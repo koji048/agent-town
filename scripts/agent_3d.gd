@@ -7,9 +7,9 @@ extends Node3D
 
 enum State { IDLE, WALKING, WORKING }
 
-const FRAME_W := 32
-const FRAME_H := 48
-const PIXEL_SIZE := 0.032
+const FRAME_W := 48
+const FRAME_H := 72
+const PIXEL_SIZE := 0.021
 const SPEED := 1.7
 
 const SAY_START := {

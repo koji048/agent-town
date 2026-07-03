@@ -419,53 +419,122 @@ def make_stations() -> None:
 
 
 # ---------------------------------------------------------------- characters
-FRAME_W, FRAME_H = 16, 24  # half-res; final 32x48
+# Ghibli-inspired (studied, not copied): rounded forms, big emotive eyes,
+# button nose, blush, soft two-tone shading, warm outlines, muted palette.
+FRAME_W, FRAME_H = 24, 36  # half-res; final 48x72
 FACINGS = ["s", "w", "e", "n"]  # sheet rows 0-3; row 4 = work
 
+GHIBLI = {
+    "director":   {"shirt": (78, 96, 130),  "hair": (62, 52, 48),   "skin": (247, 221, 198), "accent": (222, 178, 96),  "pants": (58, 56, 66)},
+    "researcher": {"shirt": (106, 138, 106),"hair": (112, 82, 56),  "skin": (250, 226, 202), "accent": (238, 234, 224), "pants": (84, 78, 68)},
+    "writer":     {"shirt": (214, 150, 98), "hair": (52, 46, 48),   "skin": (243, 214, 188), "accent": (248, 238, 210), "pants": (92, 86, 92)},
+    "editor":     {"shirt": (140, 110, 156),"hair": (196, 168, 110),"skin": (250, 228, 206), "accent": (150, 208, 198), "pants": (70, 68, 82)},
+    "publisher":  {"shirt": (196, 108, 100),"hair": (76, 60, 62),   "skin": (245, 216, 190), "accent": (240, 206, 120), "pants": (72, 64, 70)},
+}
+CH_OUTLINE = (88, 62, 52)
+BLUSH = (236, 168, 150)
+EYE = (56, 46, 44)
 
-def draw_char(d: ImageDraw.ImageDraw, ox: int, oy: int, facing: str, frame: int,
-              pal: dict, work: bool = False) -> None:
-    skin, shirt, hair, accent = pal["skin"], pal["shirt"], pal["hair"], pal["accent"]
-    pants = (52, 54, 70)
-    phase = [0, 1, 0, -1][frame % 4]
-    if work:
-        phase = 0
-    d.rectangle([ox + 5, oy + 17 + max(0, phase), ox + 6, oy + 21], pants)
-    d.rectangle([ox + 9, oy + 17 + max(0, -phase), ox + 10, oy + 21], pants)
-    d.rectangle([ox + 4, oy + 10, ox + 11, oy + 17], shirt, outline=OUTLINE)
+
+def _shade(col, amt=0.82):
+    return tuple(int(c * amt) for c in col)
+
+
+def draw_char_g(d, ox, oy, facing, frame, pal, work=False):
+    shirt, hair, skin, accent, pants = pal["shirt"], pal["hair"], pal["skin"], pal["accent"], pal["pants"]
+    walk = not work
+    phase = [0, 1, 0, -1][frame % 4] if walk else 0
+    bob = -1 if (walk and frame % 2 == 1) else 0
+    oy = oy + bob
+
+    # ---- legs & shoes (rounded)
+    l_dy = max(0, phase)
+    r_dy = max(0, -phase)
+    d.rounded_rectangle([ox + 7, oy + 26 + l_dy, ox + 11, oy + 33], 2, pants, outline=CH_OUTLINE)
+    d.rounded_rectangle([ox + 13, oy + 26 + r_dy, ox + 17, oy + 33], 2, pants, outline=CH_OUTLINE)
+    d.rectangle([ox + 7, oy + 32 + l_dy // 2, ox + 11, oy + 33], _shade(pants, 0.6))
+    d.rectangle([ox + 13, oy + 32 + r_dy // 2, ox + 17, oy + 33], _shade(pants, 0.6))
+
+    # ---- body: rounded shirt with soft left shading + collar accent
+    d.rounded_rectangle([ox + 5, oy + 15, ox + 19, oy + 27], 4, shirt, outline=CH_OUTLINE)
+    d.rounded_rectangle([ox + 5, oy + 15, ox + 10, oy + 27], 4, _shade(shirt))
+    d.line([(ox + 10, oy + 16), (ox + 10, oy + 26)], _shade(shirt))
+    d.rounded_rectangle([ox + 8, oy + 15, ox + 16, oy + 17], 2, accent)
+
+    # ---- arms (swing opposite to legs) or raised when working
     if work:
         lift = 2 if frame % 2 == 0 else 0
-        d.rectangle([ox + 2, oy + 9 - lift, ox + 3, oy + 13 - lift], shirt)
-        d.rectangle([ox + 12, oy + 9 - (2 - lift), ox + 13, oy + 13 - (2 - lift)], shirt)
-        d.rectangle([ox + 5, oy + 13, ox + 10, oy + 15], accent)
+        d.rounded_rectangle([ox + 2, oy + 11 - lift, ox + 5, oy + 19 - lift], 2, shirt, outline=CH_OUTLINE)
+        d.rounded_rectangle([ox + 19, oy + 11 - (2 - lift), ox + 22, oy + 19 - (2 - lift)], 2, shirt, outline=CH_OUTLINE)
+        d.rounded_rectangle([ox + 7, oy + 18, ox + 17, oy + 22], 2, accent, outline=CH_OUTLINE)
     else:
-        d.rectangle([ox + 3, oy + 11 + phase, ox + 3, oy + 15 + phase], shirt)
-        d.rectangle([ox + 12, oy + 11 - phase, ox + 12, oy + 15 - phase], shirt)
-    d.rectangle([ox + 4, oy + 3, ox + 11, oy + 9], skin, outline=OUTLINE)
-    d.rectangle([ox + 4, oy + 2, ox + 11, oy + 4], hair)
+        a_dy = -phase
+        d.rounded_rectangle([ox + 3, oy + 16 + a_dy, ox + 5, oy + 24 + a_dy], 2, _shade(shirt), outline=CH_OUTLINE)
+        d.rounded_rectangle([ox + 19, oy + 16 - a_dy, ox + 21, oy + 24 - a_dy], 2, shirt, outline=CH_OUTLINE)
+        d.rectangle([ox + 3, oy + 23 + a_dy, ox + 5, oy + 24 + a_dy], skin)
+        d.rectangle([ox + 19, oy + 23 - a_dy, ox + 21, oy + 24 - a_dy], skin)
+
+    # ---- head: big rounded face
+    d.ellipse([ox + 4, oy + 2, ox + 20, oy + 16], skin, outline=CH_OUTLINE)
+
     if facing == "n":
-        d.rectangle([ox + 4, oy + 3, ox + 11, oy + 8], hair)
-    elif facing == "s" or work:
-        d.point((ox + 6, oy + 6), OUTLINE)
-        d.point((ox + 9, oy + 6), OUTLINE)
-    elif facing == "w":
-        d.rectangle([ox + 9, oy + 3, ox + 11, oy + 8], hair)
-        d.point((ox + 6, oy + 6), OUTLINE)
-    elif facing == "e":
-        d.rectangle([ox + 4, oy + 3, ox + 6, oy + 8], hair)
-        d.point((ox + 9, oy + 6), OUTLINE)
+        # back of head: full hair + a little bun
+        d.ellipse([ox + 4, oy + 2, ox + 20, oy + 15], hair, outline=CH_OUTLINE)
+        d.ellipse([ox + 9, oy + 1, ox + 15, oy + 5], _shade(hair, 1.18), outline=CH_OUTLINE)
+    else:
+        # hair cap with soft highlight
+        d.ellipse([ox + 4, oy + 1, ox + 20, oy + 10], hair, outline=CH_OUTLINE)
+        d.rectangle([ox + 4, oy + 6, ox + 20, oy + 7], hair)
+        d.arc([ox + 6, oy + 2, ox + 18, oy + 9], 200, 320, _shade(hair, 1.25), 1)
+        # side locks
+        d.rounded_rectangle([ox + 4, oy + 6, ox + 6, oy + 12], 1, hair)
+        d.rounded_rectangle([ox + 18, oy + 6, ox + 20, oy + 12], 1, hair)
+
+        # scalloped bangs (kept above the eye line)
+        for bx in (6, 10, 14):
+            d.arc([ox + bx, oy + 5, ox + bx + 4, oy + 9], 0, 180, hair, 1)
+        if facing == "s" or work:
+            # big Ghibli eyes with catchlights (spaced apart)
+            d.ellipse([ox + 7, oy + 9, ox + 9, oy + 12], EYE)
+            d.ellipse([ox + 15, oy + 9, ox + 17, oy + 12], EYE)
+            d.point((ox + 8, oy + 10), (255, 255, 255))
+            d.point((ox + 16, oy + 10), (255, 255, 255))
+            # button nose + subtle mouth + blush
+            d.point((ox + 12, oy + 13), (196, 140, 120))
+            d.line([(ox + 11, oy + 14), (ox + 13, oy + 14)], (176, 116, 100))
+            d.rectangle([ox + 5, oy + 12, ox + 6, oy + 13], BLUSH)
+            d.rectangle([ox + 18, oy + 12, ox + 19, oy + 13], BLUSH)
+        elif facing == "w":
+            d.rectangle([ox + 12, oy + 3, ox + 20, oy + 12], hair)
+            d.ellipse([ox + 7, oy + 9, ox + 9, oy + 12], EYE)
+            d.point((ox + 8, oy + 10), (255, 255, 255))
+            d.rectangle([ox + 5, oy + 12, ox + 6, oy + 13], BLUSH)
+        elif facing == "e":
+            d.rectangle([ox + 4, oy + 3, ox + 12, oy + 12], hair)
+            d.ellipse([ox + 15, oy + 9, ox + 17, oy + 12], EYE)
+            d.point((ox + 16, oy + 10), (255, 255, 255))
+            d.rectangle([ox + 18, oy + 12, ox + 19, oy + 13], BLUSH)
 
 
 def make_characters() -> None:
-    for role, pal in ROLE_PAL.items():
+    for role, pal in GHIBLI.items():
         sheet = Image.new("RGBA", (FRAME_W * 4, FRAME_H * 5), (0, 0, 0, 0))
         d = ImageDraw.Draw(sheet)
         for row, facing in enumerate(FACINGS):
             for f in range(4):
-                draw_char(d, f * FRAME_W, row * FRAME_H, facing, f, pal)
+                draw_char_g(d, f * FRAME_W, row * FRAME_H, facing, f, pal)
         for f in range(4):
-            draw_char(d, f * FRAME_W, 4 * FRAME_H, "s", f, pal, work=True)
+            draw_char_g(d, f * FRAME_W, 4 * FRAME_H, "s", f, pal, work=True)
         save(sheet, "characters", f"{role}.png")
+    # review strip: all five, front idle, 4x
+    strip = Image.new("RGBA", (FRAME_W * 5 * 4, FRAME_H * 4), (236, 232, 224, 255))
+    for i, (role, pal) in enumerate(GHIBLI.items()):
+        one = Image.new("RGBA", (FRAME_W, FRAME_H), (0, 0, 0, 0))
+        draw_char_g(ImageDraw.Draw(one), 0, 0, "s", 0, pal)
+        strip.alpha_composite(one.resize((FRAME_W * 4, FRAME_H * 4), Image.NEAREST), (i * FRAME_W * 4, 0))
+    p = os.path.join(ROOT, "docs", "chars_preview.png")
+    strip.save(p)
+    print("wrote docs/chars_preview.png")
 
 
 # ---------------------------------------------------------------- 3D textures
