@@ -20,7 +20,7 @@ static func scriptwriter(language: String, niche: String) -> String:
 
 
 static func editor(language: String, niche: String) -> String:
-	return _base("the Editor (captions & pacing)", language, niche) + "\n\nFrom the script, produce:\n1. A valid SRT subtitle file (```srt block), captions capped at ~38 characters per line, max 2 lines, timed to the script beats\n2. On-screen text overlays (big keywords) per beat\n3. Two pacing/cut suggestions\nOutput the SRT first."
+	return _base("the Editor (captions & pacing)", language, niche) + "\n\nFrom the script, produce:\n1. A valid SRT subtitle file (```srt block) following these caption rules:\n   - max ~32 characters per caption, single line, lower-third style\n   - never split a word (for Thai: never break mid-word — break at natural phrase boundaries)\n   - captions never cross a spoken-phrase boundary; prefer breaks after sentence-enders or before connectives\n   - no overlapping timecodes; leave captions blank during silence\n   - keep English tech terms as-is; add a space between Thai and Latin text\n2. An opening-title line for the first 3-5s: 'EP## <native title> (<English concept>)'\n3. On-screen text overlays (big keywords) per beat\n4. Two pacing/cut suggestions\nOutput the SRT first."
 
 
 static func publisher(language: String, niche: String) -> String:

@@ -45,6 +45,7 @@ func _ready() -> void:
 		",": load("res://assets/tiles/floor_dark.png"),
 		"#": load("res://assets/tiles/deck.png"),
 		"P": load("res://assets/tiles/atrium.png"),
+		"r": load("res://assets/tiles/carpet.png"),
 	}
 	var floor_tex: Texture2D = tile_tex["."]
 
@@ -79,6 +80,18 @@ func _ready() -> void:
 					_prop("res://assets/props/lamp.png", center)
 				"d":
 					_prop("res://assets/props/desk.png", center)
+				"c":
+					_wall("res://assets/walls/wall_corner.png", center)
+				"w":
+					_wall("res://assets/walls/wall_ne_wood.png", center)
+				"W":
+					_wall("res://assets/walls/wall_ne_window.png", center)
+				"v":
+					_wall("res://assets/walls/wall_nw_wood.png", center)
+				"V":
+					_wall("res://assets/walls/wall_nw_window.png", center)
+				"M":
+					_wall("res://assets/walls/mural_%d.png" % _mural_index(row, gx), center)
 
 	# --- rooms
 	for bname in buildings:
@@ -144,6 +157,23 @@ func _prop(path: String, tile_pos: Vector2) -> void:
 	spr.position = tile_pos
 	spr.offset = Vector2(0, -spr.texture.get_height() / 2.0 + 6.0)
 	world.add_child(spr)
+
+
+func _wall(path: String, tile_pos: Vector2) -> void:
+	## Perimeter wall piece: canvas bottom aligns with the tile's south corner.
+	var spr := Sprite2D.new()
+	spr.texture = load(path)
+	spr.position = tile_pos
+	spr.offset = Vector2(0, -spr.texture.get_height() / 2.0 + tile_h / 2.0)
+	world.add_child(spr)
+
+
+func _mural_index(row: String, gx: int) -> int:
+	## Index within a consecutive run of "M" wall tiles (4-tile artwork).
+	var i := 0
+	while gx - i - 1 >= 0 and row[gx - i - 1] == "M":
+		i += 1
+	return i % 4
 
 
 func _animate_garden() -> void:

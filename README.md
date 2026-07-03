@@ -1,7 +1,9 @@
 # Agent Town
 
-An ambient 16-bit isometric studio campus, built in **Godot 4**, where a crew of
-AI agents produces short-form video content (Reels / TikTok / Shorts) for real.
+An ambient 16-bit isometric creative-studio office, built in **Godot 4**, where a
+crew of AI agents produces short-form video content (Reels / TikTok / Shorts) for
+real. One big room — wood-clad walls, tall windows, a mural wall, carpet and
+timber walkways — modeled after a modern open-plan studio.
 
 Drop a request file into a folder — the **Director** picks it up, writes a brief,
 and cascades the work through **Researcher → Scriptwriter → Editor → Publisher**,
@@ -28,13 +30,17 @@ Every stage is a real Claude Messages API call (or canned demo text in simulate
 mode). The pipeline waits for each agent to physically walk to its workstation
 before the call fires — the town state is the pipeline state.
 
-| Agent | Room | Deliverable |
+| Agent | Workstation | Deliverable |
 |---|---|---|
-| Director | Director's Office (mural wall) | `00_plan.md`, `05_review.md` |
-| Researcher | Research Corner | `01_research.md` |
-| Scriptwriter | Writers' Room | `02_script.md` |
-| Editor | Edit Bay | `03_captions.srt` |
-| Publisher | Publishing Deck | `04_publish.md` |
+| Director | Glass corner office by the mural | `00_plan.md`, `05_review.md` |
+| Researcher | Bookshelf research corner | `01_research.md` |
+| Scriptwriter | Writers' room (pinned pages) | `02_script.md` |
+| Editor | Edit bay (waveform panel, 3 monitors) | `03_captions.srt` |
+| Publisher | Publishing deck (sticky-note board, ring light) | `04_publish.md` |
+
+The Editor follows the same caption rules as the `reels-pipeline` workflow:
+~32 chars per caption, no mid-word breaks (Thai-aware), phrase-boundary
+wrapping, blank during silence — so its SRT drops straight into an editor.
 
 ## Quick start
 
