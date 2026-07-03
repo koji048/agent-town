@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate:
+    name: Validate project (Godot headless)
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:4.3
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Regenerate assets (determinism check)
+        run: |
+          apt-get update -qq && apt-get install -y -qq python3-pip > /dev/null
+          pip3 install --quiet pillow
+          python3 tools/generate_assets.py
+
+      - name: Import resources
+        run: godot --headless --path . --import || true
+
+      - name: Validate scripts, scenes and assets
+        run: godot --headless --path . -s res://tools/ci_check.gd

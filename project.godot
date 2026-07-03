@@ -1,0 +1,31 @@
+; Engine configuration file.
+; Godot 4.x — Agent Town
+
+config_version=5
+
+[application]
+
+config/name="Agent Town"
+config/description="Ambient 16-bit isometric town of AI agents that produce Reels content. A Director agent cascades work to a crew of subagents powered by the Claude API."
+run/main_scene="res://scenes/main.tscn"
+config/features=PackedStringArray("4.3")
+config/icon="res://assets/ui/icon.png"
+
+[autoload]
+
+Config="*res://scripts/autoload/config.gd"
+EventBus="*res://scripts/autoload/event_bus.gd"
+Claude="*res://scripts/autoload/claude_client.gd"
+TaskQueue="*res://scripts/autoload/task_queue.gd"
+OutputWriter="*res://scripts/autoload/output_writer.gd"
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+
+[rendering]
+
+textures/canvas_textures/default_texture_filter=0

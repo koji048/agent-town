@@ -1,0 +1,24 @@
+# Godot
+.godot/
+*.import
+export_presets.cfg
+
+# Secrets — never commit your API key
+user_config.cfg
+
+# Runtime artifacts
+output/*
+!output/.gitkeep
+queue/processing/*
+!queue/processing/.gitkeep
+queue/done/*
+!queue/done/.gitkeep
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.pyc
+.venv/
