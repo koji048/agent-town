@@ -81,14 +81,14 @@ STATION_ROLE = {
 # desk pods center, storage along the north wall, coffee corner on the west
 # wall, lounge bottom-left. Furniture detail is placed by the 3D builder.
 MAP_ROWS = [
-    "cwwwwwwwwWWWWWWWwwww",
+    "cwwwwwwwWWWWWWWWwwww",
     "v...................",
     "v...................",
+    "V...................",
     "v...................",
+    "V...................",
     "v...................",
-    "v...................",
-    "v...................",
-    "v...................",
+    "V...................",
     "v...................",
     "v...................",
     "v...................",
@@ -101,8 +101,8 @@ BUILDINGS = {
     "town_hall": {"anchor": [8, 1],  "role": "director",   "name": "Director's Office"},
     "library":   {"anchor": [3, 5],  "role": "researcher", "name": "Studio Desk"},
     "studio":    {"anchor": [1, 3],  "role": "writer",     "name": "Studio Counter"},
-    "edit_bay":  {"anchor": [9, 8],  "role": "editor",     "name": "Work Pod"},
-    "tower":     {"anchor": [14, 8], "role": "publisher",  "name": "Reception"},
+    "edit_bay":  {"anchor": [9, 7],  "role": "editor",     "name": "Work Pod"},
+    "tower":     {"anchor": [15, 10], "role": "publisher",  "name": "Reception"},
 }
 
 BLOCKED_CHARS = "~tdlcwWMvV"

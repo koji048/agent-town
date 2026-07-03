@@ -54,12 +54,16 @@ const BLOCKED_CELLS: Array = [
 	[16, 1], [16, 2], [16, 3],
 	# lounge seating + plants
 	[17, 2], [18, 3], [19, 2], [17, 4], [19, 1], [16, 5],
-	# reception L (vertical leg)
-	[16, 8], [16, 9], [16, 10],
-	# second work pod + ottomans
-	[11, 11], [12, 11], [11, 12], [12, 12], [9, 11],
+	# reception L (vertical leg, faces the entrance)
+	[17, 10], [17, 11],
+	# work pod grid (editor's pod is covered by its anchor)
+	[12, 7], [13, 7], [12, 8], [13, 8],
+	[9, 10], [10, 10], [9, 11], [10, 11],
+	[12, 10], [13, 10], [12, 11], [13, 11],
+	# ottomans + entrance plants
+	[14, 12], [19, 11],
 	# plants
-	[6, 11], [17, 12], [19, 6],
+	[6, 11], [19, 6],
 ]
 
 
@@ -260,8 +264,12 @@ func _combined_aabb(node: Node, xf: Transform3D) -> AABB:
 # ------------------------------------------------------------ floor & walls
 
 func _build_floor_cell(gx: int, gy: int) -> void:
-	# left studio wing gets warm wood; everything else large light tiles
+	# left studio wing gets warm wood; everything else large light tiles.
+	# A darker runner marks the circulation spine: entrance -> pod field ->
+	# partition door into the studio wing.
 	var tex := "deck" if (gx <= 7 and gy <= 9) else "concrete"
+	if (gy == 6 and gx >= 7 and gx <= 16) or (gx == 16 and gy >= 6 and gy <= 12):
+		tex = "concrete_dark"
 	var m := _mat("floor_" + tex, Color.WHITE, "res://assets/textures/%s.png" % tex)
 	var cx := (gx + 0.5) * CELL
 	var cz := (gy + 0.5) * CELL
@@ -426,39 +434,78 @@ func _furnish() -> void:
 	_prop("pottedPlant", 19.4, 1.3, 0, 1.0, 0.0, 1.2)
 	_prop("pottedPlant", 16.5, 5.4, 0, 1.0, 0.0, 1.2)
 
-	# ============ RECEPTION (L-shaped counter) ============
-	_box(Vector3(2.0, 0.95, 0.85), Vector3(15.0, 0.475, 8.45), oak)
-	_box(Vector3(2.1, 0.06, 0.95), Vector3(15.0, 1.0, 8.45), white, self, false)
-	_box(Vector3(0.85, 0.95, 2.55), Vector3(16.55, 0.475, 9.6), oak)
-	_box(Vector3(0.95, 0.06, 2.65), Vector3(16.55, 1.0, 9.6), white, self, false)
-	_prop("computerScreen", 14.7, 8.45, 180, 1.0, 1.03, 0.36)
-	_prop("chairDesk", 15.3, 9.3, 350, 1.0, 0.0, 1.05)
-	_prop("plantSmall3", 16.55, 8.5, 0, 1.0, 1.03, 0.26)
+	# ============ RECEPTION (faces the entrance, south-east) ============
+	_box(Vector3(2.0, 0.95, 0.85), Vector3(16.0, 0.475, 10.55), oak)
+	_box(Vector3(2.1, 0.06, 0.95), Vector3(16.0, 1.0, 10.55), white, self, false)
+	_box(Vector3(0.85, 0.95, 1.15), Vector3(17.55, 0.475, 11.4), oak)
+	_box(Vector3(0.95, 0.06, 1.25), Vector3(17.55, 1.0, 11.4), white, self, false)
+	_prop("computerScreen", 15.7, 10.55, 180, 1.0, 1.03, 0.36)
+	_prop("chairDesk", 16.2, 9.7, 170, 1.0, 0.0, 1.05)
+	_prop("plantSmall3", 16.9, 10.55, 0, 1.0, 1.03, 0.26)
+	_pendant(Vector3(16.0, 2.5, 10.9))
 
-	# ============ OPEN WORK PODS (tile floor) ============
-	var pods := [[9.0, 8.5, true], [11.0, 11.5, false]]
+	# ============ ENTRANCE (south-east corner) ============
+	_prop("rugDoormat", 18.4, 12.4, 90, 1.4)
+	_prop("pottedPlant", 19.45, 11.4, 0, 1.0, 0.0, 1.2)
+
+	# ============ WORK POD GRID (2 x 2, strict rhythm) ============
+	var pods := [[9.0, 7.5, true], [12.0, 7.5, false], [9.0, 10.5, false], [12.0, 10.5, false]]
 	for pod in pods:
 		var px: float = pod[0]
 		var pz: float = pod[1]
+		var is_editor: bool = pod[2]
 		_prop("desk", px + 0.5, pz - 0.45, 0, 1.0, 0.0, 0.74)
 		_prop("desk", px + 0.5, pz + 0.45, 180, 1.0, 0.0, 0.74)
 		_prop("computerScreen", px + 0.3, pz - 0.35, 0, 1.0, DESK_H, 0.38)
 		_prop("computerScreen", px + 0.85, pz - 0.35, 5, 1.0, DESK_H, 0.38)
 		_prop("computerScreen", px + 0.3, pz + 0.35, 180, 1.0, DESK_H, 0.38)
 		_prop("computerScreen", px + 0.85, pz + 0.38, 175, 1.0, DESK_H, 0.38)
+		_prop("computerKeyboard", px + 0.32, pz - 0.62, 0, 0.28, DESK_H)
+		_prop("computerKeyboard", px + 0.32, pz + 0.62, 180, 0.28, DESK_H)
 		_prop("chairDesk", px + 0.5, pz - 1.25, 5 + randf_range(-15.0, 15.0), 1.0, 0.0, 1.0)
 		_prop("chairDesk", px + 0.5, pz + 1.25, 185 + randf_range(-15.0, 15.0), 1.0, 0.0, 1.0)
-	# editor's pod gets the role trim on a low divider between the desks
-	_box(Vector3(2.0, 0.9, 0.06), Vector3(9.5 + 0.0, 0.75, 8.5), _mat("pod_divider", Color(0.90, 0.89, 0.86)))
-	_box(Vector3(2.0, 0.05, 0.09), Vector3(9.5, 1.22, 8.5),
-		_mat("trim_editor", ROLE_ACCENT["editor"], "", ROLE_ACCENT["editor"] * 0.5), self, false)
-	_box(Vector3(2.0, 0.9, 0.06), Vector3(11.5, 0.75, 11.5), _mat("pod_divider", Color(0.90, 0.89, 0.86)))
-	# ottomans near the pods
-	_prop("benchCushionLow", 9.3, 11.4, 20, 1.0, 0.0, 0.42)
-	_prop("benchCushionLow", 9.7, 12.0, -10, 1.0, 0.0, 0.42)
+		var divider_mat := _mat("pod_divider", Color(0.90, 0.89, 0.86))
+		_box(Vector3(2.0, 0.9, 0.06), Vector3(px + 0.5, 0.75, pz), divider_mat)
+		if is_editor:
+			_box(Vector3(2.0, 0.05, 0.09), Vector3(px + 0.5, 1.22, pz),
+				_mat("trim_editor", ROLE_ACCENT["editor"], "", ROLE_ACCENT["editor"] * 0.5), self, false)
+	# ottomans by the pod field
+	_prop("benchCushionLow", 14.4, 12.3, 20, 1.0, 0.0, 0.42)
+	_prop("benchCushionLow", 14.9, 12.7, -10, 1.0, 0.0, 0.42)
+
+	# ============ layered light: pendants over shared zones ============
+	_pendant(Vector3(13.0, 2.5, 2.4))
+	_pendant(Vector3(18.1, 2.5, 2.8))
 
 	# ============ plants ============
 	_prop("pottedPlant", 6.4, 11.3, 0, 1.0, 0.0, 1.2)
-	_prop("pottedPlant", 17.4, 12.3, 0, 1.0, 0.0, 1.2)
 	_prop("pottedPlant", 19.4, 6.3, 0, 1.0, 0.0, 1.2)
-	_prop("plantSmall1", 12.5, 6.2, 0, 1.0, 0.0, 0.5)
+	_prop("plantSmall1", 5.5, 10.5, 0, 1.0, 0.0, 0.5)
+
+	# ============ ground plane (seats the diorama) ============
+	_box(Vector3(70.0, 0.06, 70.0), Vector3(10.0, -0.58, 7.0),
+		_mat("ground", Color(0.88, 0.88, 0.89)), self, false)
+
+
+## A small pendant lamp with a warm light pool — layered lighting.
+func _pendant(pos: Vector3) -> void:
+	var steel := _mat("steel", Color(0.42, 0.42, 0.46))
+	_box(Vector3(0.03, 3.0 - pos.y - 0.12, 0.03), Vector3(pos.x, (3.0 + pos.y) / 2.0, pos.z), steel, self, false)
+	var shade := MeshInstance3D.new()
+	var cyl := CylinderMesh.new()
+	cyl.top_radius = 0.05
+	cyl.bottom_radius = 0.16
+	cyl.height = 0.16
+	shade.mesh = cyl
+	shade.material_override = _mat("pendant_shade", Color(0.30, 0.30, 0.33))
+	shade.position = pos
+	add_child(shade)
+	var bulb := _mat("pendant_bulb", Color(1.0, 0.9, 0.7) * 0.8, "", Color(1.0, 0.88, 0.65))
+	_box(Vector3(0.07, 0.04, 0.07), pos + Vector3(0, -0.09, 0), bulb, self, false)
+	var light := OmniLight3D.new()
+	light.position = pos + Vector3(0, -0.2, 0)
+	light.light_color = Color(1.0, 0.9, 0.72)
+	light.omni_range = 3.0
+	light.light_energy = 1.4
+	light.shadow_enabled = false
+	add_child(light)
