@@ -2,18 +2,18 @@
   "tile_w": 64,
   "tile_h": 32,
   "rows": [
-    "cwwwwwwwWWWWWWWWwwww",
+    "cwwwwWWwwwwwwWWWWWWw",
+    "v...................",
+    "v...................",
     "v...................",
     "v...................",
     "V...................",
-    "v...................",
-    "V...................",
-    "v...................",
     "V...................",
     "v...................",
     "v...................",
     "v...................",
-    "v...................",
+    "V...................",
+    "V...................",
     "v...................",
     "v..................."
   ],
@@ -21,62 +21,62 @@
   "buildings": {
     "town_hall": {
       "anchor": [
-        8,
+        1,
         1
       ],
       "role": "director",
       "name": "Director's Office",
       "workstation": [
-        9,
+        2,
         3
       ]
     },
     "library": {
       "anchor": [
-        3,
+        1,
         5
       ],
       "role": "researcher",
-      "name": "Studio Desk",
+      "name": "Research Station",
       "workstation": [
-        4,
+        2,
         7
       ]
     },
     "studio": {
       "anchor": [
-        1,
-        3
+        4,
+        5
       ],
       "role": "writer",
-      "name": "Studio Counter",
+      "name": "Writing Station",
       "workstation": [
-        2,
-        5
+        5,
+        7
       ]
     },
     "edit_bay": {
       "anchor": [
-        9,
-        7
+        7,
+        5
       ],
       "role": "editor",
-      "name": "Work Pod",
+      "name": "Edit Station",
       "workstation": [
-        10,
-        9
+        8,
+        7
       ]
     },
     "tower": {
       "anchor": [
-        15,
-        10
+        14,
+        1
       ],
       "role": "publisher",
-      "name": "Reception",
+      "name": "Publishing Dept",
       "workstation": [
-        16,
-        12
+        15,
+        3
       ]
     }
   }
