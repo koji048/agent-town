@@ -18,12 +18,11 @@ func _ready() -> void:
 	# --- low-res 3D viewport (pixelated upscale for the 16-bit look)
 	var container := SubViewportContainer.new()
 	container.stretch = true
-	container.stretch_shrink = 2
+	container.stretch_shrink = 1  # native res — crisp archviz look
 	container.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(container)
 	var vp := SubViewport.new()
-	vp.msaa_3d = Viewport.MSAA_DISABLED
-	vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
+	vp.msaa_3d = Viewport.MSAA_4X
 	container.add_child(vp)
 
 	var world := Node3D.new()
@@ -54,6 +53,8 @@ func _ready() -> void:
 	env.ambient_light_color = Color(0.72, 0.72, 0.76)
 	env.ambient_light_energy = 1.15
 	env.ssao_enabled = true
+	env.ssao_intensity = 3.0
+	env.ssao_radius = 1.5
 	var we := WorldEnvironment.new()
 	we.environment = env
 	world.add_child(we)
@@ -64,6 +65,7 @@ func _ready() -> void:
 	sun.light_color = Color(1.0, 0.97, 0.90)
 	sun.light_energy = 1.35
 	sun.shadow_enabled = true
+	sun.light_angular_distance = 2.5  # soft shadow edges
 	world.add_child(sun)
 
 	# --- isometric orthographic camera
@@ -150,7 +152,8 @@ func _build_hud() -> void:
 
 	var bottom := PanelContainer.new()
 	bottom.add_theme_stylebox_override("panel", _panel_style())
-	bottom.position = Vector2(12, 720 - 140)
+	bottom.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	bottom.position = Vector2(12, 1080 - 160)
 	var vb2 := VBoxContainer.new()
 	_log = Label.new()
 	_log.add_theme_font_size_override("font_size", 11)

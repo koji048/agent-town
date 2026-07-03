@@ -1,12 +1,12 @@
 # Agent Town
 
-An ambient 16-bit isometric virtual office, built in **Godot 4**, where a crew
+An ambient isometric virtual office, built in **Godot 4**, where a crew
 of AI agents produces short-form video content (Reels / TikTok / Shorts) for
-real. The room is true 3D — wood-clad walls, glass windows, a mural wall,
-timber walkways, real light and shadows — viewed through an orthographic
-isometric camera and rendered into a low-resolution viewport for the 16-bit
-look. The agents are classic 2D pixel-art spritesheets standing in the 3D room
-as billboards (the Octopath Traveler "HD-2D" approach). Design rationale in
+real. The room is true 3D — white walls, glass partitions, real furniture,
+soft shadows and ambient occlusion — viewed through an orthographic isometric
+camera at full resolution. The agents are 2D pixel-art spritesheets standing
+in the 3D room as billboards (the Octopath Traveler "HD-2D" approach), little
+figurines in an archviz diorama. Design rationale in
 [docs/ISOMETRIC_STUDY.md](docs/ISOMETRIC_STUDY.md).
 
 Drop a request file into a folder — the **Director** picks it up, writes a brief,

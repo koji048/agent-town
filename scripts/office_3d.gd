@@ -19,6 +19,18 @@ var astar := AStarGrid2D.new()
 var _mats: Dictionary = {}
 var _gltf_cache: Dictionary = {}
 
+# repaint Kenney models into the reference's white/oak/beige palette
+const TINT := {
+	"chairDesk": Color(0.93, 0.92, 0.89),
+	"chair": Color(0.93, 0.92, 0.89),
+	"chairModernCushion": Color(0.90, 0.89, 0.86),
+	"loungeChair": Color(0.80, 0.72, 0.60),
+	"loungeSofa": Color(0.80, 0.72, 0.60),
+	"benchCushionLow": Color(0.92, 0.91, 0.88),
+	"rugRectangle": Color(0.83, 0.81, 0.77),
+	"rugRound": Color(0.83, 0.81, 0.77),
+}
+
 const ROLE_ACCENT := {
 	"director": Color(0.85, 0.67, 0.24),
 	"researcher": Color(0.17, 0.48, 0.32),
@@ -133,7 +145,6 @@ func _mat(key: String, color: Color, tex_path: String = "", emission: Color = Co
 	m.albedo_color = color
 	if not tex_path.is_empty():
 		m.albedo_texture = load(tex_path)
-		m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
 	m.uv1_scale = uv_scale
 	m.roughness = 0.9
 	if emission != Color.BLACK:
@@ -189,8 +200,28 @@ func _prop(model: String, x: float, z: float, rot_deg: float = 0.0, fit: float =
 			-(aabb.position.x + aabb.size.x / 2.0) * s,
 			-aabb.position.y * s,
 			-(aabb.position.z + aabb.size.z / 2.0) * s)
+	if TINT.has(model):
+		_tint_meshes(node, TINT[model])
 	root.add_child(node)
 	return root
+
+
+## Repaint a model: light surfaces take the tint, dark parts become steel.
+func _tint_meshes(node: Node, tint: Color) -> void:
+	if node is MeshInstance3D:
+		var mi: MeshInstance3D = node
+		if mi.mesh:
+			for i in mi.mesh.get_surface_count():
+				var src := mi.mesh.surface_get_material(i)
+				if src is StandardMaterial3D:
+					var m: StandardMaterial3D = (src as StandardMaterial3D).duplicate()
+					if m.albedo_color.v > 0.45:
+						m.albedo_color = tint
+					else:
+						m.albedo_color = Color(0.32, 0.32, 0.35)
+					mi.set_surface_override_material(i, m)
+	for child in node.get_children():
+		_tint_meshes(child, tint)
 
 
 func _instantiate_glb(model: String) -> Node3D:
@@ -271,6 +302,11 @@ func _wall_segment(kind: String, pos: Vector3, ne: bool, gx: int, row: String) -
 	var glass := _mat("glass", Color(0.78, 0.88, 0.95, 0.35), "", Color.BLACK, true)
 	_box(glass_size, pos + Vector3(0, 1.65, 0), glass, self, false)
 	_box(mull_size, pos + Vector3(0, 1.65, 0), _mat("steel", Color(0.42, 0.42, 0.46)))
+	# venetian blinds over the top half of the glass
+	for i in 5:
+		var slat := Vector3(CELL - 0.12, 0.035, 0.02) if ne else Vector3(0.02, 0.035, CELL - 0.12)
+		var slat_off := Vector3(0, 2.32 - i * 0.13, WALL_T / 2.0 + 0.03) if ne else Vector3(WALL_T / 2.0 + 0.03, 2.32 - i * 0.13, 0)
+		_box(slat, pos + slat_off, _mat("blind", Color(0.90, 0.90, 0.88)), self, false)
 
 
 func _mural_run_index(row: String, gx: int) -> int:
@@ -364,8 +400,8 @@ func _furnish() -> void:
 	# east dividing wall to the lounge
 	for wz2 in [1, 2, 3]:
 		_box(Vector3(0.14, 2.4, 1.0), Vector3(16.5, 1.2, wz2 + 0.5), wallwhite)
-	_prop("tableRound", 13.0, 2.4, 0, 1.15)
-	_prop("chair", 13.0, 1.3, 180, 1.0, 0.0, 0.9)
+	_prop("tableRound", 13.0, 2.4, 0, 1.0, 0.0, 0.74)
+	_prop("chair", 13.0, 1.35, 180, 1.0, 0.0, 0.9)
 	_prop("chair", 13.0, 3.5, 0, 1.0, 0.0, 0.9)
 	_prop("chair", 11.9, 2.4, 90, 1.0, 0.0, 0.9)
 	_prop("chair", 14.1, 2.4, 270, 1.0, 0.0, 0.9)
