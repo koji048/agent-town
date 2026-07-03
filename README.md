@@ -1,17 +1,21 @@
 # Agent Town
 
-An ambient 16-bit isometric creative-studio office, built in **Godot 4**, where a
-crew of AI agents produces short-form video content (Reels / TikTok / Shorts) for
-real. One big room — wood-clad walls, tall windows, a mural wall, carpet and
-timber walkways — modeled after a modern open-plan studio.
+An ambient 16-bit isometric virtual office, built in **Godot 4**, where a crew
+of AI agents produces short-form video content (Reels / TikTok / Shorts) for
+real. The room is true 3D — wood-clad walls, glass windows, a mural wall,
+timber walkways, real light and shadows — viewed through an orthographic
+isometric camera and rendered into a low-resolution viewport for the 16-bit
+look. The agents are classic 2D pixel-art spritesheets standing in the 3D room
+as billboards (the Octopath Traveler "HD-2D" approach). Design rationale in
+[docs/ISOMETRIC_STUDY.md](docs/ISOMETRIC_STUDY.md).
 
 Drop a request file into a folder — the **Director** picks it up, writes a brief,
 and cascades the work through **Researcher → Scriptwriter → Editor → Publisher**,
-each powered by a live **Claude API** call. Agents walk to their rooms, work at
-their desks, chat in speech bubbles, and the finished reel package lands on your
-disk. No clicking required. You just watch the town live.
+each powered by a live **Claude API** call. Agents walk to their workstations,
+work at their desks, chat in speech bubbles, and the finished reel package lands
+on your disk. No clicking required. You just watch the office live.
 
-![Agent Town preview](docs/preview.png)
+![Agent Town — 3D isometric office](docs/screenshot_3d.png)
 
 ## How it works
 
@@ -101,9 +105,9 @@ agent-town/
 │   ├── autoload/            Config, EventBus, Claude client, queue, writer
 │   ├── pipeline.gd          The boss→subagent cascade
 │   ├── prompts.gd           System prompts per role
-│   ├── town.gd              Isometric renderer + A* pathfinding
-│   ├── agent.gd             Agent FSM: wander / walk / work / speak
-│   └── main.gd              Boot, camera, HUD
+│   ├── office_3d.gd         3D office builder + A* pathfinding
+│   ├── agent_3d.gd          Billboard agent FSM: wander / walk / work / speak
+│   └── main.gd              Boot, ortho camera, lighting, HUD
 ├── assets/                  Generated 16-bit pixel art + map.json
 ├── tools/generate_assets.py Deterministic art generator (Pillow)
 ├── tools/ci_check.gd        Headless validation (used by CI)

@@ -6,6 +6,12 @@ extends SceneTree
 
 
 func _init() -> void:
+	# Wait one frame so autoload singletons (Config, EventBus, ...) are
+	# registered — scripts referencing them can't compile before that.
+	process_frame.connect(_run, CONNECT_ONE_SHOT)
+
+
+func _run() -> void:
 	var errors: int = 0
 
 	for path in _find_files("res://scripts", "gd"):

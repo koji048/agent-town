@@ -24,4 +24,6 @@ jobs:
         run: godot --headless --path . --import || true
 
       - name: Validate scripts, scenes and assets
-        run: godot --headless --path . -s res://tools/ci_check.gd
+        run: |
+          godot --headless --path . -s res://tools/ci_check.gd 2>&1 | tee /tmp/check.log
+          ! grep -q "SCRIPT ERROR" /tmp/check.log

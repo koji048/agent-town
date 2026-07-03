@@ -1,41 +1,78 @@
-## Boots the campus: town, agents, pipeline, camera and HUD.
+## Boots the 3D office: low-res viewport for the 16-bit look, orthographic
+## isometric camera, sunlight through the windows, agents, pipeline, HUD.
 ## Pan with WASD/arrows, zoom with the mouse wheel.
-extends Node2D
+extends Node
 
 const ROLES := ["director", "researcher", "writer", "editor", "publisher"]
 const MAX_LOG_LINES := 7
+const CAM_DIST := 30.0
 
-var town: Town
-var _cam: Camera2D
+var office: Office3D
+var _cam: Camera3D
 var _status: Label
-var _mode: Label
 var _log: Label
 var _log_lines: PackedStringArray = []
 
 
 func _ready() -> void:
-	town = Town.new()
-	add_child(town)
+	# --- low-res 3D viewport (pixelated upscale for the 16-bit look)
+	var container := SubViewportContainer.new()
+	container.stretch = true
+	container.stretch_shrink = 2
+	container.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(container)
+	var vp := SubViewport.new()
+	vp.msaa_3d = Viewport.MSAA_DISABLED
+	vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
+	container.add_child(vp)
+
+	var world := Node3D.new()
+	vp.add_child(world)
+
+	office = Office3D.new()
+	world.add_child(office)
 
 	for role in ROLES:
-		var agent := TownAgent.new()
+		var agent := TownAgent3D.new()
 		agent.role = role
-		agent.town = town
-		var ws := town.workstation(role)
+		agent.office = office
+		var ws := office.workstation(role)
 		var spawn := Vector2i(ws.x, ws.y + 1)
-		if town.is_blocked(spawn):
+		if office.is_blocked(spawn):
 			spawn = ws
 		agent.grid_pos = spawn
-		agent.position = town.tile_center(spawn)
-		town.world.add_child(agent)
+		agent.position = office.grid_to_world(spawn)
+		world.add_child(agent)
 
 	add_child(Pipeline.new())
 
-	_cam = Camera2D.new()
-	_cam.position = town.center()
-	_cam.zoom = Vector2(0.9, 0.9)
-	add_child(_cam)
-	_cam.make_current()
+	# --- environment & light
+	var env := Environment.new()
+	env.background_mode = Environment.BG_COLOR
+	env.background_color = Color(0.72, 0.83, 0.9)
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.ambient_light_color = Color(0.62, 0.63, 0.7)
+	env.ambient_light_energy = 1.0
+	env.ssao_enabled = true
+	var we := WorldEnvironment.new()
+	we.environment = env
+	world.add_child(we)
+
+	var sun := DirectionalLight3D.new()
+	sun.rotation_degrees = Vector3(-42, 200, 0)
+	sun.light_color = Color(1.0, 0.94, 0.82)
+	sun.light_energy = 1.25
+	sun.shadow_enabled = true
+	world.add_child(sun)
+
+	# --- isometric orthographic camera
+	_cam = Camera3D.new()
+	_cam.projection = Camera3D.PROJECTION_ORTHOGONAL
+	_cam.size = 13.0
+	_cam.rotation_degrees = Vector3(-30, 45, 0)
+	world.add_child(_cam)
+	_cam.position = office.center() + _cam.global_transform.basis.z * CAM_DIST
+	_cam.current = true
 
 	_build_hud()
 	EventBus.log_line.connect(_append_log)
@@ -46,7 +83,22 @@ func _ready() -> void:
 	EventBus.request_completed.connect(func(_request: Dictionary, output_dir: String) -> void:
 		_status.text = "IDLE — drop a .json into queue/pending/"
 		_append_log("Package saved: output/%s" % output_dir.get_file()))
-	_append_log("Agent Town is alive.")
+	_append_log("Agent Town office is open.")
+
+	# Dev helper: AGENT_TOWN_SHOT=/path/out.png godot --path . -> renders a
+	# few seconds, saves a screenshot, quits. Used for README captures.
+	var shot_path := OS.get_environment("AGENT_TOWN_SHOT")
+	if not shot_path.is_empty():
+		_capture_and_quit(shot_path)
+
+
+func _capture_and_quit(path: String) -> void:
+	await get_tree().create_timer(3.5).timeout
+	var img := get_viewport().get_texture().get_image()
+	img.save_png(path)
+	print("screenshot saved: ", path)
+	await get_tree().create_timer(0.2).timeout
+	get_tree().quit()
 
 
 func _process(delta: float) -> void:
@@ -54,15 +106,21 @@ func _process(delta: float) -> void:
 	pan.x = Input.get_axis(&"ui_left", &"ui_right")
 	pan.y = Input.get_axis(&"ui_up", &"ui_down")
 	if pan != Vector2.ZERO:
-		_cam.position += pan * 420.0 * delta / _cam.zoom.x
+		var right := _cam.global_transform.basis.x
+		right.y = 0.0
+		right = right.normalized()
+		var fwd := -_cam.global_transform.basis.z
+		fwd.y = 0.0
+		fwd = fwd.normalized()
+		_cam.position += (right * pan.x + fwd * -pan.y) * 8.0 * delta * (_cam.size / 13.0)
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
-			_cam.zoom = (_cam.zoom * 1.1).clamp(Vector2(0.4, 0.4), Vector2(3, 3))
+			_cam.size = clampf(_cam.size / 1.1, 5.0, 26.0)
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			_cam.zoom = (_cam.zoom / 1.1).clamp(Vector2(0.4, 0.4), Vector2(3, 3))
+			_cam.size = clampf(_cam.size * 1.1, 5.0, 26.0)
 
 
 func _build_hud() -> void:
@@ -74,14 +132,14 @@ func _build_hud() -> void:
 	top.position = Vector2(12, 12)
 	var vb := VBoxContainer.new()
 	var title := Label.new()
-	title.text = "AGENT TOWN — content studio"
+	title.text = "AGENT TOWN — virtual office"
 	title.add_theme_font_size_override("font_size", 16)
 	vb.add_child(title)
-	_mode = Label.new()
-	_mode.text = ("MODE: DEMO (no API key — simulate)" if Config.simulate else "MODE: LIVE (%s)" % Config.model)
-	_mode.add_theme_font_size_override("font_size", 11)
-	_mode.modulate = Color(1, 0.85, 0.5) if Config.simulate else Color(0.6, 1, 0.7)
-	vb.add_child(_mode)
+	var mode := Label.new()
+	mode.text = ("MODE: DEMO (no API key — simulate)" if Config.simulate else "MODE: LIVE (%s)" % Config.model)
+	mode.add_theme_font_size_override("font_size", 11)
+	mode.modulate = Color(1, 0.85, 0.5) if Config.simulate else Color(0.6, 1, 0.7)
+	vb.add_child(mode)
 	_status = Label.new()
 	_status.text = "IDLE — drop a .json into queue/pending/"
 	_status.add_theme_font_size_override("font_size", 12)
@@ -91,8 +149,6 @@ func _build_hud() -> void:
 
 	var bottom := PanelContainer.new()
 	bottom.add_theme_stylebox_override("panel", _panel_style())
-	bottom.anchor_top = 1.0
-	bottom.anchor_bottom = 1.0
 	bottom.position = Vector2(12, 720 - 140)
 	var vb2 := VBoxContainer.new()
 	_log = Label.new()

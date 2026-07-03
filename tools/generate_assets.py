@@ -471,6 +471,62 @@ def make_characters() -> None:
         save(sheet, "characters", f"{role}.png")
 
 
+# ---------------------------------------------------------------- 3D textures
+# Square tiling textures used as StandardMaterial3D albedo maps by the
+# 3D office renderer (nearest-filtered for the 16-bit look).
+def make_textures_3d() -> None:
+    rng = random.Random(31)
+
+    def tex(name: str, size: int, base, painter) -> None:
+        im = Image.new("RGBA", (size, size), base + (255,))
+        painter(ImageDraw.Draw(im), size)
+        p = os.path.join(ASSETS, "textures", f"{name}.png")
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        im.save(p)
+        print("wrote", os.path.relpath(p, ROOT))
+
+    def speckle(cols, n):
+        def paint(d: ImageDraw.ImageDraw, size: int) -> None:
+            for _ in range(n):
+                d.point((rng.randrange(size), rng.randrange(size)), cols[rng.randrange(len(cols))])
+        return paint
+
+    tex("concrete", 16, FLOOR, speckle([FLOOR_D, FLOOR_SPECK], 30))
+    tex("concrete_dark", 16, FLOOR_D, speckle([FLOOR, (180, 176, 168)], 30))
+
+    def carpet_paint(d: ImageDraw.ImageDraw, size: int) -> None:
+        for y in range(0, size, 4):
+            d.line([(0, y), (size, y)], CARPET_D)
+        speckle([(116, 122, 136)], 14)(d, size)
+    tex("carpet", 16, CARPET, carpet_paint)
+
+    def planks(base, dark, light):
+        def paint(d: ImageDraw.ImageDraw, size: int) -> None:
+            for x in range(0, size, 4):
+                d.line([(x, 0), (x, size)], dark if (x // 4) % 2 else light)
+            for y in (5, 11):
+                d.line([(0, y), (size, y)], dark)
+        return paint
+    tex("deck", 16, DECK, planks(DECK, DECK_D, (200, 152, 104)))
+    tex("atrium", 16, ATRIUM, planks(ATRIUM, ATRIUM_D, (218, 176, 124)))
+
+    tex("garden", 16, GARDEN, speckle([GARDEN_HI, (86, 128, 82), (50, 80, 54)], 40))
+
+    def wallwood_paint(d: ImageDraw.ImageDraw, size: int) -> None:
+        for x in range(0, size, 4):
+            d.line([(x, 0), (x, size)], TIMBER_D if (x // 4) % 2 else TIMBER_L)
+    tex("wallwood", 32, TIMBER, wallwood_paint)
+
+    # full mural artwork for the 3D wall (one quad, 4 tiles wide)
+    im = Image.new("RGBA", (128, 56), WHITE_WALL + (255,))
+    d = ImageDraw.Draw(im)
+    for bx, by, rx, ry, col in MURAL_BLOBS:
+        d.ellipse([bx * 1.4 - rx * 1.4, by - ry, bx * 1.4 + rx * 1.4, by + ry], col)
+    p = os.path.join(ASSETS, "textures", "mural_full.png")
+    im.save(p)
+    print("wrote", os.path.relpath(p, ROOT))
+
+
 # ---------------------------------------------------------------- ui icon
 def make_icon() -> None:
     im = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
@@ -612,6 +668,7 @@ if __name__ == "__main__":
     make_props()
     make_stations()
     make_characters()
+    make_textures_3d()
     make_icon()
     make_map_json()
     make_preview()
