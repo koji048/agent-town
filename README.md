@@ -17,6 +17,18 @@ on your disk. No clicking required. You just watch the office live.
 
 ![Agent Town — 3D isometric office](docs/screenshot_3d.png)
 
+The office follows your real local clock — golden hour at 17:30, lamps and
+monitor glow after dark (override with `AGENT_TOWN_HOUR=17.5` for screenshots).
+Agents wear MMO-style nameplates with live state pills (IDLE / WALKING /
+WORKING, gold plate for the Director), and stage transitions pop `!` / `+` / `x`
+effects above their heads. These ideas are studied from
+[BagIdea Office](https://github.com/bagidea/bagidea-office) — notes in
+[docs/BAGIDEA_STUDY.md](docs/BAGIDEA_STUDY.md).
+
+| Golden hour (17:30) | Night (21:30) |
+|---|---|
+| ![Golden hour](docs/screenshot_golden.png) | ![Night](docs/screenshot_night.png) |
+
 ## How it works
 
 ```mermaid

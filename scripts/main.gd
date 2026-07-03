@@ -65,6 +65,12 @@ func _ready() -> void:
 	sun.shadow_enabled = true
 	world.add_child(sun)
 
+	# real-clock day/night cycle (override: AGENT_TOWN_HOUR=17.5)
+	var daynight := DayNight.new()
+	daynight.sun = sun
+	daynight.env = env
+	world.add_child(daynight)
+
 	# --- isometric orthographic camera
 	_cam = Camera3D.new()
 	_cam.projection = Camera3D.PROJECTION_ORTHOGONAL

@@ -33,6 +33,13 @@ var _sprite: AnimatedSprite3D
 var _bubble: Label3D
 var _bubble_timer: Timer
 var _wander_timer: Timer
+var _plate_state: Label3D
+
+const STATE_STYLE := {
+	State.IDLE: ["IDLE", Color(0.72, 0.76, 0.72)],
+	State.WALKING: ["WALKING", Color(0.55, 0.75, 1.0)],
+	State.WORKING: ["WORKING", Color(1.0, 0.72, 0.32)],
+}
 
 
 func _ready() -> void:
@@ -50,14 +57,21 @@ func _ready() -> void:
 	_bubble = Label3D.new()
 	_bubble.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_bubble.no_depth_test = true
-	_bubble.font_size = 40
-	_bubble.outline_size = 14
-	_bubble.pixel_size = 0.006
+	_bubble.font_size = 64
+	_bubble.outline_size = 18
+	_bubble.pixel_size = 0.0042
 	_bubble.modulate = Color(0.98, 0.97, 0.94)
 	_bubble.outline_modulate = Color(0.13, 0.12, 0.16)
-	_bubble.position = Vector3(0, FRAME_H * PIXEL_SIZE + 0.45, 0)
+	_bubble.position = Vector3(0, FRAME_H * PIXEL_SIZE + 0.62, 0)
 	_bubble.visible = false
 	add_child(_bubble)
+
+	# nameplate: role name (gold for the boss) + live state pill
+	var plate_name := _make_plate(role.to_upper(), 64,
+		Color(1.0, 0.85, 0.35) if role == "director" else Color(0.96, 0.96, 0.92))
+	plate_name.position = Vector3(0, FRAME_H * PIXEL_SIZE + 0.42, 0)
+	_plate_state = _make_plate("IDLE", 44, Color(0.72, 0.76, 0.72))
+	_plate_state.position = Vector3(0, FRAME_H * PIXEL_SIZE + 0.18, 0)
 
 	_bubble_timer = Timer.new()
 	_bubble_timer.one_shot = true
@@ -109,16 +123,16 @@ func walk_to(cell: Vector2i) -> void:
 	for i in range(1, path.size()):
 		_cells.append(path[i])
 		_waypoints.append(office.grid_to_world(path[i]))
-	state = State.WALKING
+	_set_state(State.WALKING)
 
 
 func _on_path_done() -> void:
 	if _target_is_work:
-		state = State.WORKING
+		_set_state(State.WORKING)
 		_sprite.play("work")
 		EventBus.agent_arrived.emit(role)
 	else:
-		state = State.IDLE
+		_set_state(State.IDLE)
 		_sprite.play("idle")
 		_restart_wander()
 
@@ -128,17 +142,23 @@ func _on_stage_started(stage: String, r: String, _request: Dictionary) -> void:
 		return
 	_target_is_work = true
 	_wander_timer.stop()
+	_pop_fx("!", Color(1.0, 0.78, 0.3))
 	_say(str(SAY_START.get(stage, "On it...")))
 	walk_to(office.workstation(role))
 
 
-func _on_stage_completed(_stage: String, r: String, _request: Dictionary, _result: String) -> void:
+func _on_stage_completed(stage: String, r: String, _request: Dictionary, result: String) -> void:
 	if r != role:
 		return
 	_target_is_work = false
-	state = State.IDLE
+	_set_state(State.IDLE)
 	_sprite.play("idle")
-	_say("Done!")
+	if result.begins_with("(stage"):
+		_pop_fx("x", Color(1.0, 0.42, 0.42))
+		_say("That one failed...")
+	else:
+		_pop_fx("+", Color(0.45, 1.0, 0.55))
+		_say("Done!")
 	_restart_wander()
 
 
@@ -168,6 +188,47 @@ func _say(text: String) -> void:
 	_bubble.text = text
 	_bubble.visible = true
 	_bubble_timer.start(4.0)
+
+
+func _set_state(s: State) -> void:
+	state = s
+	if _plate_state:
+		var style: Array = STATE_STYLE[s]
+		_plate_state.text = style[0]
+		_plate_state.modulate = style[1]
+
+
+func _make_plate(text: String, size: int, color: Color) -> Label3D:
+	var l := Label3D.new()
+	l.text = text
+	l.font_size = size
+	l.outline_size = size / 4
+	l.pixel_size = 0.0032
+	l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	l.no_depth_test = true
+	l.modulate = color
+	l.outline_modulate = Color(0.1, 0.1, 0.13, 0.9)
+	add_child(l)
+	return l
+
+
+## BagIdea-style event FX: a symbol pops above the head, floats up, fades.
+func _pop_fx(symbol: String, color: Color) -> void:
+	var l := Label3D.new()
+	l.text = symbol
+	l.font_size = 72
+	l.outline_size = 18
+	l.pixel_size = 0.006
+	l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	l.no_depth_test = true
+	l.modulate = color
+	l.outline_modulate = Color(0.1, 0.1, 0.13)
+	l.position = Vector3(0, FRAME_H * PIXEL_SIZE + 0.85, 0)
+	add_child(l)
+	var tw := create_tween()
+	tw.tween_property(l, "position:y", l.position.y + 0.6, 1.1)
+	tw.parallel().tween_property(l, "modulate:a", 0.0, 1.1)
+	tw.tween_callback(l.queue_free)
 
 
 func _build_frames() -> SpriteFrames:
