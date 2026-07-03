@@ -49,35 +49,30 @@ func _ready() -> void:
 	# --- environment & light
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color(0.72, 0.83, 0.9)
+	env.background_color = Color(0.94, 0.94, 0.95)
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.62, 0.63, 0.7)
-	env.ambient_light_energy = 1.0
+	env.ambient_light_color = Color(0.72, 0.72, 0.76)
+	env.ambient_light_energy = 1.15
 	env.ssao_enabled = true
 	var we := WorldEnvironment.new()
 	we.environment = env
 	world.add_child(we)
 
+	# fixed bright daylight (per request: no night time)
 	var sun := DirectionalLight3D.new()
-	sun.rotation_degrees = Vector3(-42, 200, 0)
-	sun.light_color = Color(1.0, 0.94, 0.82)
-	sun.light_energy = 1.25
+	sun.rotation_degrees = Vector3(-48, 205, 0)
+	sun.light_color = Color(1.0, 0.97, 0.90)
+	sun.light_energy = 1.35
 	sun.shadow_enabled = true
 	world.add_child(sun)
-
-	# real-clock day/night cycle (override: AGENT_TOWN_HOUR=17.5)
-	var daynight := DayNight.new()
-	daynight.sun = sun
-	daynight.env = env
-	world.add_child(daynight)
 
 	# --- isometric orthographic camera
 	_cam = Camera3D.new()
 	_cam.projection = Camera3D.PROJECTION_ORTHOGONAL
-	_cam.size = 10.5
+	_cam.size = 13.2
 	_cam.rotation_degrees = Vector3(-30, 45, 0)
 	world.add_child(_cam)
-	_cam.position = office.center() + _cam.global_transform.basis.z * CAM_DIST
+	_cam.position = office.center() + Vector3(0.4, 0, 0.6) + _cam.global_transform.basis.z * CAM_DIST
 	_cam.current = true
 
 	_build_hud()

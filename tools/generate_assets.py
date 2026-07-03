@@ -81,27 +81,28 @@ STATION_ROLE = {
 # desk pods center, storage along the north wall, coffee corner on the west
 # wall, lounge bottom-left. Furniture detail is placed by the 3D builder.
 MAP_ROWS = [
-    "cwwwwMMMMwWWWWww",
-    "v...............",
-    "v...............",
-    "v...............",
-    "v...............",
-    "V...............",
-    "v...............",
-    "v...............",
-    "v...............",
-    "V...............",
-    "v...............",
-    "v...............",
-    "v...............",
+    "cwwwwwwwwWWWWWWWwwww",
+    "v...................",
+    "v...................",
+    "v...................",
+    "v...................",
+    "v...................",
+    "v...................",
+    "v...................",
+    "v...................",
+    "v...................",
+    "v...................",
+    "v...................",
+    "v...................",
+    "v...................",
 ]
 
 BUILDINGS = {
-    "town_hall": {"anchor": [1, 1], "role": "director",   "name": "Director's Cabin"},
-    "library":   {"anchor": [5, 4], "role": "researcher", "name": "Research Pod"},
-    "studio":    {"anchor": [7, 4], "role": "writer",     "name": "Writing Pod"},
-    "edit_bay":  {"anchor": [5, 7], "role": "editor",     "name": "Edit Pod"},
-    "tower":     {"anchor": [7, 7], "role": "publisher",  "name": "Publishing Pod"},
+    "town_hall": {"anchor": [8, 1],  "role": "director",   "name": "Director's Office"},
+    "library":   {"anchor": [3, 5],  "role": "researcher", "name": "Studio Desk"},
+    "studio":    {"anchor": [1, 3],  "role": "writer",     "name": "Studio Counter"},
+    "edit_bay":  {"anchor": [9, 8],  "role": "editor",     "name": "Work Pod"},
+    "tower":     {"anchor": [14, 8], "role": "publisher",  "name": "Reception"},
 }
 
 BLOCKED_CHARS = "~tdlcwWMvV"
