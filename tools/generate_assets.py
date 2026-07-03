@@ -77,35 +77,31 @@ STATION_ROLE = {
 #   v NW wall wood   V NW wall window
 # Workstation anchors (occupy 2x2 tiles from anchor, blocked):
 #   H director   L researcher   S writer   E editor   T publisher
+# Compact diorama office (16 x 13): director cabin top-left, two rows of
+# desk pods center, storage along the north wall, coffee corner on the west
+# wall, lounge bottom-left. Furniture detail is placed by the 3D builder.
 MAP_ROWS = [
-    "cwwWWwwMMMMwwWWwwwWWwwww",
-    "v.......................",
-    "v.H...............L.....",
-    "v.......................",
-    "v.....#.................",
-    "v.....#.PPPP..t..rr.....",
-    "V.....#.PPPP.....dd.....",
-    "v.....#.PPPP.....rr.....",
-    "v.####################..",
-    "v.S...#...~~....E.......",
-    "v.....#...~~............",
-    "V.....#.................",
-    "v.....#..........rr.....",
-    "v.....#....l.....dd.....",
-    "v.....#..........rr.....",
-    "v.....#.....T........t..",
-    "v.....#.................",
-    "v.....#......,..........",
-    "v..t.........,....t.....",
-    "v,.......,..........,...",
+    "cwwwwMMMMwWWWWww",
+    "v...............",
+    "v...............",
+    "v...............",
+    "v...............",
+    "V...............",
+    "v...............",
+    "v...............",
+    "v...............",
+    "V...............",
+    "v...............",
+    "v...............",
+    "v...............",
 ]
 
 BUILDINGS = {
-    "town_hall": {"anchor": [2, 2],   "role": "director",   "name": "Director's Office"},
-    "library":   {"anchor": [18, 2],  "role": "researcher", "name": "Research Corner"},
-    "studio":    {"anchor": [2, 9],   "role": "writer",     "name": "Writers' Room"},
-    "edit_bay":  {"anchor": [16, 9],  "role": "editor",     "name": "Edit Bay"},
-    "tower":     {"anchor": [12, 15], "role": "publisher",  "name": "Publishing Deck"},
+    "town_hall": {"anchor": [1, 1], "role": "director",   "name": "Director's Cabin"},
+    "library":   {"anchor": [5, 4], "role": "researcher", "name": "Research Pod"},
+    "studio":    {"anchor": [7, 4], "role": "writer",     "name": "Writing Pod"},
+    "edit_bay":  {"anchor": [5, 7], "role": "editor",     "name": "Edit Pod"},
+    "tower":     {"anchor": [7, 7], "role": "publisher",  "name": "Publishing Pod"},
 }
 
 BLOCKED_CHARS = "~tdlcwWMvV"
@@ -541,9 +537,9 @@ def make_icon() -> None:
 
 # ---------------------------------------------------------------- map.json
 def validate_map() -> None:
-    assert len(MAP_ROWS) == 20, "map must be 20 rows"
+    width = len(MAP_ROWS[0])
     for i, row in enumerate(MAP_ROWS):
-        assert len(row) == 24, f"row {i} must be 24 chars, got {len(row)}"
+        assert len(row) == width, f"row {i} must be {width} chars, got {len(row)}"
     blocked = set()
     for b in BUILDINGS.values():
         ax, ay = b["anchor"]
@@ -598,7 +594,7 @@ def wall_sprite_for(c: str, gx: int, gy: int) -> str | None:
 
 def make_preview() -> None:
     """Composite the whole office into docs/preview.png (for the README)."""
-    cols, rows_n = 24, 20
+    cols, rows_n = len(MAP_ROWS[0]), len(MAP_ROWS)
     W = (cols + rows_n) * TW // 2 + TW
     H = (cols + rows_n) * TH // 2 + 160
     im = Image.new("RGBA", (W, H), (28, 28, 36, 255))

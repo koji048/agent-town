@@ -2,87 +2,80 @@
   "tile_w": 64,
   "tile_h": 32,
   "rows": [
-    "cwwWWwwMMMMwwWWwwwWWwwww",
-    "v.......................",
-    "v.H...............L.....",
-    "v.......................",
-    "v.....#.................",
-    "v.....#.PPPP..t..rr.....",
-    "V.....#.PPPP.....dd.....",
-    "v.....#.PPPP.....rr.....",
-    "v.####################..",
-    "v.S...#...~~....E.......",
-    "v.....#...~~............",
-    "V.....#.................",
-    "v.....#..........rr.....",
-    "v.....#....l.....dd.....",
-    "v.....#..........rr.....",
-    "v.....#.....T........t..",
-    "v.....#.................",
-    "v.....#......,..........",
-    "v..t.........,....t.....",
-    "v,.......,..........,..."
+    "cwwwwMMMMwWWWWww",
+    "v...............",
+    "v...............",
+    "v...............",
+    "v...............",
+    "V...............",
+    "v...............",
+    "v...............",
+    "v...............",
+    "V...............",
+    "v...............",
+    "v...............",
+    "v..............."
   ],
   "blocked_chars": "~tdlcwWMvV",
   "buildings": {
     "town_hall": {
       "anchor": [
-        2,
-        2
+        1,
+        1
       ],
       "role": "director",
-      "name": "Director's Office",
+      "name": "Director's Cabin",
       "workstation": [
-        3,
-        4
+        2,
+        3
       ]
     },
     "library": {
       "anchor": [
-        18,
-        2
+        5,
+        4
       ],
       "role": "researcher",
-      "name": "Research Corner",
+      "name": "Research Pod",
       "workstation": [
-        19,
-        4
+        6,
+        6
       ]
     },
     "studio": {
       "anchor": [
-        2,
-        9
+        7,
+        4
       ],
       "role": "writer",
-      "name": "Writers' Room",
+      "name": "Writing Pod",
       "workstation": [
-        3,
-        11
+        8,
+        6
       ]
     },
     "edit_bay": {
       "anchor": [
-        16,
-        9
+        5,
+        7
       ],
       "role": "editor",
-      "name": "Edit Bay",
+      "name": "Edit Pod",
       "workstation": [
-        17,
-        11
+        6,
+        9
       ]
     },
     "tower": {
       "anchor": [
-        12,
-        15
+        7,
+        7
       ],
       "role": "publisher",
-      "name": "Publishing Deck",
+      "name": "Publishing Pod",
       "workstation": [
-        13,
-        17
+        8,
+        9
       ]
     }
   }

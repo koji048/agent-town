@@ -74,7 +74,7 @@ func _ready() -> void:
 	# --- isometric orthographic camera
 	_cam = Camera3D.new()
 	_cam.projection = Camera3D.PROJECTION_ORTHOGONAL
-	_cam.size = 13.0
+	_cam.size = 10.5
 	_cam.rotation_degrees = Vector3(-30, 45, 0)
 	world.add_child(_cam)
 	_cam.position = office.center() + _cam.global_transform.basis.z * CAM_DIST
