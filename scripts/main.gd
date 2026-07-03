@@ -48,7 +48,7 @@ func _ready() -> void:
 	# --- environment & light
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color(0.94, 0.94, 0.95)
+	env.background_color = Color(0.80, 0.87, 0.88)
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color(0.72, 0.72, 0.76)
 	env.ambient_light_energy = 1.15

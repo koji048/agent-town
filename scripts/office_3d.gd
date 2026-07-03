@@ -9,6 +9,7 @@ const CELL := 1.0
 const WALL_H := 3.0
 const WALL_T := 0.15
 const DESK_H := 0.72
+const CORAL := Color(0.95, 0.45, 0.33)
 
 var cols: int = 0
 var rows: int = 0
@@ -62,6 +63,8 @@ const BLOCKED_CELLS: Array = [
 	[12, 10], [13, 10], [12, 11], [13, 11],
 	# ottomans + entrance plants
 	[14, 12], [19, 11],
+	# focus booth (east side)
+	[19, 8], [19, 9],
 	# plants
 	[6, 11], [19, 6],
 ]
@@ -415,7 +418,7 @@ func _furnish() -> void:
 	_prop("chair", 14.1, 2.4, 270, 1.0, 0.0, 0.9)
 	_prop("laptop", 13.15, 2.35, 210, 0.32, DESK_H)
 	# picture on the wall behind
-	_box(Vector3(0.9, 0.6, 0.04), Vector3(13.0, 2.05, 0.21), _mat("meet_art", Color(0.72, 0.78, 0.82)), self, false)
+	_box(Vector3(0.9, 0.6, 0.04), Vector3(13.0, 2.05, 0.21), _mat("meet_art", CORAL), self, false)
 
 	# ============ LOUNGE (right wing) ============
 	# big framed notice board on the north wall
@@ -445,7 +448,8 @@ func _furnish() -> void:
 	_pendant(Vector3(16.0, 2.5, 10.9))
 
 	# ============ ENTRANCE (south-east corner) ============
-	_prop("rugDoormat", 18.4, 12.4, 90, 1.4)
+	var mat_prop := _prop("rugDoormat", 18.4, 12.4, 90, 1.4)
+	_tint_meshes(mat_prop, CORAL)
 	_prop("pottedPlant", 19.45, 11.4, 0, 1.0, 0.0, 1.2)
 
 	# ============ WORK POD GRID (2 x 2, strict rhythm) ============
@@ -456,19 +460,28 @@ func _furnish() -> void:
 		var is_editor: bool = pod[2]
 		_prop("desk", px + 0.5, pz - 0.45, 0, 1.0, 0.0, 0.74)
 		_prop("desk", px + 0.5, pz + 0.45, 180, 1.0, 0.0, 0.74)
-		_prop("computerScreen", px + 0.3, pz - 0.35, 0, 1.0, DESK_H, 0.38)
-		_prop("computerScreen", px + 0.85, pz - 0.35, 5, 1.0, DESK_H, 0.38)
-		_prop("computerScreen", px + 0.3, pz + 0.35, 180, 1.0, DESK_H, 0.38)
-		_prop("computerScreen", px + 0.85, pz + 0.38, 175, 1.0, DESK_H, 0.38)
+		_prop("computerScreen", px + 0.3, pz - 0.28, 0, 1.0, DESK_H + 0.18, 0.38)
+		_prop("computerScreen", px + 0.85, pz - 0.28, 5, 1.0, DESK_H + 0.18, 0.38)
+		_prop("computerScreen", px + 0.3, pz + 0.28, 180, 1.0, DESK_H + 0.18, 0.38)
+		_prop("computerScreen", px + 0.85, pz + 0.28, 175, 1.0, DESK_H + 0.18, 0.38)
 		_prop("computerKeyboard", px + 0.32, pz - 0.62, 0, 0.28, DESK_H)
 		_prop("computerKeyboard", px + 0.32, pz + 0.62, 180, 0.28, DESK_H)
 		_prop("chairDesk", px + 0.5, pz - 1.25, 5 + randf_range(-15.0, 15.0), 1.0, 0.0, 1.0)
 		_prop("chairDesk", px + 0.5, pz + 1.25, 185 + randf_range(-15.0, 15.0), 1.0, 0.0, 1.0)
 		var divider_mat := _mat("pod_divider", Color(0.90, 0.89, 0.86))
 		_box(Vector3(2.0, 0.9, 0.06), Vector3(px + 0.5, 0.75, pz), divider_mat)
+		_box(Vector3(2.0, 0.05, 0.09), Vector3(px + 0.5, 1.22, pz),
+			_mat("trim_coral", CORAL, "", CORAL * 0.4), self, false)
 		if is_editor:
-			_box(Vector3(2.0, 0.05, 0.09), Vector3(px + 0.5, 1.22, pz),
+			_box(Vector3(0.3, 0.05, 0.10), Vector3(px + 0.5, 1.26, pz),
 				_mat("trim_editor", ROLE_ACCENT["editor"], "", ROLE_ACCENT["editor"] * 0.5), self, false)
+		# monitor arms: slim steel poles lifting the screens off the desk
+		var steel2 := _mat("steel", Color(0.42, 0.42, 0.46))
+		for arm in [[px + 0.3, pz - 0.28], [px + 0.85, pz - 0.28], [px + 0.3, pz + 0.28], [px + 0.85, pz + 0.28]]:
+			_box(Vector3(0.03, 0.22, 0.03), Vector3(arm[0], DESK_H + 0.11, arm[1]), steel2, self, false)
+		# task lamps, one per side
+		_prop("lampSquareTable", px - 0.35, pz - 0.55, 20, 1.0, DESK_H, 0.28)
+		_prop("lampSquareTable", px + 1.35, pz + 0.55, 200, 1.0, DESK_H, 0.28)
 	# ottomans by the pod field
 	_prop("benchCushionLow", 14.4, 12.3, 20, 1.0, 0.0, 0.42)
 	_prop("benchCushionLow", 14.9, 12.7, -10, 1.0, 0.0, 0.42)
@@ -482,9 +495,108 @@ func _furnish() -> void:
 	_prop("pottedPlant", 19.4, 6.3, 0, 1.0, 0.0, 1.2)
 	_prop("plantSmall1", 5.5, 10.5, 0, 1.0, 0.0, 0.5)
 
-	# ============ ground plane (seats the diorama) ============
+	# ============ FOCUS BOOTH (east edge — prospect & refuge) ============
+	var booth := _mat("booth_shell", Color(0.27, 0.27, 0.30))
+	_box(Vector3(1.05, 0.05, 2.05), Vector3(19.5, 0.025, 9.0), booth, self, false)
+	_box(Vector3(1.0, 2.15, 0.08), Vector3(19.5, 1.08, 8.05), booth)
+	_box(Vector3(0.08, 2.15, 2.0), Vector3(19.95, 1.08, 9.0), booth)
+	_box(Vector3(0.08, 2.15, 2.0), Vector3(19.05, 1.08, 9.0), booth)
+	# glass front faces south (toward the camera) so the interior reads
+	_box(Vector3(0.9, 2.0, 0.05), Vector3(19.5, 1.0, 9.95),
+		_mat("podglass", Color(0.75, 0.86, 0.94, 0.25), "", Color.BLACK, true), self, false)
+	_box(Vector3(1.05, 0.08, 2.05), Vector3(19.5, 2.2, 9.0), booth)
+	_box(Vector3(0.9, 0.05, 0.06), Vector3(19.5, 2.12, 9.93),
+		_mat("trim_coral", CORAL, "", CORAL * 0.4), self, false)
+	_box(Vector3(0.45, 0.05, 0.4), Vector3(19.6, 0.72, 8.45), _mat("counter_white", Color(0.94, 0.93, 0.90)), self)
+	_prop("laptop", 19.6, 8.45, 200, 0.3, 0.75)
+	_prop("chairModernCushion", 19.5, 9.2, 350, 1.0, 0.0, 0.85)
+	var booth_light := OmniLight3D.new()
+	booth_light.position = Vector3(19.5, 1.9, 9.0)
+	booth_light.light_color = Color(1.0, 0.9, 0.72)
+	booth_light.omni_range = 1.8
+	booth_light.light_energy = 1.2
+	add_child(booth_light)
+
+	# ============ GREEN COURTYARD (landscape) ============
 	_box(Vector3(70.0, 0.06, 70.0), Vector3(10.0, -0.58, 7.0),
-		_mat("ground", Color(0.88, 0.88, 0.89)), self, false)
+		_mat("grass", Color(0.55, 0.66, 0.42)), self, false)
+	# stone walkway from the entrance
+	for i in 4:
+		_box(Vector3(0.9, 0.08, 0.6), Vector3(18.4 + (0.15 if i % 2 == 1 else -0.15), -0.51, 14.4 + i * 0.9),
+			_mat("stone_step", Color(0.78, 0.77, 0.74)), self, false)
+	# trees outside the north and west walls (green through every window)
+	for tx in [2.5, 6.0, 10.5, 14.0, 17.5]:
+		_tree(Vector3(tx, -0.55, -1.6), randf_range(0.9, 1.25))
+	for tz in [3.0, 7.0, 11.0]:
+		_tree(Vector3(-1.7, -0.55, tz), randf_range(0.9, 1.2))
+	_tree(Vector3(21.8, -0.55, 3.5), 1.1)
+	_tree(Vector3(16.5, -0.55, 16.2), 1.3)
+	_tree(Vector3(21.5, -0.55, 13.5), 0.95)
+	# bushes hugging the walls
+	for bz in [[1.2, -0.9], [8.0, -0.9], [15.5, -0.9], [-0.9, 9.5], [-0.9, 12.5], [20.8, 6.0]]:
+		_bush(Vector3(bz[0], -0.55, bz[1]))
+	# pond with stone edge (south-east of the courtyard)
+	var pond := MeshInstance3D.new()
+	var pcyl := CylinderMesh.new()
+	pcyl.top_radius = 1.5
+	pcyl.bottom_radius = 1.5
+	pcyl.height = 0.06
+	pond.mesh = pcyl
+	var pmat := _mat("pond", Color(0.47, 0.67, 0.76))
+	pmat.roughness = 0.15
+	pond.material_override = pmat
+	pond.position = Vector3(13.8, -0.52, 16.0)
+	add_child(pond)
+	for i in 9:
+		var ang := i * TAU / 9.0
+		var r := 1.55 + randf_range(0.0, 0.15)
+		_bush_stone(Vector3(13.8 + cos(ang) * r, -0.53, 16.0 + sin(ang) * r))
+
+
+## A simple low-poly tree: trunk + two foliage spheres.
+func _tree(base: Vector3, s: float) -> void:
+	var trunk := MeshInstance3D.new()
+	var tcyl := CylinderMesh.new()
+	tcyl.top_radius = 0.07 * s
+	tcyl.bottom_radius = 0.1 * s
+	tcyl.height = 1.0 * s
+	trunk.mesh = tcyl
+	trunk.material_override = _mat("trunk", Color(0.45, 0.34, 0.26))
+	trunk.position = base + Vector3(0, 0.5 * s, 0)
+	add_child(trunk)
+	_leaf_ball(base + Vector3(0, 1.25 * s, 0), 0.62 * s, "leafA", Color(0.42, 0.58, 0.36))
+	_leaf_ball(base + Vector3(0.18 * s, 1.7 * s, 0.1 * s), 0.42 * s, "leafB", Color(0.48, 0.64, 0.40))
+
+
+func _bush(base: Vector3) -> void:
+	_leaf_ball(base + Vector3(0, 0.22, 0), 0.3, "leafA", Color(0.42, 0.58, 0.36))
+	_leaf_ball(base + Vector3(0.25, 0.16, 0.1), 0.22, "leafB", Color(0.48, 0.64, 0.40))
+
+
+func _bush_stone(pos: Vector3) -> void:
+	var mi := MeshInstance3D.new()
+	var sph := SphereMesh.new()
+	sph.radius = randf_range(0.08, 0.14)
+	sph.height = sph.radius * 1.4
+	sph.radial_segments = 8
+	sph.rings = 4
+	mi.mesh = sph
+	mi.material_override = _mat("stone", Color(0.72, 0.71, 0.68))
+	mi.position = pos
+	add_child(mi)
+
+
+func _leaf_ball(pos: Vector3, r: float, key: String, col: Color) -> void:
+	var mi := MeshInstance3D.new()
+	var sph := SphereMesh.new()
+	sph.radius = r
+	sph.height = r * 1.8
+	sph.radial_segments = 10
+	sph.rings = 5
+	mi.mesh = sph
+	mi.material_override = _mat(key, col)
+	mi.position = pos
+	add_child(mi)
 
 
 ## A small pendant lamp with a warm light pool — layered lighting.
