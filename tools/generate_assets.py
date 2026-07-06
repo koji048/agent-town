@@ -425,11 +425,11 @@ FRAME_W, FRAME_H = 24, 36  # half-res; final 48x72
 FACINGS = ["s", "w", "e", "n"]  # sheet rows 0-3; row 4 = work
 
 GHIBLI = {
-    "director":   {"shirt": (78, 96, 130),  "hair": (62, 52, 48),   "skin": (247, 221, 198), "accent": (222, 178, 96),  "pants": (58, 56, 66)},
-    "researcher": {"shirt": (106, 138, 106),"hair": (112, 82, 56),  "skin": (250, 226, 202), "accent": (238, 234, 224), "pants": (84, 78, 68)},
-    "writer":     {"shirt": (214, 150, 98), "hair": (52, 46, 48),   "skin": (243, 214, 188), "accent": (248, 238, 210), "pants": (92, 86, 92)},
-    "editor":     {"shirt": (140, 110, 156),"hair": (196, 168, 110),"skin": (250, 228, 206), "accent": (150, 208, 198), "pants": (70, 68, 82)},
-    "publisher":  {"shirt": (196, 108, 100),"hair": (76, 60, 62),   "skin": (245, 216, 190), "accent": (240, 206, 120), "pants": (72, 64, 70)},
+    "director":   {"shirt": (108, 138, 190), "hair": (84, 66, 56),   "skin": (255, 231, 205), "accent": (255, 208, 110), "pants": (88, 88, 104)},
+    "researcher": {"shirt": (128, 176, 128), "hair": (150, 106, 66), "skin": (255, 235, 210), "accent": (255, 252, 244), "pants": (118, 108, 92)},
+    "writer":     {"shirt": (248, 180, 112), "hair": (70, 60, 62),   "skin": (252, 226, 198), "accent": (255, 250, 224), "pants": (124, 116, 124)},
+    "editor":     {"shirt": (186, 148, 208), "hair": (238, 206, 130),"skin": (255, 238, 214), "accent": (168, 232, 220), "pants": (98, 96, 116)},
+    "publisher":  {"shirt": (240, 138, 124), "hair": (96, 74, 76),   "skin": (253, 226, 198), "accent": (255, 224, 130), "pants": (104, 92, 100)},
 }
 CH_OUTLINE = (88, 62, 52)
 BLUSH = (236, 168, 150)
@@ -457,8 +457,6 @@ def draw_char_g(d, ox, oy, facing, frame, pal, work=False):
 
     # ---- body: rounded shirt with soft left shading + collar accent
     d.rounded_rectangle([ox + 5, oy + 15, ox + 19, oy + 27], 4, shirt, outline=CH_OUTLINE)
-    d.rounded_rectangle([ox + 5, oy + 15, ox + 10, oy + 27], 4, _shade(shirt))
-    d.line([(ox + 10, oy + 16), (ox + 10, oy + 26)], _shade(shirt))
     d.rounded_rectangle([ox + 8, oy + 15, ox + 16, oy + 17], 2, accent)
 
     # ---- arms (swing opposite to legs) or raised when working
@@ -494,16 +492,14 @@ def draw_char_g(d, ox, oy, facing, frame, pal, work=False):
         for bx in (6, 10, 14):
             d.arc([ox + bx, oy + 5, ox + bx + 4, oy + 9], 0, 180, hair, 1)
         if facing == "s" or work:
-            # big Ghibli eyes with catchlights (spaced apart)
-            d.ellipse([ox + 7, oy + 9, ox + 9, oy + 12], EYE)
-            d.ellipse([ox + 15, oy + 9, ox + 17, oy + 12], EYE)
-            d.point((ox + 8, oy + 10), (255, 255, 255))
-            d.point((ox + 16, oy + 10), (255, 255, 255))
-            # button nose + subtle mouth + blush
-            d.point((ox + 12, oy + 13), (196, 140, 120))
-            d.line([(ox + 11, oy + 14), (ox + 13, oy + 14)], (176, 116, 100))
-            d.rectangle([ox + 5, oy + 12, ox + 6, oy + 13], BLUSH)
-            d.rectangle([ox + 18, oy + 12, ox + 19, oy + 13], BLUSH)
+            # bold eyes sized for game distance
+            d.ellipse([ox + 6, oy + 8, ox + 9, oy + 12], EYE)
+            d.ellipse([ox + 15, oy + 8, ox + 18, oy + 12], EYE)
+            d.rectangle([ox + 7, oy + 9, ox + 8, oy + 9], (255, 255, 255))
+            d.rectangle([ox + 16, oy + 9, ox + 17, oy + 9], (255, 255, 255))
+            d.line([(ox + 11, oy + 13), (ox + 13, oy + 13)], (196, 128, 108))
+            d.rectangle([ox + 4, oy + 11, ox + 5, oy + 12], BLUSH)
+            d.rectangle([ox + 19, oy + 11, ox + 20, oy + 12], BLUSH)
         elif facing == "w":
             d.rectangle([ox + 12, oy + 3, ox + 20, oy + 12], hair)
             d.ellipse([ox + 7, oy + 9, ox + 9, oy + 12], EYE)
