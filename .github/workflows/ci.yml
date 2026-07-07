@@ -17,7 +17,7 @@ jobs:
       - name: Regenerate assets (determinism check)
         run: |
           apt-get update -qq && apt-get install -y -qq python3-pip > /dev/null
-          pip3 install --quiet pillow
+          pip3 install --quiet --break-system-packages pillow || pip3 install --quiet pillow
           python3 tools/generate_assets.py
 
       - name: Import resources

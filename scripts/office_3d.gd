@@ -589,6 +589,17 @@ func _furnish() -> void:
 	_pendant(Vector3(4.0, 2.4, 17.8))
 	_prop("pottedPlant", 10.6, 16.5, 0, 1.0, 0.0, 1.15)
 
+	# ============ CEILING LIGHT GRID (office luminaires) ============
+	# recessed panel fixtures over the work zones — the office's real light
+	for lx in [2.0, 5.0, 8.0, 11.0]:
+		for lz in [2.0, 5.0, 8.0, 11.5]:
+			_ceiling_panel(Vector3(lx, 2.92, lz))
+	for lx2 in [13.5, 16.0, 18.5]:
+		for lz2 in [2.0, 4.8]:
+			_ceiling_panel(Vector3(lx2, 2.92, lz2))
+	_ceiling_panel(Vector3(3.0, 2.92, 16.5))
+	_ceiling_panel(Vector3(7.5, 2.92, 16.5))
+
 	# ============ EXTERIOR LANDSCAPE ============
 	_box(Vector3(70.0, 0.06, 70.0), Vector3(10.0, -0.58, 7.0),
 		_mat("grass", Color(0.55, 0.66, 0.42)), self, false)
@@ -674,3 +685,16 @@ func _leaf_ball(pos: Vector3, r: float, key: String, col: Color) -> void:
 	mi.material_override = _mat(key, col)
 	mi.position = pos
 	add_child(mi)
+
+
+## A recessed ceiling light panel with a warm-neutral pool.
+func _ceiling_panel(pos: Vector3) -> void:
+	_box(Vector3(0.9, 0.05, 0.9), pos,
+		_mat("light_panel", Color(0.95, 0.94, 0.9) * 0.8, "", Color(1.0, 0.98, 0.92)), self, false)
+	var l := OmniLight3D.new()
+	l.position = pos + Vector3(0, -0.25, 0)
+	l.light_color = Color(1.0, 0.97, 0.9)
+	l.omni_range = 4.6
+	l.light_energy = 1.5
+	l.shadow_enabled = false
+	add_child(l)

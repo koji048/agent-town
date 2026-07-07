@@ -70,13 +70,14 @@ func _ready() -> void:
 	we.environment = env
 	world.add_child(we)
 
-	# fixed bright daylight (per request: no night time)
+	# faint exterior fill only — the office is lit by its own luminaires
+	# (per request: no sunlight through the office)
 	var sun := DirectionalLight3D.new()
-	sun.rotation_degrees = Vector3(-48, 205, 0)
-	sun.light_color = Color(1.0, 0.97, 0.90)
-	sun.light_energy = 1.9
+	sun.rotation_degrees = Vector3(-52, 205, 0)
+	sun.light_color = Color(0.85, 0.90, 1.0)
+	sun.light_energy = 0.45
 	sun.shadow_enabled = true
-	sun.light_angular_distance = 2.5  # soft shadow edges
+	sun.light_angular_distance = 3.0
 	world.add_child(sun)
 
 	# --- isometric orthographic camera
