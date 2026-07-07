@@ -86,14 +86,29 @@ func complete(system_prompt: String, user_prompt: String, sim_stage: String = ""
 
 ## Headless Claude Code session (production brain): runs `claude -p` in a
 ## worker thread so the office never blocks, using the owner's login.
+## Everything (prompts AND the invocation) travels via files on disk —
+## Godot's OS.execute pipe path mangles shell metacharacters in args, so
+## no generated content may ever appear in the argument list.
 func _cli_complete(system_prompt: String, user_prompt: String) -> String:
-	# run through zsh with stdin closed (the CLI otherwise waits 3s on a pipe)
-	var cmd := "%s -p %s --append-system-prompt %s --output-format text < /dev/null" % [
-		_shq(Config.cli_path), _shq(user_prompt), _shq(system_prompt)]
+	var user_f := ProjectSettings.globalize_path("user://cli_user_prompt.txt")
+	var sys_f := ProjectSettings.globalize_path("user://cli_system_prompt.txt")
+	var run_f := ProjectSettings.globalize_path("user://cli_run.zsh")
+	var fu := FileAccess.open("user://cli_user_prompt.txt", FileAccess.WRITE)
+	fu.store_string(user_prompt)
+	fu.close()
+	var fs := FileAccess.open("user://cli_system_prompt.txt", FileAccess.WRITE)
+	fs.store_string(system_prompt)
+	fs.close()
+	var fr := FileAccess.open("user://cli_run.zsh", FileAccess.WRITE)
+	fr.store_string("exec " + _shq(Config.cli_path)
+		+ " -p \"$(cat " + _shq(user_f) + ")\""
+		+ " --append-system-prompt \"$(cat " + _shq(sys_f) + ")\""
+		+ " --output-format text < /dev/null\n")
+	fr.close()
 	var th := Thread.new()
 	th.start(func() -> void:
 		var out: Array = []
-		var code := OS.execute("/bin/zsh", PackedStringArray(["-c", cmd]), out, true)
+		var code := OS.execute("/bin/zsh", PackedStringArray([run_f]), out, true)
 		var text := ""
 		for line in out:
 			text += str(line)
@@ -103,8 +118,11 @@ func _cli_complete(system_prompt: String, user_prompt: String) -> String:
 	var text := str(res[0]).strip_edges()
 	var code := int(res[1])
 	if code != 0:
+		printerr("claude-code FAIL code=%d out=%s" % [code, text.left(300)])
 		EventBus.log_line.emit("claude-code exited %d: %s" % [code, text.left(80)])
 		return ""
+	if text.is_empty():
+		printerr("claude-code EMPTY output (code 0)")
 	return text
 
 

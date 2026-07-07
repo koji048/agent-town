@@ -1,0 +1,161 @@
+```srt
+1
+00:00:00,000 --> 00:00:01,200
+ทำคอนเทนต์ตัวนึงหมดไป 3 ชั่วโมง?
+
+2
+00:00:01,200 --> 00:00:02,400
+5 เทคนิคนี้เหลือแค่ 30 นาที...
+
+3
+00:00:02,400 --> 00:00:03,000
+Game changer มาก
+
+4
+00:00:03,000 --> 00:00:04,110
+หนึ่ง เขียนสคริปต์
+
+5
+00:00:04,110 --> 00:00:06,090
+ใช้ ChatGPT หรือ Claude ฟรีก็ได้
+
+6
+00:00:06,090 --> 00:00:07,510
+พิมพ์แค่ 'ขอ hook 3 แบบ
+
+7
+00:00:07,510 --> 00:00:09,000
+กับโครงสคริปต์ 45 วิ' จบ
+
+8
+00:00:09,000 --> 00:00:10,600
+สอง แคปชั่น ไม่ต้องนั่งคิดเอง
+
+9
+00:00:10,600 --> 00:00:11,810
+ใช้ ChatGPT หรือ Canva
+
+10
+00:00:11,810 --> 00:00:12,410
+Magic Write
+
+11
+00:00:12,410 --> 00:00:13,840
+ใส่หัวข้อ ใส่โทนที่อยากได้
+
+12
+00:00:13,840 --> 00:00:15,000
+ได้หลายแบบให้เลือกเลย
+
+13
+00:00:15,000 --> 00:00:15,560
+สาม ภาพปก
+
+14
+00:00:15,560 --> 00:00:17,480
+ใช้ Canva AI หรือ Adobe Express
+
+15
+00:00:17,480 --> 00:00:18,410
+ฟรี มี template
+
+16
+00:00:18,410 --> 00:00:19,710
+กับ AI ช่วยจัดพื้นหลัง
+
+17
+00:00:19,710 --> 00:00:21,000
+ไม่ต้องออกแบบจากศูนย์
+
+18
+00:00:21,000 --> 00:00:22,630
+สี่ ตัดต่อ ใช้ CapCut ฟรี
+
+19
+00:00:22,630 --> 00:00:24,590
+เปิด auto-caption กับ auto-cut
+
+20
+00:00:24,590 --> 00:00:25,440
+ตามจังหวะเพลง
+
+21
+00:00:25,440 --> 00:00:27,000
+ตัดเองทีละคลิปเลิกได้เลย
+
+22
+00:00:27,000 --> 00:00:28,740
+ห้า แฮชแท็ก ให้ AI แนะนำ
+
+23
+00:00:28,740 --> 00:00:30,980
+มิกซ์แท็กกว้างกับแท็กเฉพาะกลุ่ม
+
+24
+00:00:30,980 --> 00:00:31,480
+ให้เลย
+
+25
+00:00:31,480 --> 00:00:33,000
+ไม่ต้องเดาสุ่มอีกต่อไป
+
+26
+00:00:33,000 --> 00:00:33,770
+แต่บอกก่อนนะ
+
+27
+00:00:33,770 --> 00:00:35,370
+AI ช่วยแค่ร่างเวอร์ชันแรก
+
+28
+00:00:35,370 --> 00:00:36,780
+สุดท้ายต้องปรับสำเนียง
+
+29
+00:00:36,780 --> 00:00:38,000
+ให้เป็นตัวเราเองเสมอ
+
+30
+00:00:38,000 --> 00:00:39,300
+เซฟรีลนี้ไว้ก่อนลืม
+
+31
+00:00:39,300 --> 00:00:41,150
+แล้วลองสัก 1 เทคนิคใน 5 นี้
+
+32
+00:00:41,150 --> 00:00:41,770
+วันนี้เลย
+
+33
+00:00:41,770 --> 00:00:43,280
+ลิงก์เครื่องมือทั้งหมด
+
+34
+00:00:43,280 --> 00:00:45,000
+ปักไว้ที่คอมเมนต์ด้านล่าง
+```
+
+## Opening Title (0–4s, held over hook B-roll)
+
+**EP01 5 เทคนิค AI เร่งคอนเทนต์ให้เร็วขึ้น 3 เท่า (AI Content Speed Hacks)**
+
+## On-screen Text Overlays (big keywords per beat)
+
+| Beat | Overlay |
+|---|---|
+| Hook (0–3s) | **3 ชม. ➜ 30 นาที** — counter-up, strike-through on "3 ชม." |
+| 1/5 Script (3–9s) | **1/5** (pinned top-left) · **Script: ~10 นาที** |
+| 2/5 Caption (9–15s) | **2/5** · **Caption: ~2 นาที** |
+| 3/5 Thumbnail (15–21s) | **3/5** · **Thumbnail: ~5 นาที** |
+| 4/5 Edit (21–27s) | **4/5** · **Edit: ~20-30 นาที** |
+| 5/5 Hashtag (27–33s) | **5/5** · **Hashtag: ไม่กี่นาที** |
+| Reality check (33–38s) | **AI = ร่างแรก ไม่ใช่ผลลัพธ์สุดท้าย 👀** (full-screen, sound-off readable) |
+| CTA (38–45s) | **⬇️ เครื่องมือทั้งหมดในคอมเมนต์** + Save/Share button animation |
+
+*หมายเหตุ: เติม "*โดยประมาณ" ตัวเล็กใต้ overlay ตัวเลขทุกจุด ตามที่สคริปต์ระบุ*
+
+## Pacing/Cut Suggestions
+
+1. **Hard-cut on the beat drop, not on the VO gap** — since counters `1/5`→`5/5` land back-to-back every ~6s, sync the cut point to the music kick rather than the exact VO boundary; a half-beat-early cut (~150–200ms before "สอง", "สาม"...) reads as snappier and hides the audio-splice better than cutting exactly at word onset.
+2. **Speed-ramp the tool-screen B-roll** — for beats 1–3 (Script/Caption/Thumbnail), fast-forward the app-recording footage 1.5–2x during the "typing/generating" moments and cut back to real-time exactly when the AI output appears on screen; this reinforces the "time saved" premise visually instead of just via the on-screen timer text, and keeps those three beats feeling shorter than the Edit (CapCut) beat, which should stay closer to real-time since it's the biggest time-save claim (1-2hr → 20-30min) and needs to feel *substantial*, not rushed.

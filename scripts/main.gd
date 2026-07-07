@@ -100,6 +100,36 @@ func _ready() -> void:
 	var shot_path := OS.get_environment("AGENT_TOWN_SHOT")
 	if not shot_path.is_empty():
 		_capture_and_quit(shot_path)
+	# Demo mode: AGENT_TOWN_DEMO=/dir — snap every few seconds until the
+	# queued request completes, then capture the town-hall celebration.
+	var demo_dir := OS.get_environment("AGENT_TOWN_DEMO")
+	if not demo_dir.is_empty():
+		_run_demo_capture(demo_dir)
+
+
+func _run_demo_capture(dir: String) -> void:
+	DirAccess.make_dir_recursive_absolute(dir)
+	var done := [false]
+	EventBus.request_completed.connect(func(_r: Dictionary, _o: String) -> void: done[0] = true)
+	var i := 0
+	await get_tree().create_timer(2.0).timeout
+	while not done[0] and i < 80:
+		_snap(dir.path_join("demo_%02d.png" % i))
+		i += 1
+		await get_tree().create_timer(6.0).timeout
+	# celebration: crew walks to the town hall and cheers
+	await get_tree().create_timer(7.0).timeout
+	_snap(dir.path_join("demo_%02d.png" % i))
+	await get_tree().create_timer(4.0).timeout
+	_snap(dir.path_join("demo_%02d.png" % (i + 1)))
+	await get_tree().create_timer(0.3).timeout
+	get_tree().quit()
+
+
+func _snap(path: String) -> void:
+	var img := get_viewport().get_texture().get_image()
+	img.save_png(path)
+	print("demo snap: ", path)
 
 
 func _capture_and_quit(path: String) -> void:
