@@ -18,16 +18,19 @@ on your disk. No clicking required. You just watch the office live.
 
 ![Agent Town — 3D isometric office](docs/screenshot_3d.png)
 
-The building is an L-shape wrapping a garden courtyard (pond, stone path,
-trees) with windows into it from both wings. The west wing holds the glass
-director's office, a meeting nook, a three-station production row
-(Research / Write / Edit) and the coffee bar; the north wing is the
-publishing department with storage, a mission board and a window bench over
-the garden. Every zone is sized to what the five agents actually use. Agents wear
-MMO-style nameplates with live state pills (IDLE / WALKING / WORKING, gold
-plate for the Director), and stage transitions pop `!` / `+` / `x` effects
-above their heads — ideas studied from
-[BagIdea Office](https://github.com/bagidea/bagidea-office)
+The building is **"The Production Loop"** ([plan](docs/LAYOUT_PLAN.md)): a
+rectangle wrapping a central courtyard garden, ringed by a racetrack
+corridor — the floor plan IS the pipeline. A request enters at the
+**reception intake wall** (NE), gets briefed in the **director's glass
+office** (north, mural backdrop, sight line over the loop), travels the
+quiet west band (**research library → writers' room → focus booths**) into
+the south production band (**enclosed edit bay → green-screen studio →
+publishing**), and returns up the social band (**coffee bar at the loop
+midpoint, slat-screened relax lounge**) past the **courtyard amphitheater**,
+where the crew celebrates every finished reel under the ALL-HANDS screen.
+Agents wear MMO-style nameplates with live state pills, and stage
+transitions pop `!` / `+` / `x` effects above their heads — ideas studied
+from [BagIdea Office](https://github.com/bagidea/bagidea-office)
 ([notes](docs/BAGIDEA_STUDY.md)).
 
 ## How it works
@@ -50,11 +53,11 @@ before the call fires — the town state is the pipeline state.
 
 | Agent | Workstation | Deliverable |
 |---|---|---|
-| Director | Glass corner office by the mural | `00_plan.md`, `05_review.md` |
-| Researcher | Bookshelf research corner | `01_research.md` |
-| Scriptwriter | Writers' room (pinned pages) | `02_script.md` |
-| Editor | Edit bay (waveform panel, 3 monitors) | `03_captions.srt` |
-| Publisher | Publishing deck (sticky-note board, ring light) | `04_publish.md` |
+| Director | Glass office under the mural (north) | `00_plan.md`, `05_review.md` |
+| Researcher | Research library (west quiet band) | `01_research.md` |
+| Scriptwriter | Writers' room (pinned pages + a HIRING desk) | `02_script.md` |
+| Editor | Enclosed edit bay (acoustic partition, 3 monitors) | `03_captions.srt` |
+| Publisher | Publishing, beside the green-screen studio | `04_publish.md` |
 
 The Editor follows the same caption rules as the `reels-pipeline` workflow:
 ~32 chars per caption, no mid-word breaks (Thai-aware), phrase-boundary

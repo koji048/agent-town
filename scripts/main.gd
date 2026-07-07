@@ -87,7 +87,7 @@ func _ready() -> void:
 	_cam.far = 200.0
 	_cam.rotation_degrees = Vector3(-30, 45, 0)
 	world.add_child(_cam)
-	_cam.position = office.center() + Vector3(0.3, 0, 0.8) + _cam.global_transform.basis.z * 42.0
+	_cam.position = office.center() + Vector3(0.3, 0, 0.8) + _cam.global_transform.basis.z * 48.0
 	_cam.current = true
 
 	_build_hud()

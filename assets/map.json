@@ -2,37 +2,38 @@
   "tile_w": 64,
   "tile_h": 32,
   "rows": [
-    "cwwwwWWwwwwwwWWWWWWw",
-    "v...................",
-    "v...................",
-    "v...................",
-    "v...................",
-    "V...................",
-    "V...................",
-    "v...................",
-    "v...................",
-    "v...................",
-    "V...................",
-    "V...................",
-    "v...................",
-    "v...................",
-    "v...................",
-    "V...................",
-    "v...................",
-    "V...................",
-    "v..................."
+    "cwwWWwwwMMMMwwwWwwWWwWww",
+    "v.......................",
+    "v.......................",
+    "v.......................",
+    "v.......................",
+    "vrrrrrrr.........######.",
+    "Vrrrrrrr,,,,,,,,,######.",
+    "Vrrrrrrr,ggggggg,######.",
+    "vrrrrrrr,ggggggg,######.",
+    "vrrrrrrr,ggggggg,######.",
+    "Vrrrrrrr,ggggggg,######.",
+    "Vrrrrrrr,ggggggg,######.",
+    "vrrrrrrr,ggggggg,######.",
+    "v.......,,,,,,,,,######.",
+    "v...rrrrr...............",
+    "v...rrrrr...............",
+    "v...rrrrr...............",
+    "v...rrrrr...............",
+    "v...rrrrr...............",
+    "v......................."
   ],
   "blocked_chars": "~tdlcwWMvV",
   "buildings": {
     "town_hall": {
       "anchor": [
-        1,
+        9,
         1
       ],
       "role": "director",
       "name": "Director's Office",
       "workstation": [
-        2,
+        10,
         3
       ]
     },
@@ -42,7 +43,7 @@
         5
       ],
       "role": "researcher",
-      "name": "Research Station",
+      "name": "Research Library",
       "workstation": [
         2,
         7
@@ -50,38 +51,38 @@
     },
     "studio": {
       "anchor": [
-        4,
-        5
+        1,
+        9
       ],
       "role": "writer",
-      "name": "Writing Station",
+      "name": "Writers' Room",
       "workstation": [
-        5,
-        7
+        2,
+        11
       ]
     },
     "edit_bay": {
       "anchor": [
-        7,
-        5
+        5,
+        15
       ],
       "role": "editor",
-      "name": "Edit Station",
+      "name": "Edit Bay",
       "workstation": [
-        8,
-        7
+        6,
+        17
       ]
     },
     "tower": {
       "anchor": [
-        14,
-        1
+        17,
+        15
       ],
       "role": "publisher",
-      "name": "Publishing Dept",
+      "name": "Publishing",
       "workstation": [
-        15,
-        3
+        18,
+        17
       ]
     }
   }

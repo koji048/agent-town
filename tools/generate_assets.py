@@ -77,37 +77,47 @@ STATION_ROLE = {
 #   v NW wall wood   V NW wall window
 # Workstation anchors (occupy 2x2 tiles from anchor, blocked):
 #   H director   L researcher   S writer   E editor   T publisher
-# Compact diorama office (16 x 13): director cabin top-left, two rows of
-# desk pods center, storage along the north wall, coffee corner on the west
-# wall, lounge bottom-left. Furniture detail is placed by the 3D builder.
-MAP_ROWS = [
-    "cwwwwWWwwwwwwWWWWWWw",
-    "v...................",
-    "v...................",
-    "v...................",
-    "v...................",
-    "V...................",
-    "V...................",
-    "v...................",
-    "v...................",
-    "v...................",
-    "V...................",
-    "V...................",
-    "v...................",
-    "v...................",
-    "v...................",
-    "V...................",
-    "v...................",
-    "V...................",
-    "v...................",
-]
+#
+# Layout v2 "The Production Loop" (docs/LAYOUT_PLAN.md): a 24x20
+# rectangular building around a central courtyard (g = walkable garden).
+# A racetrack loop corridor (,) rings the courtyard; zones read
+# counterclockwise: reception NE -> director N -> research/writers W
+# (carpet r) -> focus booths SW -> edit bay S (carpet) -> studio ->
+# publishing SE -> coffee + lounge E (deck #) -> back to director.
+def _build_map_rows() -> list:
+    top = list("c" + "w" * 23)
+    for x in (3, 4, 15, 18, 19, 21):
+        top[x] = "W"                     # windows: nook + loop + reception
+    for x in (8, 9, 10, 11):
+        top[x] = "M"                     # mural behind the director
+    rows = ["".join(top)]
+    for y in range(1, 20):
+        r = ["V" if y in (6, 7, 10, 11) else "v"]   # west windows: library/writers
+        for x in range(1, 24):
+            c = "."
+            if 1 <= x <= 7 and 5 <= y <= 12:
+                c = "r"                  # quiet band: library + writers' room
+            if 4 <= x <= 8 and 14 <= y <= 18:
+                c = "r"                  # edit bay (acoustic carpet)
+            if 17 <= x <= 22 and 5 <= y <= 13:
+                c = "#"                  # social band: coffee bar + lounge deck
+            if (y in (6, 13) and 8 <= x <= 16) or (x in (8, 16) and 6 <= y <= 13):
+                c = ","                  # the loop corridor
+            if 9 <= x <= 15 and 7 <= y <= 12:
+                c = "g"                  # courtyard garden (walkable)
+            r.append(c)
+        rows.append("".join(r))
+    return rows
+
+
+MAP_ROWS = _build_map_rows()
 
 BUILDINGS = {
-    "town_hall": {"anchor": [1, 1],  "role": "director",   "name": "Director's Office"},
-    "library":   {"anchor": [1, 5],  "role": "researcher", "name": "Research Station"},
-    "studio":    {"anchor": [4, 5],  "role": "writer",     "name": "Writing Station"},
-    "edit_bay":  {"anchor": [7, 5],  "role": "editor",     "name": "Edit Station"},
-    "tower":     {"anchor": [14, 1], "role": "publisher",  "name": "Publishing Dept"},
+    "town_hall": {"anchor": [9, 1],  "role": "director",   "name": "Director's Office"},
+    "library":   {"anchor": [1, 5],  "role": "researcher", "name": "Research Library"},
+    "studio":    {"anchor": [1, 9],  "role": "writer",     "name": "Writers' Room"},
+    "edit_bay":  {"anchor": [5, 15], "role": "editor",     "name": "Edit Bay"},
+    "tower":     {"anchor": [17, 15], "role": "publisher", "name": "Publishing"},
 }
 
 BLOCKED_CHARS = "~tdlcwWMvV"
@@ -679,7 +689,8 @@ def make_preview() -> None:
         return s.resize((s.width // SCALE, s.height // SCALE), Image.NEAREST)
 
     tile_map = {".": "tiles/floor.png", ",": "tiles/floor_dark.png", "#": "tiles/deck.png",
-                "P": "tiles/atrium.png", "~": "tiles/garden_0.png", "r": "tiles/carpet.png"}
+                "P": "tiles/atrium.png", "~": "tiles/garden_0.png", "r": "tiles/carpet.png",
+                "g": "tiles/garden_1.png"}
     for gy in range(rows_n):
         for gx in range(cols):
             spr = sprite(tile_map.get(MAP_ROWS[gy][gx], "tiles/floor.png"))
