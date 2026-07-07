@@ -188,6 +188,8 @@ const SURFACE_SPECS := {
 	"stage_top": [0.40, 0.0, 0.5],
 	"tier_top": [0.45, 0.0, 0.5],
 	"floor_deck": [0.45, 0.0, 0.5],
+	"floor_atrium": [0.45, 0.0, 0.5],
+	"studio_floor": [0.85, 0.0, 0.4],    # matte charcoal stage floor
 	# mineral: sealed concrete / stone 0.7-0.9
 	"floor_concrete": [0.80, 0.0, 0.5],
 	"floor_concrete_dark": [0.80, 0.0, 0.5],
@@ -404,6 +406,8 @@ func _build_floor_cell(gx: int, gy: int) -> void:
 			tex = "carpet"
 		"#":
 			tex = "deck"
+		"P":
+			tex = "atrium"
 		"g":
 			tex = "grass"
 	var m := _mat("floor_" + tex, Color.WHITE, "res://assets/textures/%s.png" % tex)
@@ -468,8 +472,54 @@ func _furnish() -> void:
 	_zone_coffee_bar()
 	_relax_area()
 	_zone_courtyard()
+	_wayfinding()
 	_ceiling_grid()
 	_exterior()
+
+
+# ============ WAYFINDING (flooring-as-wayfinding research: a high-contrast
+# line marks the loop; hanging signs name every zone's purpose) ============
+func _wayfinding() -> void:
+	# coral guideline tracing the loop corridor's inner edge
+	var line := _mat("loop_line", CORAL * 0.9, "", CORAL * 0.25)
+	_box(Vector3(8.2, 0.012, 0.06), Vector3(12.5, 0.055, 6.6), line, self, false)   # north
+	_box(Vector3(8.2, 0.012, 0.06), Vector3(12.5, 0.055, 13.4), line, self, false)  # south
+	_box(Vector3(0.06, 0.012, 6.86), Vector3(8.4, 0.055, 10.0), line, self, false)  # west
+	_box(Vector3(0.06, 0.012, 6.86), Vector3(16.6, 0.055, 10.0), line, self, false) # east
+	# stone border framing the courtyard grass (crisp garden edge)
+	var edge := _mat("stone_step", Color(0.78, 0.77, 0.74))
+	_box(Vector3(7.2, 0.05, 0.18), Vector3(12.5, 0.028, 7.05), edge, self, false)
+	_box(Vector3(7.2, 0.05, 0.18), Vector3(12.5, 0.028, 12.95), edge, self, false)
+	_box(Vector3(0.18, 0.05, 6.1), Vector3(9.05, 0.028, 10.0), edge, self, false)
+	_box(Vector3(0.18, 0.05, 6.1), Vector3(15.95, 0.028, 10.0), edge, self, false)
+	# hanging zone signs: every room declares its purpose
+	var signs := [
+		["RECEPTION", 19.9, 1.4], ["DIRECTOR", 11.2, 2.6], ["MEETING", 3.5, 2.9],
+		["LIBRARY", 2.2, 6.9], ["WRITERS", 3.2, 10.6], ["FOCUS", 1.6, 15.4],
+		["EDIT BAY", 6.0, 15.6], ["STUDIO", 12.0, 16.3], ["PUBLISHING", 18.4, 15.8],
+		["COFFEE", 19.7, 6.7], ["LOUNGE", 19.5, 12.0], ["GARDEN", 12.5, 10.2],
+	]
+	for s in signs:
+		_zone_sign(str(s[0]), Vector3(float(s[1]), 2.45, float(s[2])))
+
+
+## A hung signage plate: thin steel drop rod + charcoal plate + label.
+func _zone_sign(text: String, pos: Vector3) -> void:
+	var steel := _mat("steel", Color(0.42, 0.42, 0.46))
+	_box(Vector3(0.02, 3.0 - pos.y - 0.14, 0.02),
+		Vector3(pos.x, (3.0 + pos.y + 0.14) / 2.0, pos.z), steel, self, false)
+	_box(Vector3(0.7, 0.22, 0.03), pos + Vector3(0, 0.03, 0),
+		_mat("sign_plate", Color(0.16, 0.16, 0.19)), self, false)
+	var l := Label3D.new()
+	l.text = text
+	l.font_size = 44
+	l.outline_size = 8
+	l.pixel_size = 0.004
+	l.modulate = Color(0.95, 0.94, 0.9)
+	l.position = pos + Vector3(0, 0.03, 0)
+	l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	l.no_depth_test = false
+	add_child(l)
 
 
 # ============ 2. DIRECTOR'S GLASS OFFICE (north-center, mural backdrop,
@@ -655,9 +705,12 @@ func _zone_edit_bay() -> void:
 func _zone_studio() -> void:
 	var steel := _mat("steel", Color(0.42, 0.42, 0.46))
 	var chroma := _mat("chroma", Color(0.28, 0.78, 0.31))
+	# matte charcoal stage floor zones the studio off the concrete
+	_box(Vector3(5.0, 0.015, 4.9), Vector3(12.0, 0.008, 16.5),
+		_mat("studio_floor", Color(0.24, 0.24, 0.27)), self, false)
 	# green-screen backdrop with floor spill
 	_box(Vector3(4.0, 2.2, 0.09), Vector3(12.0, 1.1, 14.45), chroma)
-	_box(Vector3(4.0, 0.02, 1.3), Vector3(12.0, 0.012, 15.15), chroma, self, false)
+	_box(Vector3(4.0, 0.02, 1.3), Vector3(12.0, 0.022, 15.15), chroma, self, false)
 	var onair := Label3D.new()
 	onair.text = "ON AIR"
 	onair.font_size = 52

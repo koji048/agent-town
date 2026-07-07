@@ -91,18 +91,30 @@ def _build_map_rows() -> list:
     for x in (8, 9, 10, 11):
         top[x] = "M"                     # mural behind the director
     rows = ["".join(top)]
+    # Floor materials zone the plan (flooring-as-wayfinding: material
+    # transitions mark zone boundaries; hard corridor vs soft task zones)
     for y in range(1, 20):
         r = ["V" if y in (6, 7, 10, 11) else "v"]   # west windows: library/writers
         for x in range(1, 24):
             c = "."
+            if 1 <= x <= 6 and 1 <= y <= 4:
+                c = "r"                  # meeting nook: soft carpet
+            if 7 <= x <= 14 and 1 <= y <= 4:
+                c = "P"                  # director's office: light wood
+            if 17 <= x <= 23 and 1 <= y <= 4:
+                c = "#"                  # reception: warm hospitality deck
             if 1 <= x <= 7 and 5 <= y <= 12:
                 c = "r"                  # quiet band: library + writers' room
+            if 1 <= x <= 3 and 13 <= y <= 17:
+                c = "r"                  # focus booth alcove
             if 4 <= x <= 8 and 14 <= y <= 18:
                 c = "r"                  # edit bay (acoustic carpet)
+            if 16 <= x <= 20 and 14 <= y <= 18:
+                c = "r"                  # publishing: task carpet
             if 17 <= x <= 22 and 5 <= y <= 13:
                 c = "#"                  # social band: coffee bar + lounge deck
             if (y in (6, 13) and 8 <= x <= 16) or (x in (8, 16) and 6 <= y <= 13):
-                c = ","                  # the loop corridor
+                c = ","                  # the loop corridor (hard, dark)
             if 9 <= x <= 15 and 7 <= y <= 12:
                 c = "g"                  # courtyard garden (walkable)
             r.append(c)
