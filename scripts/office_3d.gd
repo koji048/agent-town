@@ -147,6 +147,70 @@ func random_walkable() -> Vector2i:
 
 # ------------------------------------------------------------ materials/mesh
 
+## Measured surface physics, researched before applying (docs/MATERIAL_STUDY.md).
+## Sources: physicallybased.info (albedo / IOR / metalness) + PBR roughness
+## field guides. Format: [roughness, metallic, specular(F0 scale)].
+const SURFACE_SPECS := {
+	# glazing & water — dielectrics, near-mirror smooth
+	"glass": [0.05, 0.0, 0.5],           # soda-lime, IOR 1.52
+	"podglass": [0.05, 0.0, 0.5],
+	"pond": [0.02, 0.0, 0.25],           # water IOR 1.333 -> F0 ~2%
+	# metals — F0 comes from albedo when metallic
+	"steel": [0.35, 1.0, 0.5],           # brushed stainless 0.3-0.45
+	"pendant_shade": [0.45, 0.6, 0.5],   # painted metal shade
+	# varnished / sealed wood: 0.3-0.45
+	"oak": [0.40, 0.0, 0.5],
+	"stage_top": [0.40, 0.0, 0.5],
+	"tier_top": [0.45, 0.0, 0.5],
+	"floor_deck": [0.45, 0.0, 0.5],
+	# mineral: sealed concrete / stone 0.7-0.9
+	"floor_concrete": [0.80, 0.0, 0.5],
+	"floor_concrete_dark": [0.80, 0.0, 0.5],
+	"slab": [0.85, 0.0, 0.5],
+	"stone": [0.85, 0.0, 0.5],
+	"stone_step": [0.85, 0.0, 0.5],
+	"stone_bench": [0.85, 0.0, 0.5],
+	# textile — fibers scatter everything: roughness ~1, low specular
+	"floor_carpet": [1.0, 0.0, 0.25],
+	"partition": [0.92, 0.0, 0.3],       # felt acoustic panel
+	"bench_cushion": [0.92, 0.0, 0.3],
+	"cushion_": [0.92, 0.0, 0.3],
+	"beanbag_": [0.95, 0.0, 0.3],
+	"speaker_box": [0.85, 0.0, 0.4],     # fabric grille
+	# painted drywall 0.6-0.75; laminate / coated plastic 0.3-0.5
+	"wall_face": [0.70, 0.0, 0.5],
+	"wall_white": [0.70, 0.0, 0.5],
+	"baseboard": [0.60, 0.0, 0.5],
+	"blind": [0.50, 0.0, 0.5],
+	"counter_white": [0.35, 0.0, 0.5],
+	"pantry_tray": [0.35, 0.0, 0.5],
+	"trim_coral": [0.50, 0.0, 0.5],
+	"chip_": [0.50, 0.0, 0.5],
+	"printer": [0.45, 0.0, 0.5],
+	"ringlight": [0.40, 0.0, 0.5],
+	"screen_frame": [0.40, 0.0, 0.5],    # ABS bezel
+	"screen_glow": [0.20, 0.0, 0.5],
+	"pendant_bulb": [0.30, 0.0, 0.5],
+	# paper / cork pinboards
+	"kanban": [0.75, 0.0, 0.5],
+	"meet_art": [0.75, 0.0, 0.5],
+	# vegetation: waxy leaf vs matte bark/grass
+	"grass": [0.95, 0.0, 0.3],
+	"leafA": [0.70, 0.0, 0.4],
+	"leafB": [0.70, 0.0, 0.4],
+	"trunk": [0.90, 0.0, 0.5],
+}
+
+
+func _spec_for(key: String) -> Array:
+	if SURFACE_SPECS.has(key):
+		return SURFACE_SPECS[key]
+	for prefix in ["chip_", "cushion_", "beanbag_"]:
+		if key.begins_with(prefix):
+			return SURFACE_SPECS[prefix]
+	return []
+
+
 func _mat(key: String, color: Color, tex_path: String = "", emission: Color = Color.BLACK,
 		transparent: bool = false, uv_scale: Vector3 = Vector3.ONE) -> StandardMaterial3D:
 	if _mats.has(key):
@@ -164,6 +228,11 @@ func _mat(key: String, color: Color, tex_path: String = "", emission: Color = Co
 	m.uv1_scale = uv_scale
 	if m.roughness == 0.0 or not m.normal_enabled:
 		m.roughness = 0.9
+	var spec := _spec_for(key)
+	if not spec.is_empty():
+		m.roughness = spec[0]
+		m.metallic = spec[1]
+		m.metallic_specular = spec[2]
 	if emission != Color.BLACK:
 		m.emission_enabled = true
 		m.emission = emission
@@ -234,8 +303,11 @@ func _tint_meshes(node: Node, tint: Color) -> void:
 					var m: StandardMaterial3D = (src as StandardMaterial3D).duplicate()
 					if m.albedo_color.v > 0.45:
 						m.albedo_color = tint
+						m.roughness = 0.6   # satin-painted furniture surface
 					else:
 						m.albedo_color = Color(0.32, 0.32, 0.35)
+						m.metallic = 0.85   # dark parts are steel legs/frames
+						m.roughness = 0.4
 					mi.set_surface_override_material(i, m)
 	for child in node.get_children():
 		_tint_meshes(child, tint)
@@ -280,7 +352,7 @@ func _build_floor_cell(gx: int, gy: int) -> void:
 	# L-shape: courtyard notch is grass; north wing warm wood; the
 	# production row sits on carpet; runners mark the circulation spine.
 	if COURTYARD.has_point(Vector2i(gx, gy)):
-		var gmat := _mat("grass", Color(0.55, 0.66, 0.42))
+		var gmat := _mat("grass", Color(0.42, 0.54, 0.31))
 		_box(Vector3(CELL, 0.1, CELL), Vector3((gx + 0.5) * CELL, -0.05, (gy + 0.5) * CELL), gmat, self, false)
 		_box(Vector3(CELL, 0.42, CELL), Vector3((gx + 0.5) * CELL, -0.31, (gy + 0.5) * CELL),
 			_mat("slab", Color(0.55, 0.53, 0.50)), self, false)
@@ -512,7 +584,6 @@ func _furnish() -> void:
 	pcyl.height = 0.06
 	pond.mesh = pcyl
 	var pmat := _mat("pond", Color(0.47, 0.67, 0.76))
-	pmat.roughness = 0.15
 	pond.material_override = pmat
 	pond.position = Vector3(17.8, 0.03, 11.2)
 	add_child(pond)
@@ -602,7 +673,7 @@ func _furnish() -> void:
 
 	# ============ EXTERIOR LANDSCAPE ============
 	_box(Vector3(70.0, 0.06, 70.0), Vector3(10.0, -0.58, 7.0),
-		_mat("grass", Color(0.55, 0.66, 0.42)), self, false)
+		_mat("grass", Color(0.42, 0.54, 0.31)), self, false)
 	for tx in [2.5, 6.5, 10.0, 14.5, 18.0]:
 		_tree(Vector3(tx, -0.55, -1.6), randf_range(0.9, 1.25))
 	for tz in [3.0, 7.5, 12.0]:
