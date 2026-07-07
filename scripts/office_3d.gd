@@ -317,7 +317,7 @@ func _build_wall_cell(c: String, gx: int, gy: int, row: String) -> void:
 
 func _wall_segment(kind: String, pos: Vector3, ne: bool, gx: int, row: String) -> void:
 	var size := Vector3(CELL, WALL_H, WALL_T) if ne else Vector3(WALL_T, WALL_H, CELL)
-	var wallmat := _mat("wall_face", Color(0.93, 0.92, 0.89))
+	var wallmat := _mat("wall_face", Color(0.80, 0.79, 0.76))
 	if kind == "w" or kind == "v" or kind == "M":
 		_box(size, pos + Vector3(0, WALL_H / 2.0, 0), wallmat)
 		var bb := Vector3(CELL, 0.12, 0.05) if ne else Vector3(0.05, 0.12, CELL)
@@ -359,9 +359,9 @@ func _mural_run_index(row: String, gx: int) -> int:
 func _furnish() -> void:
 	var steel := _mat("steel", Color(0.42, 0.42, 0.46))
 	var glass := _mat("podglass", Color(0.75, 0.86, 0.94, 0.25), "", Color.BLACK, true)
-	var white := _mat("counter_white", Color(0.94, 0.93, 0.90))
+	var white := _mat("counter_white", Color(0.82, 0.81, 0.78))
 	var oak := _mat("oak", Color.WHITE, "res://assets/textures/deck.png")
-	var wallwhite := _mat("wall_white", Color(0.92, 0.91, 0.88))
+	var wallwhite := _mat("wall_white", Color(0.80, 0.79, 0.76))
 	var spine_cols := [Color(0.77, 0.30, 0.30), Color(0.30, 0.48, 0.68), Color(0.86, 0.70, 0.34),
 		Color(0.36, 0.60, 0.44), Color(0.55, 0.42, 0.62), Color(0.88, 0.86, 0.82)]
 
@@ -394,7 +394,7 @@ func _furnish() -> void:
 		var role: String = st[0]
 		var sx: float = st[1]
 		# divider behind the desk with coral trim + role chip
-		_box(Vector3(1.95, 1.25, 0.07), Vector3(sx + 1.0, 0.72, 5.45), _mat("partition", Color(0.93, 0.92, 0.89)))
+		_box(Vector3(1.95, 1.25, 0.07), Vector3(sx + 1.0, 0.72, 5.45), _mat("partition", Color(0.82, 0.81, 0.78)))
 		_box(Vector3(1.95, 0.06, 0.10), Vector3(sx + 1.0, 1.38, 5.45),
 			_mat("trim_coral", CORAL, "", CORAL * 0.4), self, false)
 		_box(Vector3(0.3, 0.06, 0.11), Vector3(sx + 1.0, 1.44, 5.45),
@@ -437,7 +437,7 @@ func _furnish() -> void:
 
 	# ============ NORTH WING: PUBLISHING DEPARTMENT ============
 	# publisher station under the windows
-	_box(Vector3(1.95, 1.25, 0.07), Vector3(15.0, 0.72, 1.45), _mat("partition", Color(0.93, 0.92, 0.89)))
+	_box(Vector3(1.95, 1.25, 0.07), Vector3(15.0, 0.72, 1.45), _mat("partition", Color(0.82, 0.81, 0.78)))
 	_box(Vector3(1.95, 0.06, 0.10), Vector3(15.0, 1.38, 1.45),
 		_mat("trim_coral", CORAL, "", CORAL * 0.4), self, false)
 	_box(Vector3(0.3, 0.06, 0.11), Vector3(15.0, 1.44, 1.45),
@@ -544,7 +544,7 @@ func _furnish() -> void:
 	var hall_z := 16.5
 	# stage platform + podium against the west wall
 	_box(Vector3(1.7, 0.26, 4.6), Vector3(1.75, 0.13, hall_z), oak)
-	_box(Vector3(1.8, 0.05, 4.7), Vector3(1.75, 0.28, hall_z), _mat("stage_top", Color(0.88, 0.83, 0.74)), self, false)
+	_box(Vector3(1.8, 0.05, 4.7), Vector3(1.75, 0.28, hall_z), _mat("stage_top", Color(0.80, 0.75, 0.67)), self, false)
 	_box(Vector3(0.4, 0.9, 0.5), Vector3(1.5, 0.73, 15.3), oak)
 	_prop("laptop", 1.5, 15.3, 90, 0.32, 1.2)
 	# big screen on the west wall (the TGIF backdrop)
@@ -636,7 +636,7 @@ func _pendant(pos: Vector3) -> void:
 	light.position = pos + Vector3(0, -0.2, 0)
 	light.light_color = Color(1.0, 0.9, 0.72)
 	light.omni_range = 3.0
-	light.light_energy = 1.4
+	light.light_energy = 0.7
 	light.shadow_enabled = false
 	add_child(light)
 
@@ -687,14 +687,15 @@ func _leaf_ball(pos: Vector3, r: float, key: String, col: Color) -> void:
 	add_child(mi)
 
 
-## A recessed ceiling light panel with a warm-neutral pool.
+## An invisible office luminaire: soft warm-neutral pool from the ceiling
+## plane (no fixture geometry — the diorama has no ceiling). Energy tuned
+## for ~300-500 lux office feel: overlapping fixtures stack, so each one
+## stays gentle.
 func _ceiling_panel(pos: Vector3) -> void:
-	_box(Vector3(0.9, 0.05, 0.9), pos,
-		_mat("light_panel", Color(0.95, 0.94, 0.9) * 0.8, "", Color(1.0, 0.98, 0.92)), self, false)
 	var l := OmniLight3D.new()
-	l.position = pos + Vector3(0, -0.25, 0)
+	l.position = pos + Vector3(0, -0.2, 0)
 	l.light_color = Color(1.0, 0.97, 0.9)
-	l.omni_range = 4.6
-	l.light_energy = 1.5
+	l.omni_range = 4.2
+	l.light_energy = 0.55
 	l.shadow_enabled = false
 	add_child(l)
