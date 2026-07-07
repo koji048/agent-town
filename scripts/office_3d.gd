@@ -55,6 +55,12 @@ const BLOCKED_CELLS: Array = [
 	[18, 1], [19, 1], [19, 2], [16, 2], [13, 6], [14, 6], [15, 6],
 	# interior plants
 	[10, 1], [10, 12], [12, 5],
+	# relax lounge: slat screens (z9), sofa, armchair, pouf, window bench,
+	# credenza, plant — entry gaps stay open at (10..11, 9) and the west side
+	[6, 9], [7, 9], [8, 9], [9, 9],
+	[7, 10], [8, 10], [8, 11], [6, 12],
+	[11, 10], [11, 11], [11, 12],
+	[9, 13], [10, 13], [6, 13],
 	# town hall: stage strip + speakers (x1), bleacher tiers (x6..8), beanbags
 	[1, 14], [1, 15], [1, 16], [1, 17], [1, 18],
 	[6, 15], [6, 16], [6, 17], [7, 15], [7, 16], [7, 17], [8, 15], [8, 16], [8, 17],
@@ -199,13 +205,25 @@ const SURFACE_SPECS := {
 	"leafA": [0.70, 0.0, 0.4],
 	"leafB": [0.70, 0.0, 0.4],
 	"trunk": [0.90, 0.0, 0.5],
+	# relax lounge (docs/RELAX_AREA_STUDY.md)
+	"copper": [0.12, 1.0, 0.5],          # polished copper pendant globes
+	"marble": [0.25, 0.0, 0.5],          # honed marble credenza top
+	"walnut": [0.40, 0.0, 0.5],          # oiled walnut casework
+	"slat_wood": [0.55, 0.0, 0.5],       # raw fir slats, unfinished
+	"black_frame": [0.55, 0.5, 0.5],     # powder-coated steel
+	"leather_tan": [0.45, 0.0, 0.4],
+	"rug_ivory": [1.0, 0.0, 0.25],
+	"plaid": [0.92, 0.0, 0.3],
+	"plaid_band": [0.92, 0.0, 0.3],
+	"basket": [0.85, 0.0, 0.35],         # woven seagrass
+	"kilim_": [0.90, 0.0, 0.3],
 }
 
 
 func _spec_for(key: String) -> Array:
 	if SURFACE_SPECS.has(key):
 		return SURFACE_SPECS[key]
-	for prefix in ["chip_", "cushion_", "beanbag_"]:
+	for prefix in ["chip_", "cushion_", "beanbag_", "kilim_"]:
 		if key.begins_with(prefix):
 			return SURFACE_SPECS[prefix]
 	return []
@@ -507,6 +525,8 @@ func _furnish() -> void:
 			_mat("frame_%d" % i, frame_cols[i]), self, false)
 		_box(Vector3(0.02, 0.56, 0.48), Vector3(0.19, 2.0, 7.9 + i * 0.9), steel, self, false)
 
+	_relax_area()
+
 	# ============ NORTH WING: PUBLISHING DEPARTMENT ============
 	# publisher station under the windows
 	_box(Vector3(1.95, 1.25, 0.07), Vector3(15.0, 0.72, 1.45), _mat("partition", Color(0.82, 0.81, 0.78)))
@@ -686,6 +706,125 @@ func _furnish() -> void:
 	for i in 3:
 		_box(Vector3(0.9, 0.08, 0.6), Vector3(16.6 + i * 0.3, -0.51, 14.5 + i * 0.9),
 			_mat("stone_step", Color(0.78, 0.77, 0.74)), self, false)
+
+
+# ------------------------------------------------------------ relax lounge
+# From the user's reference photo (industrial-Scandinavian breakout area) +
+# breakout-space research (docs/RELAX_AREA_STUDY.md): a light-oak platform
+# zones the lounge off the tile, diagonal fir-slat screens on black steel
+# frames give semi-enclosure without walls, soft seating rings a plaid pouf
+# on a pale rug, a copper pendant cluster supplies the warm low light, and
+# the walnut+marble credenza, baskets and big plants close the biophilic
+# edge. Sited against the courtyard glass: garden view = restorative zone.
+
+func _relax_area() -> void:
+	var oak := _mat("oak", Color.WHITE, "res://assets/textures/deck.png")
+	var steel := _mat("steel", Color(0.42, 0.42, 0.46))
+	# light-oak platform zoning the lounge off the concrete tile
+	_box(Vector3(6.0, 0.05, 4.3), Vector3(9.0, 0.03, 11.55),
+		_mat("floor_deck", Color.WHITE, "res://assets/textures/deck.png"), self, false)
+	# pale ivory rug under the seating group
+	_box(Vector3(2.8, 0.025, 2.0), Vector3(8.3, 0.065, 11.9),
+		_mat("rug_ivory", Color(0.86, 0.84, 0.76)), self, false)
+	# diagonal wood-slat screens (north edge, semi-enclosure from the spine)
+	_slat_screen(Vector3(7.15, 0, 9.38), 1.9)
+	_slat_screen(Vector3(9.05, 0, 9.38), 1.9)
+	# gray sofa with kilim pillows, back to the screens
+	var sofa := _prop("loungeSofa", 8.3, 10.05, 180, 1.0, 0.0, 0.75)
+	_tint_meshes(sofa, Color(0.55, 0.54, 0.53))
+	var kilim_cols := [Color(0.80, 0.35, 0.28), Color(0.85, 0.66, 0.30), Color(0.30, 0.36, 0.55)]
+	for i in 3:
+		_box(Vector3(0.32, 0.28, 0.12), Vector3(7.75 + i * 0.55, 0.52, 9.92),
+			_mat("kilim_%d" % i, kilim_cols[i]), self, false)
+	# blue mid-century armchair + tan leather ottoman
+	var chair := _prop("loungeChair", 6.85, 12.15, 75, 1.0, 0.0, 0.8)
+	_tint_meshes(chair, Color(0.30, 0.38, 0.62))
+	_box(Vector3(0.5, 0.26, 0.4), Vector3(7.65, 0.16, 12.35),
+		_mat("leather_tan", Color(0.62, 0.44, 0.28)), self, false)
+	# plaid round pouf at the center of the group
+	var pouf := MeshInstance3D.new()
+	var pc := CylinderMesh.new()
+	pc.top_radius = 0.34
+	pc.bottom_radius = 0.36
+	pc.height = 0.34
+	pouf.mesh = pc
+	pouf.material_override = _mat("plaid", Color(0.78, 0.60, 0.42))
+	pouf.position = Vector3(8.3, 0.17, 11.55)
+	add_child(pouf)
+	_box(Vector3(0.52, 0.02, 0.52), Vector3(8.3, 0.345, 11.55),
+		_mat("plaid_band", Color(0.55, 0.38, 0.30)), self, false)
+	# copper globe pendant cluster (staggered drops) + one warm pool
+	for g in [[8.0, 2.25, 11.2, 0.15], [8.35, 2.02, 11.5, 0.18], [8.72, 2.3, 11.8, 0.13]]:
+		var globe := MeshInstance3D.new()
+		var gs := SphereMesh.new()
+		gs.radius = g[3]
+		gs.height = g[3] * 2.0
+		globe.mesh = gs
+		globe.material_override = _mat("copper", Color(0.93, 0.62, 0.52))
+		globe.position = Vector3(g[0], g[1], g[2])
+		add_child(globe)
+		_box(Vector3(0.02, 3.0 - g[1] - g[3], 0.02),
+			Vector3(g[0], (3.0 + g[1] + g[3]) / 2.0, g[2]), steel, self, false)
+	var warm := OmniLight3D.new()
+	warm.position = Vector3(8.35, 1.8, 11.5)
+	warm.light_color = Color(1.0, 0.85, 0.65)
+	warm.omni_range = 3.4
+	warm.light_energy = 0.7
+	warm.shadow_enabled = false
+	add_child(warm)
+	# window bench along the courtyard glass (prospect over the garden)
+	_box(Vector3(0.55, 0.42, 2.4), Vector3(11.55, 0.21, 11.5), oak)
+	_box(Vector3(0.55, 0.10, 2.4), Vector3(11.55, 0.47, 11.5),
+		_mat("bench_cushion", Color(0.88, 0.86, 0.82)), self, false)
+	var wp1 := _prop("pillow", 11.55, 10.65, 70, 0.4, 0.52)
+	_tint_meshes(wp1, kilim_cols[0])
+	var wp2 := _prop("pillow", 11.55, 12.35, -70, 0.4, 0.52)
+	_tint_meshes(wp2, kilim_cols[2])
+	# walnut credenza with honed-marble top on black steel legs
+	_box(Vector3(1.5, 0.52, 0.42), Vector3(9.9, 0.44, 13.42), _mat("walnut", Color(0.36, 0.25, 0.18)))
+	_box(Vector3(1.56, 0.04, 0.48), Vector3(9.9, 0.72, 13.42),
+		_mat("marble", Color(0.83, 0.79, 0.75)), self, false)
+	for lp in [[9.25, 13.28], [9.25, 13.56], [10.55, 13.28], [10.55, 13.56]]:
+		_box(Vector3(0.04, 0.18, 0.04), Vector3(lp[0], 0.09, lp[1]),
+			_mat("black_frame", Color(0.13, 0.13, 0.14)), self, false)
+	_prop("plantSmall2", 9.5, 13.42, 0, 1.0, 0.74, 0.22)
+	# woven basket + the big biophilic corner plant
+	var bask := MeshInstance3D.new()
+	var bc := CylinderMesh.new()
+	bc.top_radius = 0.22
+	bc.bottom_radius = 0.16
+	bc.height = 0.36
+	bask.mesh = bc
+	bask.material_override = _mat("basket", Color(0.72, 0.58, 0.38))
+	bask.position = Vector3(10.9, 0.18, 13.35)
+	add_child(bask)
+	_prop("pottedPlant", 6.3, 13.2, 0, 1.0, 0.0, 1.15)
+
+
+## A slat privacy screen: black powder-coated frame, parallel diagonal
+## fir slats (the reference's signature divider).
+func _slat_screen(pos: Vector3, w: float) -> void:
+	var frame := _mat("black_frame", Color(0.13, 0.13, 0.14))
+	var slat := _mat("slat_wood", Color(0.78, 0.62, 0.42))
+	var h := 1.9
+	for sx in [-w / 2.0, w / 2.0]:
+		_box(Vector3(0.06, h, 0.06), pos + Vector3(sx, h / 2.0, 0), frame)
+	_box(Vector3(w, 0.05, 0.05), pos + Vector3(0, h - 0.025, 0), frame, self, false)
+	_box(Vector3(w, 0.05, 0.05), pos + Vector3(0, 0.025, 0), frame, self, false)
+	for row in 3:
+		var ry := 0.45 + row * 0.5
+		var xo := fmod(row * 0.14, 0.28)
+		var x := -w / 2.0 + 0.18 + xo
+		while x < w / 2.0 - 0.12:
+			var mi := MeshInstance3D.new()
+			var bm := BoxMesh.new()
+			bm.size = Vector3(0.62, 0.045, 0.03)
+			mi.mesh = bm
+			mi.material_override = slat
+			mi.position = pos + Vector3(x, ry, 0)
+			mi.rotation_degrees = Vector3(0, 0, -38)
+			add_child(mi)
+			x += 0.28
 
 
 ## A small pendant lamp with a warm light pool — layered lighting.
