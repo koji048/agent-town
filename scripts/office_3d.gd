@@ -155,8 +155,15 @@ func _mat(key: String, color: Color, tex_path: String = "", emission: Color = Co
 	m.albedo_color = color
 	if not tex_path.is_empty():
 		m.albedo_texture = load(tex_path)
+		var normal_path := tex_path.replace(".png", "_n.png")
+		if FileAccess.file_exists(normal_path):
+			m.normal_enabled = true
+			m.normal_texture = load(normal_path)
+			m.normal_scale = 0.8
+			m.roughness = 0.62
 	m.uv1_scale = uv_scale
-	m.roughness = 0.9
+	if m.roughness == 0.0 or not m.normal_enabled:
+		m.roughness = 0.9
 	if emission != Color.BLACK:
 		m.emission_enabled = true
 		m.emission = emission

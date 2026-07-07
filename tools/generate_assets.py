@@ -729,6 +729,145 @@ def make_preview() -> None:
     print("wrote docs/preview.png")
 
 
+# ---------------------------------------------------------------- PBR textures
+# 256px albedo + normal maps for the realism pass. Normals derived from a
+# procedural height field via central differences.
+def _normal_from_height(h, strength=2.0):
+    import math
+    size = len(h)
+    img = Image.new("RGB", (size, size))
+    px = img.load()
+    for y in range(size):
+        for x in range(size):
+            dx = (h[(y) % size][(x + 1) % size] - h[y % size][(x - 1) % size]) * strength
+            dy = (h[(y + 1) % size][x % size] - h[(y - 1) % size][x % size]) * strength
+            l = math.sqrt(dx * dx + dy * dy + 1.0)
+            px[x, y] = (int(((-dx / l) * 0.5 + 0.5) * 255),
+                        int(((-dy / l) * 0.5 + 0.5) * 255),
+                        int(((1.0 / l) * 0.5 + 0.5) * 255))
+    return img
+
+
+def make_pbr_textures() -> None:
+    import math
+    S = 256
+    rng = random.Random(99)
+    out_dir = os.path.join(ASSETS, "textures")
+    os.makedirs(out_dir, exist_ok=True)
+
+    def save_pair(name, albedo, height):
+        albedo.save(os.path.join(out_dir, name + ".png"))
+        _normal_from_height(height).save(os.path.join(out_dir, name + "_n.png"))
+        print("wrote textures/%s(+_n).png" % name)
+
+    def noise2(x, y, seed=0):
+        n = math.sin(x * 12.9898 + y * 78.233 + seed * 37.719) * 43758.5453
+        return n - math.floor(n)
+
+    def fbm(x, y, seed=0):
+        v = 0.0
+        amp = 0.5
+        f = 1.0
+        for _ in range(4):
+            v += amp * noise2(x * f, y * f, seed)
+            amp *= 0.5
+            f *= 2.1
+        return v
+
+    # ---- wood planks (deck floor)
+    alb = Image.new("RGB", (S, S))
+    hgt = [[0.0] * S for _ in range(S)]
+    p = alb.load()
+    plank_h = 42
+    for y in range(S):
+        plank = y // plank_h
+        for x in range(S):
+            off = (plank * 61) % 97
+            grain = fbm((x + off) / 21.0, (y) / 240.0, plank) * 0.5 + fbm(x / 5.0, y / 90.0, plank + 9) * 0.5
+            base = 172 + int(30 * grain) - (plank % 3) * 8
+            r, gg, b = base, int(base * 0.74), int(base * 0.52)
+            edge = y % plank_h
+            hv = grain * 0.6
+            if edge < 2 or edge > plank_h - 2:
+                r, gg, b = int(r * 0.72), int(gg * 0.72), int(b * 0.72)
+                hv -= 0.5
+            p[x, y] = (r, gg, b)
+            hgt[y][x] = hv
+    save_pair("deck", alb, hgt)
+
+    # ---- concrete / big tiles
+    alb = Image.new("RGB", (S, S))
+    hgt = [[0.0] * S for _ in range(S)]
+    p = alb.load()
+    tile = 128
+    for y in range(S):
+        for x in range(S):
+            n = fbm(x / 60.0, y / 60.0, 3) * 0.7 + fbm(x / 11.0, y / 11.0, 5) * 0.3
+            base = 204 + int(18 * n)
+            hv = n * 0.3
+            if x % tile < 2 or y % tile < 2:
+                base = int(base * 0.82)
+                hv -= 0.6
+            p[x, y] = (base, base - 2, base - 6)
+            hgt[y][x] = hv
+    save_pair("concrete", alb, hgt)
+
+    # ---- carpet
+    alb = Image.new("RGB", (S, S))
+    hgt = [[0.0] * S for _ in range(S)]
+    p = alb.load()
+    for y in range(S):
+        for x in range(S):
+            n = noise2(x * 0.9, y * 0.9, 7)
+            base = 106 + int(16 * n)
+            p[x, y] = (base, base + 5, base + 16)
+            hgt[y][x] = n * 0.35
+    save_pair("carpet", alb, hgt)
+
+    # ---- grass
+    alb = Image.new("RGB", (S, S))
+    hgt = [[0.0] * S for _ in range(S)]
+    p = alb.load()
+    for y in range(S):
+        for x in range(S):
+            n = fbm(x / 9.0, y / 9.0, 11)
+            m = noise2(x * 1.7, y * 1.7, 13)
+            r = 96 + int(26 * n)
+            gg = 142 + int(34 * n) + int(12 * m)
+            b = 74 + int(18 * n)
+            p[x, y] = (r, gg, b)
+            hgt[y][x] = (n + m * 0.4) * 0.5
+    save_pair("grass", alb, hgt)
+
+    # ---- wall wood panels
+    alb = Image.new("RGB", (S, S))
+    hgt = [[0.0] * S for _ in range(S)]
+    p = alb.load()
+    slat = 32
+    for y in range(S):
+        for x in range(S):
+            grain = fbm(x / 160.0, y / 14.0, 17)
+            base = 200 + int(24 * grain) - ((x // slat) % 2) * 10
+            hv = grain * 0.4
+            if x % slat < 2:
+                base = int(base * 0.74)
+                hv -= 0.5
+            p[x, y] = (base, int(base * 0.76), int(base * 0.55))
+            hgt[y][x] = hv
+    save_pair("wallwood", alb, hgt)
+
+    # ---- atrium (lighter wood) reuse deck tinted
+    deck = Image.open(os.path.join(out_dir, "deck.png")).point(lambda v: min(255, int(v * 1.12)))
+    deck.save(os.path.join(out_dir, "atrium.png"))
+    import shutil
+    shutil.copy(os.path.join(out_dir, "deck_n.png"), os.path.join(out_dir, "atrium_n.png"))
+    # concrete_dark variant
+    cd = Image.open(os.path.join(out_dir, "concrete.png")).point(lambda v: int(v * 0.88))
+    cd.save(os.path.join(out_dir, "concrete_dark.png"))
+    shutil.copy(os.path.join(out_dir, "concrete_n.png"), os.path.join(out_dir, "concrete_dark_n.png"))
+    print("wrote atrium + concrete_dark variants")
+
+
 if __name__ == "__main__":
     make_tiles()
     make_walls()
@@ -736,6 +875,7 @@ if __name__ == "__main__":
     make_stations()
     make_characters()
     make_textures_3d()
+    make_pbr_textures()
     make_icon()
     make_map_json()
     make_preview()

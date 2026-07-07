@@ -52,10 +52,20 @@ func _ready() -> void:
 	env.background_color = Color(0.80, 0.87, 0.88)
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color(0.72, 0.72, 0.76)
-	env.ambient_light_energy = 1.15
+	env.ambient_light_energy = 0.85
 	env.ssao_enabled = true
-	env.ssao_intensity = 3.0
+	env.ssao_intensity = 2.2
 	env.ssao_radius = 1.5
+	env.ssil_enabled = true
+	env.sdfgi_enabled = true
+	env.tonemap_mode = Environment.TONE_MAPPER_AGX
+	env.tonemap_white = 4.0
+	env.glow_enabled = true
+	env.glow_intensity = 0.25
+	env.glow_bloom = 0.04
+	env.adjustment_enabled = true
+	env.adjustment_saturation = 1.14
+	env.adjustment_contrast = 1.03
 	var we := WorldEnvironment.new()
 	we.environment = env
 	world.add_child(we)
@@ -64,18 +74,19 @@ func _ready() -> void:
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-48, 205, 0)
 	sun.light_color = Color(1.0, 0.97, 0.90)
-	sun.light_energy = 1.35
+	sun.light_energy = 1.9
 	sun.shadow_enabled = true
 	sun.light_angular_distance = 2.5  # soft shadow edges
 	world.add_child(sun)
 
 	# --- isometric orthographic camera
 	_cam = Camera3D.new()
-	_cam.projection = Camera3D.PROJECTION_ORTHOGONAL
-	_cam.size = 16.2
+	_cam.projection = Camera3D.PROJECTION_PERSPECTIVE
+	_cam.fov = 27.0
+	_cam.far = 200.0
 	_cam.rotation_degrees = Vector3(-30, 45, 0)
 	world.add_child(_cam)
-	_cam.position = office.center() + Vector3(0.3, 0, 0.8) + _cam.global_transform.basis.z * CAM_DIST
+	_cam.position = office.center() + Vector3(0.3, 0, 0.8) + _cam.global_transform.basis.z * 42.0
 	_cam.current = true
 
 	_build_hud()
@@ -152,7 +163,7 @@ func _process(delta: float) -> void:
 		var fwd := -_cam.global_transform.basis.z
 		fwd.y = 0.0
 		fwd = fwd.normalized()
-		_cam.position += (right * pan.x + fwd * -pan.y) * 8.0 * delta * (_cam.size / 13.0)
+		_cam.position += (right * pan.x + fwd * -pan.y) * 8.0 * delta * (_cam.fov / 27.0)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -161,9 +172,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			_costume_panel.visible = not _costume_panel.visible
 	if event is InputEventMouseButton and event.pressed:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
-			_cam.size = clampf(_cam.size / 1.1, 5.0, 26.0)
+			_cam.fov = clampf(_cam.fov / 1.08, 12.0, 55.0)
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			_cam.size = clampf(_cam.size * 1.1, 5.0, 26.0)
+			_cam.fov = clampf(_cam.fov * 1.08, 12.0, 55.0)
 
 
 func _build_hud() -> void:
