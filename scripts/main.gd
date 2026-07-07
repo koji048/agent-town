@@ -12,6 +12,7 @@ var _cam: Camera3D
 var _status: Label
 var _log: Label
 var _log_lines: PackedStringArray = []
+var _costume_panel: CostumePanel
 
 
 func _ready() -> void:
@@ -78,6 +79,7 @@ func _ready() -> void:
 	_cam.current = true
 
 	_build_hud()
+	_build_costume_panel()
 	EventBus.log_line.connect(_append_log)
 	EventBus.stage_started.connect(func(stage: String, role: String, request: Dictionary) -> void:
 		_status.text = "NOW: %s -> %s  (%s)" % [role, stage, str(request.get("topic", "")).left(40)])
@@ -119,6 +121,9 @@ func _process(delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_C:
+			_costume_panel.visible = not _costume_panel.visible
 	if event is InputEventMouseButton and event.pressed:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
 			_cam.size = clampf(_cam.size / 1.1, 5.0, 26.0)
@@ -162,6 +167,29 @@ func _build_hud() -> void:
 	vb2.add_child(_log)
 	bottom.add_child(vb2)
 	hud.add_child(bottom)
+
+
+func _build_costume_panel() -> void:
+	var hud := CanvasLayer.new()
+	hud.layer = 5
+	add_child(hud)
+	_costume_panel = CostumePanel.new()
+	_costume_panel.position = Vector2(1410, 60)
+	_costume_panel.visible = false
+	_costume_panel.costume_changed.connect(func(role: String, c: Dictionary) -> void:
+		for agent in get_tree().get_nodes_in_group("agents"):
+			if agent.role == role:
+				agent.apply_costume(c))
+	hud.add_child(_costume_panel)
+	var hint := Label.new()
+	hint.text = "C — costumes"
+	hint.add_theme_font_size_override("font_size", 12)
+	hint.modulate = Color(1, 1, 1, 0.7)
+	hint.position = Vector2(1790, 20)
+	hud.add_child(hint)
+	# show the panel in dev screenshots
+	if not OS.get_environment("AGENT_TOWN_SHOT").is_empty():
+		_costume_panel.visible = true
 
 
 func _panel_style() -> StyleBoxFlat:

@@ -140,8 +140,10 @@ python3 tools/generate_assets.py
 
 ## Controls
 
-Pan with WASD / arrow keys, zoom with the mouse wheel. Everything else is
-ambient — the town runs itself.
+Pan with WASD / arrow keys, zoom with the mouse wheel, and press **C** for
+the costume panel — per-agent class, headgear, hand items, bracers and cape,
+with one-click **Office** and **Adventure** presets (saved to
+`user://costumes.json`). Everything else is ambient — the town runs itself.
 
 ## CI
 

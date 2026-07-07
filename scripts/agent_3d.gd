@@ -59,10 +59,26 @@ var _bubble_timer: Timer
 var _wander_timer: Timer
 var _plate_state: Label3D
 
+var costume: Dictionary = {}
+var _skeleton: Skeleton3D
+var _attach_head: BoneAttachment3D
+var _attach_r: BoneAttachment3D
+var _attach_l: BoneAttachment3D
+var _attach_arm_l: BoneAttachment3D
+var _attach_arm_r: BoneAttachment3D
+
+static var _item_cache: Dictionary = {}
+
 
 func _ready() -> void:
-	_model = _load_character(str(JOB_MODEL.get(role, "Knight")))
+	add_to_group("agents")
+	costume = Costumes.load_all().get(role, Costumes.OFFICE_PRESET.get(role, {})).duplicate(true)
+	if not costume.has("class"):
+		costume["class"] = str(JOB_MODEL.get(role, "Knight"))
+	_model = _load_character(str(costume["class"]))
 	add_child(_model)
+	_setup_attachments()
+	_apply_costume_parts()
 	_play("Idle")
 
 	_bubble = Label3D.new()
@@ -305,3 +321,197 @@ func _pop_fx(symbol: String, color: Color) -> void:
 	tw.tween_property(l, "position:y", l.position.y + 0.6, 1.1)
 	tw.parallel().tween_property(l, "modulate:a", 0.0, 1.1)
 	tw.tween_callback(l.queue_free)
+
+
+# ------------------------------------------------------------ costumes
+
+func apply_costume(c: Dictionary) -> void:
+	var need_reload := str(c.get("class", "")) != str(costume.get("class", ""))
+	costume = c.duplicate(true)
+	if need_reload:
+		if _model:
+			_model.queue_free()
+		_anim = null
+		_model = _load_character(str(costume["class"]))
+		add_child(_model)
+		_setup_attachments()
+		_play("Idle")
+	_apply_costume_parts()
+
+
+func _setup_attachments() -> void:
+	_skeleton = null
+	_attach_head = null
+	_attach_r = null
+	_attach_l = null
+	_attach_arm_l = null
+	_attach_arm_r = null
+	var sk := _model.find_children("*", "Skeleton3D", true, false)
+	if sk.is_empty():
+		return
+	_skeleton = sk[0]
+	_attach_head = _bone_attach("head")
+	_attach_r = _bone_attach("handslot.r")
+	_attach_l = _bone_attach("handslot.l")
+	_attach_arm_l = _bone_attach("lowerarm.l")
+	_attach_arm_r = _bone_attach("lowerarm.r")
+
+
+func _bone_attach(bone: String) -> BoneAttachment3D:
+	var idx := _skeleton.find_bone(bone)
+	if idx < 0:
+		return null
+	var ba := BoneAttachment3D.new()
+	_skeleton.add_child(ba)
+	ba.bone_idx = idx
+	return ba
+
+
+func _apply_costume_parts() -> void:
+	# 1. built-in mesh parts (weapons off; helmet/hood/cape per costume)
+	var headgear := str(costume.get("headgear", "class"))
+	for mi in _model.find_children("*", "MeshInstance3D", true, false):
+		var n := str(mi.name).to_lower()
+		if n.begins_with("1h") or n.begins_with("2h") or n.contains("shield") or n.contains("sword"):
+			mi.visible = false
+		elif n.contains("helmet") or n.contains("hat") or n.contains("hood"):
+			mi.visible = headgear == "class"
+		elif n.contains("cape"):
+			mi.visible = bool(costume.get("cape", false))
+	# 2. procedural headgear
+	_clear_attach(_attach_head)
+	if headgear != "class" and headgear != "none" and _attach_head:
+		_build_headgear(headgear, _attach_head)
+	# 3. hand items
+	_clear_attach(_attach_r)
+	_clear_attach(_attach_l)
+	_equip_item(str(costume.get("right", "none")), _attach_r)
+	_equip_item(str(costume.get("left", "none")), _attach_l)
+	# 4. bracers
+	_clear_attach(_attach_arm_l)
+	_clear_attach(_attach_arm_r)
+	if bool(costume.get("bracers", false)):
+		for arm in [_attach_arm_l, _attach_arm_r]:
+			if arm:
+				var b := MeshInstance3D.new()
+				var cyl := CylinderMesh.new()
+				cyl.top_radius = 0.09
+				cyl.bottom_radius = 0.1
+				cyl.height = 0.22
+				b.mesh = cyl
+				var bm := StandardMaterial3D.new()
+				bm.albedo_color = Color(0.45, 0.42, 0.4)
+				b.material_override = bm
+				b.position = Vector3(0, 0.12, 0)
+				arm.add_child(b)
+
+
+func _clear_attach(ba: BoneAttachment3D) -> void:
+	if ba == null:
+		return
+	for child in ba.get_children():
+		child.queue_free()
+
+
+func _equip_item(item: String, ba: BoneAttachment3D) -> void:
+	if ba == null or item == "none" or item.is_empty():
+		return
+	var path := "res://assets/models/items/%s.gltf" % item
+	if not FileAccess.file_exists(path):
+		return
+	if not _item_cache.has(item):
+		var doc := GLTFDocument.new()
+		var st := GLTFState.new()
+		if doc.append_from_file(path, st) != OK:
+			return
+		_item_cache[item] = [doc, st]
+	var pair: Array = _item_cache[item]
+	var node := pair[0].generate_scene(pair[1]) as Node3D
+	ba.add_child(node)
+
+
+func _build_headgear(kind: String, parent: Node3D) -> void:
+	var root := Node3D.new()
+	parent.add_child(root)
+	match kind:
+		"cap":
+			_gear_sphere(root, Vector3(0, 0.20, -0.02), Vector3(0.30, 0.20, 0.30), Color(0.36, 0.48, 0.72))
+			_gear_box(root, Vector3(0, 0.14, 0.26), Vector3(0.30, 0.04, 0.26), Color(0.36, 0.48, 0.72))
+		"headset":
+			var band := MeshInstance3D.new()
+			var t := TorusMesh.new()
+			t.inner_radius = 0.26
+			t.outer_radius = 0.30
+			band.mesh = t
+			band.material_override = _gear_mat(Color(0.22, 0.22, 0.26))
+			band.rotation_degrees = Vector3(0, 0, 90)
+			band.position = Vector3(0, 0.12, 0)
+			root.add_child(band)
+			_gear_box(root, Vector3(-0.29, 0.05, 0), Vector3(0.07, 0.16, 0.16), Color(0.22, 0.22, 0.26))
+			_gear_box(root, Vector3(0.29, 0.05, 0), Vector3(0.07, 0.16, 0.16), Color(0.22, 0.22, 0.26))
+			_gear_box(root, Vector3(-0.24, -0.06, 0.20), Vector3(0.04, 0.04, 0.22), Color(0.22, 0.22, 0.26))
+			_gear_box(root, Vector3(-0.2, -0.1, 0.32), Vector3(0.06, 0.06, 0.06), Color(0.95, 0.45, 0.33))
+		"glasses":
+			for gx in [-0.12, 0.12]:
+				var lens := MeshInstance3D.new()
+				var lt := TorusMesh.new()
+				lt.inner_radius = 0.07
+				lt.outer_radius = 0.10
+				lens.mesh = lt
+				lens.material_override = _gear_mat(Color(0.2, 0.2, 0.24))
+				lens.rotation_degrees = Vector3(90, 0, 0)
+				lens.position = Vector3(gx, 0.05, 0.27)
+				root.add_child(lens)
+			_gear_box(root, Vector3(0, 0.05, 0.27), Vector3(0.08, 0.02, 0.02), Color(0.2, 0.2, 0.24))
+		"party_hat":
+			var cone := MeshInstance3D.new()
+			var cm := CylinderMesh.new()
+			cm.top_radius = 0.0
+			cm.bottom_radius = 0.15
+			cm.height = 0.36
+			cone.mesh = cm
+			cone.material_override = _gear_mat(Color(0.95, 0.45, 0.33))
+			cone.position = Vector3(0, 0.36, 0)
+			root.add_child(cone)
+		"crown":
+			var ring := MeshInstance3D.new()
+			var rc := CylinderMesh.new()
+			rc.top_radius = 0.22
+			rc.bottom_radius = 0.24
+			rc.height = 0.12
+			ring.mesh = rc
+			ring.material_override = _gear_mat(Color(0.95, 0.78, 0.3))
+			ring.position = Vector3(0, 0.26, 0)
+			root.add_child(ring)
+			for i in 4:
+				var ang := i * TAU / 4.0
+				_gear_box(root, Vector3(cos(ang) * 0.21, 0.36, sin(ang) * 0.21), Vector3(0.05, 0.1, 0.05), Color(0.95, 0.78, 0.3))
+
+
+func _gear_mat(col: Color) -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.albedo_color = col
+	m.roughness = 0.7
+	return m
+
+
+func _gear_box(parent: Node3D, pos: Vector3, size: Vector3, col: Color) -> void:
+	var b := MeshInstance3D.new()
+	var bm := BoxMesh.new()
+	bm.size = size
+	b.mesh = bm
+	b.material_override = _gear_mat(col)
+	b.position = pos
+	parent.add_child(b)
+
+
+func _gear_sphere(parent: Node3D, pos: Vector3, size: Vector3, col: Color) -> void:
+	var sph := MeshInstance3D.new()
+	var sm := SphereMesh.new()
+	sm.radius = 0.5
+	sm.height = 1.0
+	sph.mesh = sm
+	sph.scale = size
+	sph.material_override = _gear_mat(col)
+	sph.position = pos
+	parent.add_child(sph)
