@@ -359,6 +359,8 @@ func _tint_meshes(node: Node, tint: Color) -> void:
 
 func _instantiate_glb(model: String) -> Node3D:
 	var path := "res://assets/models/%s.glb" % model
+	if not FileAccess.file_exists(path):
+		path = "res://assets/models/%s.gltf" % model
 	if not _gltf_cache.has(model):
 		if not FileAccess.file_exists(path):
 			push_warning("missing model: " + path)
@@ -492,33 +494,35 @@ func _wayfinding() -> void:
 	_box(Vector3(7.2, 0.05, 0.18), Vector3(12.5, 0.028, 12.95), edge, self, false)
 	_box(Vector3(0.18, 0.05, 6.1), Vector3(9.05, 0.028, 10.0), edge, self, false)
 	_box(Vector3(0.18, 0.05, 6.1), Vector3(15.95, 0.028, 10.0), edge, self, false)
-	# hanging zone signs: every room declares its purpose
+	# floor-standing zone signs at each threshold: every room declares
+	# its purpose (posts sit against furniture/partitions, off the paths)
 	var signs := [
-		["RECEPTION", 19.9, 1.4], ["DIRECTOR", 11.2, 2.6], ["MEETING", 3.5, 2.9],
-		["LIBRARY", 2.2, 6.9], ["WRITERS", 3.2, 10.6], ["FOCUS", 1.6, 15.4],
-		["EDIT BAY", 6.0, 15.6], ["STUDIO", 12.0, 16.3], ["PUBLISHING", 18.4, 15.8],
-		["COFFEE", 19.7, 6.7], ["LOUNGE", 19.5, 12.0], ["GARDEN", 12.5, 10.2],
+		["RECEPTION", 21.3, 3.7], ["DIRECTOR", 12.7, 4.85], ["MEETING", 5.5, 1.1],
+		["LIBRARY", 3.3, 5.15], ["WRITERS", 3.3, 9.15], ["FOCUS", 1.5, 13.35],
+		["EDIT BAY", 8.45, 14.35], ["STUDIO", 10.15, 15.1], ["PUBLISHING", 16.4, 14.3],
+		["COFFEE", 18.5, 5.3], ["LOUNGE", 21.9, 10.6],
 	]
 	for s in signs:
-		_zone_sign(str(s[0]), Vector3(float(s[1]), 2.45, float(s[2])))
+		_zone_sign(str(s[0]), Vector3(float(s[1]), 0.0, float(s[2])))
 
 
-## A hung signage plate: thin steel drop rod + charcoal plate + label.
+## A floor-standing signage stanchion: steel base + post, charcoal plate
+## angled toward the camera, label on top.
 func _zone_sign(text: String, pos: Vector3) -> void:
 	var steel := _mat("steel", Color(0.42, 0.42, 0.46))
-	_box(Vector3(0.02, 3.0 - pos.y - 0.14, 0.02),
-		Vector3(pos.x, (3.0 + pos.y + 0.14) / 2.0, pos.z), steel, self, false)
-	_box(Vector3(0.7, 0.22, 0.03), pos + Vector3(0, 0.03, 0),
+	_box(Vector3(0.16, 0.03, 0.16), pos + Vector3(0, 0.015, 0), steel, self, false)
+	_box(Vector3(0.025, 1.35, 0.025), pos + Vector3(0, 0.7, 0), steel, self, false)
+	var plate := _box(Vector3(0.66, 0.2, 0.03), pos + Vector3(0, 1.45, 0),
 		_mat("sign_plate", Color(0.16, 0.16, 0.19)), self, false)
+	plate.rotation_degrees = Vector3(0, 45, 0)
 	var l := Label3D.new()
 	l.text = text
-	l.font_size = 44
+	l.font_size = 40
 	l.outline_size = 8
-	l.pixel_size = 0.004
+	l.pixel_size = 0.0038
 	l.modulate = Color(0.95, 0.94, 0.9)
-	l.position = pos + Vector3(0, 0.03, 0)
-	l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	l.no_depth_test = false
+	l.position = pos + Vector3(0.016, 1.45, 0.016)
+	l.rotation_degrees = Vector3(0, 45, 0)
 	add_child(l)
 
 
@@ -538,25 +542,24 @@ func _zone_director() -> void:
 	# mural artwork on the north wall
 	_box(Vector3(3.9, 1.5, 0.05), Vector3(10.0, 1.9, 0.21),
 		_mat("mural_art", Color.WHITE, "res://assets/textures/mural_full.png"), self, false)
-	_prop("rugRectangle", 10.6, 2.3, 0, 2.6)
-	_prop("deskCorner", 9.3, 1.6, 180, 1.0, 0.0, 0.74)
-	_prop("computerScreen", 9.2, 1.7, 155, 1.0, DESK_H, 0.40)
-	_prop("computerKeyboard", 9.6, 2.0, 155, 0.3, DESK_H)
-	_prop("chairDesk", 10.0, 2.6, 200, 1.0, 0.0, 1.0)
-	_prop("bookcaseOpenLow", 13.9, 1.0, 180, 1.0, 0.0, 0.62)
-	_prop("plantSmall1", 13.9, 1.0, 0, 1.0, 0.66, 0.32)
+	_prop("kaykit/rug_rectangle_A", 10.6, 2.3, 0, 2.6)
+	_prop("kaykit/table_medium_long", 9.5, 1.7, 0, 1.6, 0.0, DESK_H)
+	_prop("computerScreen", 9.2, 1.6, 165, 1.0, DESK_H + 0.18, 0.40)
+	_prop("computerKeyboard", 9.7, 1.95, 165, 0.3, DESK_H)
+	_prop("kaykit/chair_B", 10.0, 2.6, 15, 1.0, 0.0, 0.95)
+	_prop("kaykit/cabinet_medium_decorated", 13.8, 1.0, 180, 1.0, 0.0, 1.0)
+	_prop("kaykit/cactus_small_A", 12.9, 0.8, 0, 1.0, 0.0, 0.42)
 	_pendant(Vector3(10.5, 2.4, 2.5))
 
 
 # ============ MEETING NOOK (kickoff table beside the director) ============
 func _zone_meeting_nook() -> void:
-	_prop("tableRound", 3.5, 2.0, 0, 1.0, 0.0, 0.72)
-	_prop("chair", 3.5, 1.1, 180, 1.0, 0.0, 0.9)
-	_prop("chair", 2.6, 2.7, 60, 1.0, 0.0, 0.9)
-	_prop("chair", 4.4, 2.7, 300, 1.0, 0.0, 0.9)
+	_prop("kaykit/table_medium", 3.5, 2.0, 0, 1.1, 0.0, DESK_H)
+	_prop("kaykit/chair_A_wood", 3.5, 1.1, 180, 1.0, 0.0, 0.9)
+	_prop("kaykit/chair_A_wood", 2.6, 2.7, 60, 1.0, 0.0, 0.9)
+	_prop("kaykit/chair_A_wood", 4.4, 2.7, 300, 1.0, 0.0, 0.9)
 	_prop("laptop", 3.6, 1.9, 210, 0.3, DESK_H)
-	_box(Vector3(0.9, 0.6, 0.04), Vector3(3.5, 2.05, 0.21),
-		_mat("meet_art", CORAL), self, false)
+	_prop("kaykit/pictureframe_large_A", 3.5, 0.24, 0, 1.0, 1.55, 0.65)
 	_pendant(Vector3(3.5, 2.4, 2.0))
 
 
@@ -579,21 +582,23 @@ func _zone_reception() -> void:
 	sign.modulate = Color(0.95, 0.94, 0.9)
 	sign.position = Vector3(19.7, 2.62, 0.24)
 	add_child(sign)
-	# reception counter facing the entrance
-	_box(Vector3(2.0, 0.95, 0.5), Vector3(19.9, 0.475, 2.9), white)
-	_box(Vector3(2.1, 0.06, 0.6), Vector3(19.9, 1.0, 2.9),
-		_mat("countertop", Color(0.84, 0.83, 0.81)), self, false)
-	_prop("laptop", 19.6, 2.8, 10, 0.32, 1.03)
-	_prop("chairDesk", 19.9, 2.2, 0, 1.0, 0.0, 1.0)
+	# reception counter: cabinet pair + white top, facing the entrance
+	_prop("kaykit/cabinet_medium", 19.4, 2.9, 180, 1.0, 0.0, 0.9)
+	_prop("kaykit/cabinet_medium", 20.4, 2.9, 180, 1.0, 0.0, 0.9)
+	_box(Vector3(2.1, 0.06, 0.6), Vector3(19.9, 0.94, 2.9), white, self, false)
+	_prop("laptop", 19.6, 2.8, 10, 0.32, 0.97)
+	_prop("kaykit/chair_B", 19.9, 2.2, 0, 1.0, 0.0, 0.95)
 	# coral doormat at the NE entrance
 	var mat1 := _prop("rugDoormat", 22.4, 2.0, 90, 1.0)
 	_tint_meshes(mat1, CORAL)
 	_prop("pottedPlant", 17.5, 1.2, 0, 1.0, 0.0, 1.15)
+	_prop("kaykit/pictureframe_medium", 17.6, 0.24, 0, 1.0, 1.7, 0.5)
 	_pendant(Vector3(19.9, 2.4, 2.6))
 
 
 ## A standard agent station: felt partition with coral trim + role chip,
 ## desk with dual monitors on arms, keyboard, task lamp, chair, trashcan.
+## Furniture: KayKit Furniture Bits; tech props stay Kenney (KayKit has none).
 func _station(role: String, sx: float, sz: float) -> void:
 	var steel := _mat("steel", Color(0.42, 0.42, 0.46))
 	_box(Vector3(1.95, 1.25, 0.07), Vector3(sx, 0.72, sz - 0.55), _mat("partition", Color(0.82, 0.81, 0.78)))
@@ -601,14 +606,14 @@ func _station(role: String, sx: float, sz: float) -> void:
 		_mat("trim_coral", CORAL, "", CORAL * 0.4), self, false)
 	_box(Vector3(0.3, 0.06, 0.11), Vector3(sx, 1.44, sz - 0.55),
 		_mat("chip_" + role, ROLE_ACCENT[role], "", (ROLE_ACCENT[role] as Color) * 0.5), self, false)
-	_prop("desk", sx, sz, 180, 1.0, 0.0, 0.74)
+	_prop("kaykit/table_medium_long", sx, sz, 0, 1.6, 0.0, DESK_H)
 	_prop("computerScreen", sx - 0.25, sz - 0.1, 0, 1.0, DESK_H + 0.18, 0.38)
 	_prop("computerScreen", sx + 0.3, sz - 0.1, 5, 1.0, DESK_H + 0.18, 0.38)
 	for arm in [[sx - 0.25, sz - 0.1], [sx + 0.3, sz - 0.1]]:
 		_box(Vector3(0.03, 0.22, 0.03), Vector3(arm[0], DESK_H + 0.11, arm[1]), steel, self, false)
 	_prop("computerKeyboard", sx - 0.2, sz + 0.2, 180, 0.28, DESK_H)
-	_prop("lampSquareTable", sx + 0.6, sz - 0.15, 200, 1.0, DESK_H, 0.26)
-	_prop("chairDesk", sx, sz + 0.9, 175 + randf_range(-15.0, 15.0), 1.0, 0.0, 1.0)
+	_prop("kaykit/lamp_table", sx + 0.6, sz - 0.15, 200, 1.0, DESK_H, 0.30)
+	_prop("kaykit/chair_B", sx, sz + 0.9, 355 + randf_range(-15.0, 15.0), 1.0, 0.0, 0.95)
 	_prop("trashcan", sx - 0.75, sz + 0.85, 0, 1.0, 0.0, 0.35)
 
 
@@ -616,13 +621,13 @@ func _station(role: String, sx: float, sz: float) -> void:
 func _zone_library() -> void:
 	_station("researcher", 2.0, 6.0)
 	# tall shelves along the west wall + books
-	_prop("bookcaseClosedWide", 0.75, 5.6, 90, 1.0, 0.0, 1.9)
-	_prop("bookcaseClosedWide", 0.75, 7.2, 90, 1.0, 0.0, 1.9)
-	_prop("books", 2.4, 5.85, 15, 0.28, 0.76)
-	# reading chair in the window corner
-	var rc := _prop("loungeChair", 1.6, 8.4, 55, 1.0, 0.0, 0.8)
-	_tint_meshes(rc, Color(0.36, 0.52, 0.42))
-	_prop("plantSmall1", 3.4, 8.5, 0, 1.0, 0.0, 0.5)
+	_prop("kaykit/shelf_B_large_decorated", 0.75, 5.6, 90, 1.15)
+	_prop("kaykit/shelf_A_big", 0.75, 7.2, 90, 1.05)
+	_prop("kaykit/book_set", 2.4, 5.85, 15, 0.3, DESK_H + 0.02)
+	# reading chair + floor lamp in the window corner
+	_prop("kaykit/armchair_pillows", 1.6, 8.4, 55, 1.0, 0.0, 0.85)
+	_prop("kaykit/lamp_standing", 2.7, 8.6, 0, 1.0, 0.0, 1.45)
+	_prop("kaykit/cactus_medium_A", 3.5, 8.5, 0, 1.0, 0.0, 0.6)
 
 
 # ============ 4. WRITERS' ROOM (west quiet band) ============
@@ -635,8 +640,8 @@ func _zone_writers() -> void:
 	_box(Vector3(0.03, 0.6, 0.9), Vector3(0.20, 1.9, 11.0),
 		_mat("kanban", Color(0.30, 0.30, 0.36)), self, false)
 	# spare growth desk (Phase-3 hireable role)
-	_prop("desk", 4.8, 10.0, 180, 1.0, 0.0, 0.74)
-	_prop("lampSquareTable", 5.1, 9.85, 160, 1.0, DESK_H, 0.26)
+	_prop("kaykit/table_medium_long", 4.8, 10.0, 0, 1.6, 0.0, DESK_H)
+	_prop("kaykit/lamp_table", 5.1, 9.85, 160, 1.0, DESK_H, 0.30)
 	var hire := Label3D.new()
 	hire.text = "HIRING"
 	hire.font_size = 40
@@ -685,7 +690,7 @@ func _zone_edit_bay() -> void:
 		_box(Vector3(0.5, 0.5, 0.04), Vector3(4.4 + i * 0.8, 0.85, 14.52),
 			_mat("booth_felt", Color(0.45, 0.48, 0.52)), self, false)
 	# the editor's desk: triple monitors, waveform glow
-	_prop("desk", 6.0, 16.0, 180, 1.0, 0.0, 0.74)
+	_prop("kaykit/table_medium_long", 6.0, 16.0, 0, 1.6, 0.0, DESK_H)
 	var glow_cols := [Color(0.55, 0.47, 1.0), Color(0.35, 0.86, 0.86), Color(1.0, 0.59, 0.7)]
 	for i in 3:
 		var mx := 5.45 + i * 0.55
@@ -694,7 +699,7 @@ func _zone_edit_bay() -> void:
 		_box(Vector3(0.26, 0.15, 0.01), Vector3(mx, DESK_H + 0.30, 15.83),
 			_mat("wave_%d" % i, glow_cols[i] * 0.5, "", glow_cols[i] * 0.7), self, false)
 	_prop("computerKeyboard", 5.9, 16.25, 180, 0.28, DESK_H)
-	_prop("chairDesk", 6.0, 16.9, 178, 1.0, 0.0, 1.0)
+	_prop("kaykit/chair_B", 6.0, 16.9, 358, 1.0, 0.0, 0.95)
 	_prop("trashcan", 4.6, 17.5, 0, 1.0, 0.0, 0.35)
 	# dim warm pendant instead of office panels (dark room)
 	_pendant(Vector3(6.0, 2.3, 17.0))
@@ -753,7 +758,7 @@ func _zone_studio() -> void:
 	_box(Vector3(0.22, 0.16, 0.3), Vector3(13.5, 1.05, 16.6),
 		_mat("screen_frame", Color(0.16, 0.16, 0.19)))
 	# equipment cart
-	_prop("sideTableDrawers", 14.5, 17.5, 270, 1.0, 0.0, 0.75)
+	_prop("kaykit/cabinet_small", 14.5, 17.5, 270, 1.0, 0.0, 0.75)
 	_prop("cardboardBoxOpen", 14.5, 17.5, 20, 0.5, 0.76)
 
 
@@ -761,9 +766,9 @@ func _zone_studio() -> void:
 func _zone_publishing() -> void:
 	_station("publisher", 18.0, 16.0)
 	# storage + copier along the east side
-	_prop("bookcaseClosedWide", 20.5, 14.55, 0, 1.0, 0.0, 1.9)
-	_prop("sideTableDrawers", 21.6, 15.5, 270, 1.0, 0.0, 0.75)
-	_box(Vector3(0.5, 0.42, 0.55), Vector3(21.6, 0.96, 15.5), _mat("printer", Color(0.86, 0.85, 0.82)))
+	_prop("kaykit/shelf_B_large_decorated", 20.5, 14.55, 0, 1.15)
+	_prop("kaykit/cabinet_small", 21.6, 15.5, 270, 1.0, 0.0, 0.75)
+	_box(Vector3(0.5, 0.4, 0.55), Vector3(21.6, 0.95, 15.5), _mat("printer", Color(0.86, 0.85, 0.82)))
 	_prop("cardboardBoxClosed", 21.5, 16.6, 15, 0.55)
 	_pendant(Vector3(18.0, 2.4, 15.6))
 
@@ -777,9 +782,9 @@ func _zone_coffee_bar() -> void:
 	_box(Vector3(0.5, 0.18, 0.3), Vector3(20.2, 1.04, 6.15),
 		_mat("pantry_tray", Color(0.85, 0.80, 0.72)), self, false)
 	_prop("kitchenFridgeSmall", 21.7, 5.5, 180, 1.0, 0.0, 1.1)
-	_prop("stoolBar", 19.2, 7.3, 190, 1.0, 0.0, 0.75)
-	_prop("stoolBar", 20.2, 7.3, 170, 1.0, 0.0, 0.75)
-	_prop("stoolBar", 18.3, 6.3, 95, 1.0, 0.0, 0.75)
+	_prop("kaykit/chair_stool_wood", 19.2, 7.3, 190, 1.0, 0.0, 0.7)
+	_prop("kaykit/chair_stool_wood", 20.2, 7.3, 170, 1.0, 0.0, 0.7)
+	_prop("kaykit/chair_stool_wood", 18.3, 6.3, 95, 1.0, 0.0, 0.7)
 	_pendant(Vector3(19.7, 2.4, 6.2))
 	_pendant(Vector3(21.0, 2.4, 5.6))
 
@@ -792,22 +797,16 @@ func _zone_coffee_bar() -> void:
 func _relax_area() -> void:
 	var oak := _mat("oak", Color.WHITE, "res://assets/textures/deck.png")
 	var steel := _mat("steel", Color(0.42, 0.42, 0.46))
-	# pale ivory rug under the seating group
-	_box(Vector3(2.8, 0.025, 2.0), Vector3(19.5, 0.065, 11.4),
-		_mat("rug_ivory", Color(0.86, 0.84, 0.76)), self, false)
+	# oval rug under the seating group
+	_prop("kaykit/rug_oval_A", 19.5, 11.4, 0, 2.6)
 	# diagonal wood-slat screens (north edge, semi-enclosure from coffee)
 	_slat_screen(Vector3(18.45, 0, 9.42), 1.8)
 	_slat_screen(Vector3(20.3, 0, 9.42), 1.8)
-	# gray sofa with kilim pillows, back to the screens
-	var sofa := _prop("loungeSofa", 19.5, 10.1, 180, 1.0, 0.0, 0.75)
-	_tint_meshes(sofa, Color(0.55, 0.54, 0.53))
+	# couch with pillows, back to the screens
+	_prop("kaykit/couch_pillows", 19.5, 10.15, 180, 1.0, 0.0, 0.8)
 	var kilim_cols := [Color(0.80, 0.35, 0.28), Color(0.85, 0.66, 0.30), Color(0.30, 0.36, 0.55)]
-	for i in 3:
-		_box(Vector3(0.32, 0.28, 0.12), Vector3(18.95 + i * 0.55, 0.52, 9.97),
-			_mat("kilim_%d" % i, kilim_cols[i]), self, false)
-	# blue mid-century armchair + tan leather ottoman
-	var chair := _prop("loungeChair", 18.05, 12.15, 75, 1.0, 0.0, 0.8)
-	_tint_meshes(chair, Color(0.30, 0.38, 0.62))
+	# armchair + tan leather ottoman
+	_prop("kaykit/armchair_pillows", 18.05, 12.15, 75, 1.0, 0.0, 0.85)
 	_box(Vector3(0.5, 0.26, 0.4), Vector3(18.85, 0.16, 12.35),
 		_mat("leather_tan", Color(0.62, 0.44, 0.28)), self, false)
 	# plaid round pouf at the center of the group
@@ -845,9 +844,9 @@ func _relax_area() -> void:
 	_box(Vector3(0.55, 0.42, 2.4), Vector3(17.45, 0.21, 11.5), oak)
 	_box(Vector3(0.55, 0.10, 2.4), Vector3(17.45, 0.47, 11.5),
 		_mat("bench_cushion", Color(0.88, 0.86, 0.82)), self, false)
-	var wp1 := _prop("pillow", 17.45, 10.65, 70, 0.4, 0.52)
+	var wp1 := _prop("kaykit/pillow_A", 17.45, 10.65, 70, 0.4, 0.52)
 	_tint_meshes(wp1, kilim_cols[0])
-	var wp2 := _prop("pillow", 17.45, 12.35, -70, 0.4, 0.52)
+	var wp2 := _prop("kaykit/pillow_B", 17.45, 12.35, -70, 0.4, 0.52)
 	_tint_meshes(wp2, kilim_cols[2])
 	# walnut credenza with honed-marble top on black steel legs
 	_box(Vector3(1.5, 0.52, 0.42), Vector3(20.9, 0.44, 13.42), _mat("walnut", Color(0.36, 0.25, 0.18)))
@@ -856,7 +855,7 @@ func _relax_area() -> void:
 	for lp in [[20.25, 13.28], [20.25, 13.56], [21.55, 13.28], [21.55, 13.56]]:
 		_box(Vector3(0.04, 0.18, 0.04), Vector3(lp[0], 0.09, lp[1]),
 			_mat("black_frame", Color(0.13, 0.13, 0.14)), self, false)
-	_prop("plantSmall2", 20.5, 13.42, 0, 1.0, 0.74, 0.22)
+	_prop("kaykit/cactus_small_A", 20.5, 13.42, 0, 1.0, 0.74, 0.24)
 	# woven basket + the big biophilic corner plant
 	var bask := MeshInstance3D.new()
 	var bc := CylinderMesh.new()
