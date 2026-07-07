@@ -55,10 +55,19 @@ const BLOCKED_CELLS: Array = [
 	[18, 1], [19, 1], [19, 2], [16, 2], [13, 6], [14, 6], [15, 6],
 	# interior plants
 	[10, 1], [10, 12], [12, 5],
+	# town hall: stage strip + speakers (x1), bleacher tiers (x6..8), beanbags
+	[1, 14], [1, 15], [1, 16], [1, 17], [1, 18],
+	[6, 15], [6, 16], [6, 17], [7, 15], [7, 16], [7, 17], [8, 15], [8, 16], [8, 17],
+	[10, 14], [10, 18],
+]
+
+## Gathering spots on the town-hall floor (agents celebrate here).
+const TOWNHALL_SPOTS: Array = [
+	Vector2i(3, 16), Vector2i(4, 15), Vector2i(4, 17), Vector2i(5, 16), Vector2i(3, 14),
 ]
 
 # Courtyard region (the L-notch garden) — outdoor scenery, not walkable
-const COURTYARD := Rect2i(12, 7, 8, 7)
+const COURTYARD := Rect2i(12, 7, 8, 12)
 
 
 func _ready() -> void:
@@ -272,6 +281,8 @@ func _build_floor_cell(gx: int, gy: int) -> void:
 	var tex := "concrete"
 	if gy <= 6 and gx >= 12:
 		tex = "deck"
+	elif gy >= 14:
+		tex = "deck"          # town hall: warm wood agora
 	elif gy >= 5 and gy <= 7 and gx <= 9:
 		tex = "carpet"
 	if (gy == 8 and gx >= 3 and gx <= 11) or (gx == 11 and gy >= 3 and gy <= 8):
@@ -503,6 +514,9 @@ func _furnish() -> void:
 		_bush_stone(Vector3(17.8 + cos(ang) * (1.42 + randf_range(0.0, 0.12)), 0.03, 11.2 + sin(ang) * (1.42 + randf_range(0.0, 0.12))))
 	# courtyard trees + bushes
 	_tree(Vector3(13.6, 0.0, 12.2), 1.05)
+	_tree(Vector3(14.8, 0.0, 16.0), 1.2)
+	_tree(Vector3(18.4, 0.0, 17.2), 0.9)
+	_bush(Vector3(16.4, 0.0, 15.0))
 	_tree(Vector3(18.6, 0.0, 8.6), 0.85)
 	_bush(Vector3(12.8, 0.0, 11.4))
 	_bush(Vector3(15.2, 0.0, 12.6))
@@ -518,6 +532,56 @@ func _furnish() -> void:
 	_prop("plantSmall1", 6.4, 12.6, 0, 1.0, 0.0, 0.5)
 	_prop("pottedPlant", 12.6, 5.6, 0, 1.0, 0.0, 1.15)
 
+	# ============ TOWN HALL (Google-style all-hands: stage 20% /
+	# open agora floor 25% / tiered bleachers 55% of the depth) ============
+	var hall_z := 16.5
+	# stage platform + podium against the west wall
+	_box(Vector3(1.7, 0.26, 4.6), Vector3(1.75, 0.13, hall_z), oak)
+	_box(Vector3(1.8, 0.05, 4.7), Vector3(1.75, 0.28, hall_z), _mat("stage_top", Color(0.88, 0.83, 0.74)), self, false)
+	_box(Vector3(0.4, 0.9, 0.5), Vector3(1.5, 0.73, 15.3), oak)
+	_prop("laptop", 1.5, 15.3, 90, 0.32, 1.2)
+	# big screen on the west wall (the TGIF backdrop)
+	_box(Vector3(0.08, 2.0, 4.2), Vector3(0.24, 1.85, hall_z), _mat("screen_frame", Color(0.16, 0.16, 0.19)))
+	_box(Vector3(0.04, 1.7, 3.8), Vector3(0.30, 1.85, hall_z),
+		_mat("screen_glow", Color(0.35, 0.42, 0.55) * 0.8, "", Color(0.45, 0.55, 0.75)), self, false)
+	_box(Vector3(0.05, 0.3, 2.4), Vector3(0.33, 2.45, hall_z),
+		_mat("trim_coral", CORAL, "", CORAL * 0.4), self, false)
+	var hall_title := Label3D.new()
+	hall_title.text = "ALL-HANDS"
+	hall_title.font_size = 96
+	hall_title.outline_size = 20
+	hall_title.pixel_size = 0.004
+	hall_title.modulate = Color(0.95, 0.94, 0.9)
+	hall_title.position = Vector3(0.38, 1.85, hall_z)
+	hall_title.rotation_degrees = Vector3(0, 90, 0)
+	add_child(hall_title)
+	# speakers flanking the stage
+	_box(Vector3(0.4, 1.1, 0.4), Vector3(1.4, 0.55, 14.4), _mat("speaker_box", Color(0.2, 0.2, 0.23)))
+	_box(Vector3(0.4, 1.1, 0.4), Vector3(1.4, 0.55, 18.6), _mat("speaker_box", Color(0.2, 0.2, 0.23)))
+	# three wooden bleacher tiers with Google-color cushions
+	var cushion_cols := [Color(0.26, 0.52, 0.96), Color(0.92, 0.26, 0.21), Color(0.98, 0.74, 0.02), Color(0.20, 0.66, 0.33)]
+	for tier in 3:
+		var tx := 6.5 + tier
+		var th := 0.24 * (tier + 1)
+		_box(Vector3(1.0, th, 4.9), Vector3(tx, th / 2.0, hall_z), oak)
+		_box(Vector3(1.02, 0.05, 5.0), Vector3(tx, th + 0.02, hall_z), _mat("tier_top", Color(0.83, 0.68, 0.5)), self, false)
+		for ci in 4:
+			_box(Vector3(0.55, 0.07, 0.6), Vector3(tx - 0.1, th + 0.07, 14.7 + ci * 1.25),
+				_mat("cushion_%d" % ((ci + tier) % 4), cushion_cols[(ci + tier) % 4]), self, false)
+	# beanbags at the back corners
+	for bb in [[10.4, 14.4, 0], [10.4, 18.5, 2]]:
+		var bag := MeshInstance3D.new()
+		var bs := SphereMesh.new()
+		bs.radius = 0.42
+		bs.height = 0.5
+		bag.mesh = bs
+		bag.material_override = _mat("beanbag_%d" % int(bb[2]), cushion_cols[int(bb[2])])
+		bag.position = Vector3(bb[0], 0.22, bb[1])
+		add_child(bag)
+	_pendant(Vector3(4.0, 2.4, 15.2))
+	_pendant(Vector3(4.0, 2.4, 17.8))
+	_prop("pottedPlant", 10.6, 16.5, 0, 1.0, 0.0, 1.15)
+
 	# ============ EXTERIOR LANDSCAPE ============
 	_box(Vector3(70.0, 0.06, 70.0), Vector3(10.0, -0.58, 7.0),
 		_mat("grass", Color(0.55, 0.66, 0.42)), self, false)
@@ -526,8 +590,8 @@ func _furnish() -> void:
 	for tz in [3.0, 7.5, 12.0]:
 		_tree(Vector3(-1.7, -0.55, tz), randf_range(0.9, 1.2))
 	_tree(Vector3(21.6, -0.55, 2.5), 1.1)
-	_tree(Vector3(6.0, -0.55, 15.8), 1.25)
-	for bpos in [[1.2, -0.9], [8.5, -0.9], [16.0, -0.9], [-0.9, 5.5], [-0.9, 9.8], [3.5, 14.8]]:
+	_tree(Vector3(6.0, -0.55, 20.9), 1.25)
+	for bpos in [[1.2, -0.9], [8.5, -0.9], [16.0, -0.9], [-0.9, 5.5], [-0.9, 9.8], [3.5, 19.9]]:
 		_bush(Vector3(bpos[0], -0.55, bpos[1]))
 	# entrance path from the courtyard out to the world (south-east)
 	for i in 3:

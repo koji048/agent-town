@@ -72,10 +72,10 @@ func _ready() -> void:
 	# --- isometric orthographic camera
 	_cam = Camera3D.new()
 	_cam.projection = Camera3D.PROJECTION_ORTHOGONAL
-	_cam.size = 13.8
+	_cam.size = 16.2
 	_cam.rotation_degrees = Vector3(-30, 45, 0)
 	world.add_child(_cam)
-	_cam.position = office.center() + Vector3(0.3, 0, 0.9) + _cam.global_transform.basis.z * CAM_DIST
+	_cam.position = office.center() + Vector3(0.3, 0, 0.8) + _cam.global_transform.basis.z * CAM_DIST
 	_cam.current = true
 
 	_build_hud()
@@ -87,7 +87,12 @@ func _ready() -> void:
 		_append_log("%s finished %s" % [role, stage]))
 	EventBus.request_completed.connect(func(_request: Dictionary, output_dir: String) -> void:
 		_status.text = "IDLE — drop a .json into queue/pending/"
-		_append_log("Package saved: output/%s" % output_dir.get_file()))
+		_append_log("Package saved: output/%s" % output_dir.get_file())
+		_append_log("The crew gathers in the town hall!")
+		var agents := get_tree().get_nodes_in_group("agents")
+		for i in agents.size():
+			var spot: Vector2i = Office3D.TOWNHALL_SPOTS[i % Office3D.TOWNHALL_SPOTS.size()]
+			(agents[i] as TownAgent3D).celebrate_at(spot))
 	_append_log("Agent Town office is open.")
 
 	# Dev helper: AGENT_TOWN_SHOT=/path/out.png godot --path . -> renders a

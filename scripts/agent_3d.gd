@@ -51,6 +51,7 @@ var state := State.IDLE
 var _waypoints: Array[Vector3] = []
 var _cells: Array[Vector2i] = []
 var _target_is_work := false
+var _celebrating := false
 var _model: Node3D
 var _anim: AnimationPlayer
 var _target_yaw := 0.0
@@ -158,6 +159,13 @@ func walk_to(cell: Vector2i) -> void:
 
 
 func _on_path_done() -> void:
+	if _celebrating:
+		_celebrating = false
+		_set_state(State.IDLE)
+		_target_yaw = -PI / 2.0  # face the stage (west)
+		_play_once_then_idle("Cheer")
+		_wander_timer.start(randf_range(8.0, 12.0))
+		return
 	if _target_is_work:
 		_set_state(State.WORKING)
 		_play(str(WORK_ANIM.get(role, "Interact")))
@@ -194,6 +202,16 @@ func _on_stage_completed(_stage: String, r: String, _request: Dictionary, result
 		_say("Done!")
 		_play_once_then_idle("Cheer")
 	_restart_wander()
+
+
+## Walk to a town-hall spot and cheer (all-hands gathering).
+func celebrate_at(cell: Vector2i) -> void:
+	if _target_is_work or state == State.WORKING:
+		return
+	_celebrating = true
+	_wander_timer.stop()
+	_say(["Great work, team!", "We shipped it!", "To the town hall!"].pick_random())
+	walk_to(cell)
 
 
 func _wander() -> void:
