@@ -5,6 +5,9 @@
 extends Node
 
 var api_key: String = ""
+var provider: String = "auto"          # auto | claude-code | api | simulate
+var provider_resolved: String = "simulate"
+var cli_path: String = ""
 var model: String = "claude-sonnet-5"
 var max_tokens: int = 3000
 var poll_interval: float = 4.0
@@ -19,15 +22,41 @@ func _ready() -> void:
 		api_key = str(cfg.get_value("claude", "api_key", ""))
 		model = str(cfg.get_value("claude", "model", model))
 		max_tokens = int(cfg.get_value("claude", "max_tokens", max_tokens))
+		provider = str(cfg.get_value("claude", "provider", provider))
 		poll_interval = float(cfg.get_value("town", "poll_interval", poll_interval))
 		simulate = bool(cfg.get_value("town", "simulate", false))
 		language = str(cfg.get_value("content", "language", language))
 		niche = str(cfg.get_value("content", "niche", niche))
 	if api_key.is_empty():
 		api_key = OS.get_environment("ANTHROPIC_API_KEY")
-	if api_key.is_empty() and not simulate:
-		simulate = true
-		push_warning("Agent Town: no API key found (user_config.cfg or ANTHROPIC_API_KEY). Running in simulate mode.")
+	_resolve_provider()
+
+
+func _resolve_provider() -> void:
+	if simulate:
+		provider_resolved = "simulate"
+		return
+	if provider == "claude-code" or provider == "auto":
+		cli_path = _find_claude_cli()
+		if not cli_path.is_empty():
+			provider_resolved = "claude-code"
+			return
+		if provider == "claude-code":
+			push_warning("Agent Town: provider=claude-code but CLI not found; falling back.")
+	if (provider == "api" or provider == "auto" or provider == "claude-code") and not api_key.is_empty():
+		provider_resolved = "api"
+		return
+	provider_resolved = "simulate"
+	push_warning("Agent Town: no Claude Code CLI and no API key — running in simulate mode.")
+
+
+func _find_claude_cli() -> String:
+	var home := OS.get_environment("HOME")
+	for p in [home + "/.local/bin/claude", "/opt/homebrew/bin/claude",
+			"/usr/local/bin/claude", home + "/.npm-global/bin/claude"]:
+		if FileAccess.file_exists(p):
+			return p
+	return ""
 
 
 func project_dir() -> String:

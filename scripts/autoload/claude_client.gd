@@ -18,12 +18,23 @@ const SIM_TEXT := {
 }
 
 
+signal _cli_finished(text: String, code: int)
+
+
 ## Sends one completion request. Returns the text result, or "" on failure.
-## sim_stage selects the canned demo text used in simulate mode.
+## Provider chain: claude-code CLI -> Anthropic API -> simulate.
 func complete(system_prompt: String, user_prompt: String, sim_stage: String = "") -> String:
-	if Config.simulate:
+	if Config.provider_resolved == "simulate":
 		await get_tree().create_timer(randf_range(2.5, 5.0)).timeout
 		return SIM_TEXT.get(sim_stage, "[demo] done.")
+
+	if Config.provider_resolved == "claude-code":
+		var cli_text := await _cli_complete(system_prompt, user_prompt)
+		if not cli_text.is_empty():
+			return cli_text
+		EventBus.log_line.emit("claude-code call failed — trying API fallback")
+		if Config.api_key.is_empty():
+			return ""
 
 	for attempt in MAX_RETRIES:
 		var http := HTTPRequest.new()
@@ -71,3 +82,32 @@ func complete(system_prompt: String, user_prompt: String, sim_stage: String = ""
 			return ""
 		await get_tree().create_timer(pow(2.0, attempt + 1)).timeout
 	return ""
+
+
+## Headless Claude Code session (production brain): runs `claude -p` in a
+## worker thread so the office never blocks, using the owner's login.
+func _cli_complete(system_prompt: String, user_prompt: String) -> String:
+	# run through zsh with stdin closed (the CLI otherwise waits 3s on a pipe)
+	var cmd := "%s -p %s --append-system-prompt %s --output-format text < /dev/null" % [
+		_shq(Config.cli_path), _shq(user_prompt), _shq(system_prompt)]
+	var th := Thread.new()
+	th.start(func() -> void:
+		var out: Array = []
+		var code := OS.execute("/bin/zsh", PackedStringArray(["-c", cmd]), out, true)
+		var text := ""
+		for line in out:
+			text += str(line)
+		call_deferred("emit_signal", "_cli_finished", text, code))
+	var res: Array = await _cli_finished
+	th.wait_to_finish()
+	var text := str(res[0]).strip_edges()
+	var code := int(res[1])
+	if code != 0:
+		EventBus.log_line.emit("claude-code exited %d: %s" % [code, text.left(80)])
+		return ""
+	return text
+
+
+## Single-quote shell escaping for zsh -c command strings.
+func _shq(s: String) -> String:
+	return "'" + s.replace("'", "'\\''") + "'"

@@ -149,9 +149,14 @@ func _build_hud() -> void:
 	title.add_theme_font_size_override("font_size", 16)
 	vb.add_child(title)
 	var mode := Label.new()
-	mode.text = ("MODE: DEMO (no API key — simulate)" if Config.simulate else "MODE: LIVE (%s)" % Config.model)
+	var mode_text := "MODE: DEMO (simulate)"
+	if Config.provider_resolved == "claude-code":
+		mode_text = "MODE: LIVE (Claude Code)"
+	elif Config.provider_resolved == "api":
+		mode_text = "MODE: LIVE (API %s)" % Config.model
+	mode.text = mode_text
 	mode.add_theme_font_size_override("font_size", 11)
-	mode.modulate = Color(1, 0.85, 0.5) if Config.simulate else Color(0.6, 1, 0.7)
+	mode.modulate = Color(1, 0.85, 0.5) if Config.provider_resolved == "simulate" else Color(0.6, 1, 0.7)
 	vb.add_child(mode)
 	_status = Label.new()
 	_status.text = "IDLE — drop a .json into queue/pending/"

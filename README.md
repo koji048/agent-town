@@ -43,8 +43,9 @@ flowchart LR
     D2 --> O[output/timestamp_slug/]
 ```
 
-Every stage is a real Claude Messages API call (or canned demo text in simulate
-mode). The pipeline waits for each agent to physically walk to its workstation
+Every stage is a real Claude call — through the **Claude Code CLI** (your
+login, no separate API key) when installed, else the Anthropic API, else
+canned demo text. The pipeline waits for each agent to physically walk to its workstation
 before the call fires — the town state is the pipeline state.
 
 | Agent | Workstation | Deliverable |
@@ -98,7 +99,8 @@ hashtags, and the Director's QC verdict.
 
 | Key | Default | Meaning |
 |---|---|---|
-| `claude/api_key` | — | Anthropic API key (or `ANTHROPIC_API_KEY` env var) |
+| `claude/provider` | `auto` | `auto` prefers the Claude Code CLI (your login), then API key, then demo |
+| `claude/api_key` | — | Anthropic API key (or `ANTHROPIC_API_KEY` env var) — only needed without Claude Code |
 | `claude/model` | `claude-sonnet-5` | Model for all agents |
 | `claude/max_tokens` | `3000` | Max tokens per stage |
 | `town/poll_interval` | `4.0` | Queue polling seconds |
