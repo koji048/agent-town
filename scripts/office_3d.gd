@@ -546,7 +546,7 @@ func _zone_director() -> void:
 	_prop("kaykit/table_medium_long", 9.5, 1.7, 0, 1.6, 0.0, DESK_H)
 	_prop("computerScreen", 9.2, 1.6, 165, 1.0, DESK_H + 0.18, 0.40)
 	_prop("computerKeyboard", 9.7, 1.95, 165, 0.3, DESK_H)
-	_prop("kaykit/chair_B", 10.0, 2.6, 15, 1.0, 0.0, 0.95)
+	_prop("kaykit/chair_B", 10.0, 2.6, 205, 1.0, 0.0, 0.95)
 	_prop("kaykit/cabinet_medium_decorated", 13.8, 1.0, 180, 1.0, 0.0, 1.0)
 	_prop("kaykit/cactus_small_A", 12.9, 0.8, 0, 1.0, 0.0, 0.42)
 	_pendant(Vector3(10.5, 2.4, 2.5))
@@ -555,9 +555,9 @@ func _zone_director() -> void:
 # ============ MEETING NOOK (kickoff table beside the director) ============
 func _zone_meeting_nook() -> void:
 	_prop("kaykit/table_medium", 3.5, 2.0, 0, 1.1, 0.0, DESK_H)
-	_prop("kaykit/chair_A_wood", 3.5, 1.1, 180, 1.0, 0.0, 0.9)
-	_prop("kaykit/chair_A_wood", 2.6, 2.7, 60, 1.0, 0.0, 0.9)
-	_prop("kaykit/chair_A_wood", 4.4, 2.7, 300, 1.0, 0.0, 0.9)
+	_prop("kaykit/chair_A_wood", 3.5, 1.1, 0, 1.0, 0.0, 0.9)
+	_prop("kaykit/chair_A_wood", 2.6, 2.7, 135, 1.0, 0.0, 0.9)
+	_prop("kaykit/chair_A_wood", 4.4, 2.7, 225, 1.0, 0.0, 0.9)
 	_prop("laptop", 3.6, 1.9, 210, 0.3, DESK_H)
 	_prop("kaykit/pictureframe_large_A", 3.5, 0.24, 0, 1.0, 1.55, 0.65)
 	_pendant(Vector3(3.5, 2.4, 2.0))
@@ -613,7 +613,7 @@ func _station(role: String, sx: float, sz: float) -> void:
 		_box(Vector3(0.03, 0.22, 0.03), Vector3(arm[0], DESK_H + 0.11, arm[1]), steel, self, false)
 	_prop("computerKeyboard", sx - 0.2, sz + 0.2, 180, 0.28, DESK_H)
 	_prop("kaykit/lamp_table", sx + 0.6, sz - 0.15, 200, 1.0, DESK_H, 0.30)
-	_prop("kaykit/chair_B", sx, sz + 0.9, 355 + randf_range(-15.0, 15.0), 1.0, 0.0, 0.95)
+	_prop("kaykit/chair_B", sx, sz + 0.9, 175 + randf_range(-15.0, 15.0), 1.0, 0.0, 0.95)
 	_prop("trashcan", sx - 0.75, sz + 0.85, 0, 1.0, 0.0, 0.35)
 
 
@@ -699,7 +699,7 @@ func _zone_edit_bay() -> void:
 		_box(Vector3(0.26, 0.15, 0.01), Vector3(mx, DESK_H + 0.30, 15.83),
 			_mat("wave_%d" % i, glow_cols[i] * 0.5, "", glow_cols[i] * 0.7), self, false)
 	_prop("computerKeyboard", 5.9, 16.25, 180, 0.28, DESK_H)
-	_prop("kaykit/chair_B", 6.0, 16.9, 358, 1.0, 0.0, 0.95)
+	_prop("kaykit/chair_B", 6.0, 16.9, 178, 1.0, 0.0, 0.95)
 	_prop("trashcan", 4.6, 17.5, 0, 1.0, 0.0, 0.35)
 	# dim warm pendant instead of office panels (dark room)
 	_pendant(Vector3(6.0, 2.3, 17.0))
@@ -782,9 +782,9 @@ func _zone_coffee_bar() -> void:
 	_box(Vector3(0.5, 0.18, 0.3), Vector3(20.2, 1.04, 6.15),
 		_mat("pantry_tray", Color(0.85, 0.80, 0.72)), self, false)
 	_prop("kitchenFridgeSmall", 21.7, 5.5, 180, 1.0, 0.0, 1.1)
-	_prop("kaykit/chair_stool_wood", 19.2, 7.3, 190, 1.0, 0.0, 0.7)
-	_prop("kaykit/chair_stool_wood", 20.2, 7.3, 170, 1.0, 0.0, 0.7)
-	_prop("kaykit/chair_stool_wood", 18.3, 6.3, 95, 1.0, 0.0, 0.7)
+	_prop("kaykit/chair_stool_wood", 19.2, 7.3, 190, 0.45)
+	_prop("kaykit/chair_stool_wood", 20.2, 7.3, 170, 0.45)
+	_prop("kaykit/chair_stool_wood", 18.3, 6.3, 95, 0.45)
 	_pendant(Vector3(19.7, 2.4, 6.2))
 	_pendant(Vector3(21.0, 2.4, 5.6))
 
@@ -802,8 +802,8 @@ func _relax_area() -> void:
 	# diagonal wood-slat screens (north edge, semi-enclosure from coffee)
 	_slat_screen(Vector3(18.45, 0, 9.42), 1.8)
 	_slat_screen(Vector3(20.3, 0, 9.42), 1.8)
-	# couch with pillows, back to the screens
-	_prop("kaykit/couch_pillows", 19.5, 10.15, 180, 1.0, 0.0, 0.8)
+	# couch with pillows, back to the screens, facing the seating group
+	_prop("kaykit/couch_pillows", 19.5, 10.15, 0, 1.0, 0.0, 0.8)
 	var kilim_cols := [Color(0.80, 0.35, 0.28), Color(0.85, 0.66, 0.30), Color(0.30, 0.36, 0.55)]
 	# armchair + tan leather ottoman
 	_prop("kaykit/armchair_pillows", 18.05, 12.15, 75, 1.0, 0.0, 0.85)
