@@ -10,7 +10,7 @@ jobs:
     name: Validate project (Godot headless)
     runs-on: ubuntu-latest
     container:
-      image: barichello/godot-ci:4.3
+      image: barichello/godot-ci:4.6.1
     steps:
       - uses: actions/checkout@v4
 

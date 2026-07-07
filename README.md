@@ -149,7 +149,7 @@ with one-click **Office** and **Adventure** presets (saved to
 
 ## CI
 
-GitHub Actions validates every push with headless Godot 4.3: regenerates the
+GitHub Actions validates every push with headless Godot 4.6: regenerates the
 assets, imports resources, loads every script and scene, and verifies the map.
 
 ## Roadmap ideas
