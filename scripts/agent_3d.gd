@@ -102,12 +102,12 @@ func _ready() -> void:
 	_bubble = Label3D.new()
 	_bubble.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_bubble.no_depth_test = true
-	_bubble.font_size = 58
-	_bubble.outline_size = 16
+	_bubble.font_size = 66
+	_bubble.outline_size = 22
 	_bubble.pixel_size = 0.0042
 	_bubble.font = I18n.ui_font
-	_bubble.modulate = Color(0.98, 0.97, 0.94)
-	_bubble.outline_modulate = Color(0.13, 0.12, 0.16)
+	_bubble.modulate = Color(1.0, 0.99, 0.92)
+	_bubble.outline_modulate = Color(0.10, 0.09, 0.13)
 	# wrapped speech above the head (name/state live at the feet now)
 	_bubble.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_bubble.width = 420.0
@@ -118,13 +118,12 @@ func _ready() -> void:
 	# nameplate: role name (gold for the boss) + live state pill
 	# (design-at-viewing-size: large glyphs, opaque outline, and the
 	# state label only appears when the agent is actually doing something)
-	# name + state at the FEET (per owner request): a grounded title
-	# plate instead of floating head text
-	var plate_name := _make_plate(role.to_upper(), 78,
-		Color(1.0, 0.85, 0.35) if role == "director" else Color(0.98, 0.98, 0.94))
-	plate_name.position = Vector3(0, 0.34, 0)
-	_plate_state = _make_plate("", 44, Color(0.72, 0.76, 0.72))
-	_plate_state.position = Vector3(0, 0.10, 0)
+	# name + state at the FEET, small and quiet — the speech is the star
+	var plate_name := _make_plate(role.to_upper(), 52,
+		Color(1.0, 0.85, 0.35, 0.9) if role == "director" else Color(0.96, 0.96, 0.92, 0.85))
+	plate_name.position = Vector3(0, 0.28, 0)
+	_plate_state = _make_plate("", 34, Color(0.72, 0.76, 0.72, 0.85))
+	_plate_state.position = Vector3(0, 0.08, 0)
 	_plate_state.visible = false
 
 	_bubble_timer = Timer.new()
@@ -495,7 +494,11 @@ func _restart_wander() -> void:
 func _say(text: String) -> void:
 	_bubble.text = text
 	_bubble.visible = true
-	_bubble_timer.start(4.0)
+	# the thought POPS: a springy scale-in every time they speak
+	# (reset scale first so overlapping pops never shrink the bubble)
+	_bubble.scale = Vector3.ONE
+	Juice.pop_in(_bubble, 0.28)
+	_bubble_timer.start(4.5)
 
 
 func _set_state(s: State) -> void:
