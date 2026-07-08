@@ -273,7 +273,7 @@ func _on_path_done() -> void:
 		_play("Idle")
 		var ad := _break_ad
 		_break_ad = {}
-		_say(I18n.t(str(ad["line"])))
+		_think(I18n.t(str(ad["line"])))
 		var need: String = str(ad["need"])
 		current_task = "break (%s)" % need
 		get_tree().create_timer(randf_range(5.0, 8.0)).timeout.connect(func() -> void:
@@ -297,7 +297,7 @@ func _on_stage_started(stage: String, r: String, _request: Dictionary) -> void:
 	current_task = "%s — '%s'" % [stage, str(_request.get("topic", "")).left(22)]
 	_pop_fx("!", Color(1.0, 0.78, 0.3))
 	var say_key := "say_" + stage
-	_say(I18n.t(say_key) if I18n.S.has(say_key) else I18n.t("say_onit"))
+	_think(I18n.t(say_key) if I18n.S.has(say_key) else I18n.t("say_onit"))
 	_carry_doc()
 	walk_to(office.workstation(role))
 
@@ -357,13 +357,13 @@ func _on_stage_completed(_stage: String, r: String, _request: Dictionary, result
 	current_task = "available"
 	if result.begins_with("(stage"):
 		_pop_fx("x", Color(1.0, 0.42, 0.42))
-		_say(I18n.t("say_fail"))
+		_think(I18n.t("say_fail"))
 		_play("Idle")
 	else:
 		_pop_fx("+", Color(0.45, 1.0, 0.55))
-		# quote the REAL output (legible trust: what did it actually write?)
+		# the work itself surfaces as a THOUGHT (rereading your own line)
 		var excerpt := I18n.strip_md(result).replace("\n", " ").left(46)
-		_say("“%s…”" % excerpt)
+		_think("“%s…”" % excerpt)
 		# permanence: the finished page stays on the desk
 		if office:
 			office.add_desk_paper(role)
@@ -491,7 +491,7 @@ func _gossip_with(o: TownAgent3D) -> void:
 	var lines: Array = []
 	if Config.provider_resolved != "simulate" and _llm_gossips < 24 and randf() < 0.75:
 		_llm_gossips += 1
-		_say("...")
+		_think("…")
 		var aff := Memory.get_affinity(role, o.role)
 		var vibe := "close friends" if aff >= 0.65 else ("a bit tense lately" if aff <= 0.35 else "friendly colleagues")
 		var mine := Memory.recall(role, "", 2)
@@ -575,7 +575,7 @@ func chat_reply(msg: String) -> void:
 	if Config.provider_resolved == "simulate":
 		_say(I18n.f("say_chat_sim", [Config.owner_name]))
 		return
-	_say("...")
+	_think("…")
 	var sys := ("You are %s at Agent Town, a small Thai short-video studio. " +
 		"Reply to your boss %s IN CHARACTER, one or two short sentences " +
 		"(under 140 characters total), warm and specific. %s%s") % [
@@ -591,13 +591,29 @@ func _restart_wander() -> void:
 	_wander_timer.start(randf_range(4.0, 10.0))
 
 
+## SPEECH: addressed to someone (a colleague, the team, the owner).
+## Carries polite particles in Thai, enters the office chat feed.
 func _say(text: String) -> void:
+	_bubble.modulate = Color(1.0, 0.99, 0.92)
+	_bubble.font_size = 66
 	if text != "...":
 		EventBus.chat_line.emit(role, text)
+	_show_bubble(text)
+
+
+## THOUGHT: inner voice — no addressee, so no polite particles (Thai
+## ครับ/ค่ะ mark deference to a LISTENER), never "exclaimed", and it
+## does NOT enter the chat feed. Dimmer cloud-toned bubble with 💭.
+func _think(text: String) -> void:
+	_bubble.modulate = Color(0.80, 0.82, 0.96, 0.95)
+	_bubble.font_size = 56
+	_show_bubble("💭 " + text)
+
+
+func _show_bubble(text: String) -> void:
 	_bubble.text = text
 	_bubble.visible = true
-	# the thought POPS: a springy scale-in every time they speak
-	# (reset scale first so overlapping pops never shrink the bubble)
+	# springy scale-in (reset first so overlapping pops never shrink it)
 	_bubble.scale = Vector3.ONE
 	Juice.pop_in(_bubble, 0.28)
 	_bubble_timer.start(4.5)
