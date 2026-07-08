@@ -180,7 +180,7 @@ func _ready() -> void:
 		_awaiting_approval = true
 		_approval_text.text = "APPROVAL DESK — '%s'\n\n%s...\n\n[Y] approve · [N] request revision · auto-approve in 45 s" % [
 			str(request.get("topic", "")).left(48),
-			preview.strip_edges().left(280)]
+			I18n.strip_md(preview).left(280)]
 		_approval_panel.visible = true
 		Sfx.play_ui("paper", -6.0))
 	EventBus.approval_resolved.connect(func(_a: bool) -> void:

@@ -164,6 +164,25 @@ func f(key: String, args: Array) -> String:
 	return t(key) % args
 
 
+## Strip markdown for on-screen display (panels and bubbles show human
+## text, not markup). Keeps the words, drops the syntax.
+func strip_md(s: String) -> String:
+	var out := s
+	var re := RegEx.new()
+	re.compile("```[a-z]*\\n?")            # code fences
+	out = re.sub(out, "", true)
+	re.compile("(?m)^#{1,6}\\s*")          # headers
+	out = re.sub(out, "", true)
+	re.compile("\\*\\*([^*]*)\\*\\*")      # bold
+	out = re.sub(out, "$1", true)
+	re.compile("(?m)^\\s*[-*]\\s+")        # list bullets -> dot
+	out = re.sub(out, "• ", true)
+	re.compile("\\[([^\\]]*)\\]\\([^)]*\\)")  # links -> text
+	out = re.sub(out, "$1", true)
+	out = out.replace("`", "").replace("*", "").replace("> ", "")
+	return out.strip_edges()
+
+
 ## Bind a node property to a string key — set now, re-set on toggle.
 func reg(node: Object, prop: String, key: String) -> void:
 	node.set(prop, t(key))

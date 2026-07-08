@@ -362,7 +362,7 @@ func _on_stage_completed(_stage: String, r: String, _request: Dictionary, result
 	else:
 		_pop_fx("+", Color(0.45, 1.0, 0.55))
 		# quote the REAL output (legible trust: what did it actually write?)
-		var excerpt := result.strip_edges().replace("\n", " ").left(46)
+		var excerpt := I18n.strip_md(result).replace("\n", " ").left(46)
 		_say("“%s…”" % excerpt)
 		# permanence: the finished page stays on the desk
 		if office:
