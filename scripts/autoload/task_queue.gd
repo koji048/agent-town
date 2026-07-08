@@ -14,9 +14,15 @@ var clip_active: bool = false
 var _timer: Timer
 
 ## Live job registry, so anyone (chat, watchdog) can answer "ถึงไหนแล้ว".
-## topic -> {stage, role, since (unix), warned}
+## topic -> {stage, role, since (unix), warned, pct}
 var jobs: Dictionary = {}
 const OVERDUE_SEC := 240.0
+
+## Discrete stages -> progress percent (approval desk bumps to 75).
+const STAGE_PCT := {
+	"plan": 10, "research": 25, "script": 45, "edit": 65,
+	"publish": 85, "review": 95,
+}
 
 
 func _ready() -> void:
@@ -46,7 +52,12 @@ func _ready() -> void:
 		jobs[str(request.get("topic", "untitled"))] = {
 			"stage": stage, "role": role,
 			"since": Time.get_unix_time_from_system(), "warned": false,
+			"pct": int(STAGE_PCT.get(stage, 50)),
 		})
+	EventBus.approval_requested.connect(func(request: Dictionary, _p: String) -> void:
+		var topic := str(request.get("topic", "untitled"))
+		if jobs.has(topic):
+			jobs[topic]["pct"] = 75)
 	EventBus.request_completed.connect(func(request: Dictionary, _o: String) -> void:
 		jobs.erase(str(request.get("topic", "untitled"))))
 	var watchdog := Timer.new()
@@ -77,8 +88,8 @@ func status_text() -> String:
 	var lines: Array[String] = []
 	for topic in jobs:
 		var j: Dictionary = jobs[topic]
-		lines.append("'%s' — stage %s, PIC %s, %d min in%s" % [
-			str(topic).left(36), j["stage"], j["role"],
+		lines.append("'%s' — %d%% (stage %s, PIC %s, %d min in)%s" % [
+			str(topic).left(36), int(j.get("pct", 50)), j["stage"], j["role"],
 			int((now - float(j["since"])) / 60.0),
 			" (RUNNING LATE)" if bool(j["warned"]) else ""])
 	return "\n".join(lines)

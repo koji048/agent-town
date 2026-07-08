@@ -155,7 +155,7 @@ func _clear(holder: VBoxContainer) -> void:
 
 
 func _card(holder: VBoxContainer, title_text: String, sub: String, accent: Color,
-		open_path: String = "", pic: String = "") -> void:
+		open_path: String = "", pic: String = "", pct: int = -1) -> void:
 	var card := PanelContainer.new()
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = Color(0.13, 0.13, 0.18)
@@ -178,6 +178,14 @@ func _card(holder: VBoxContainer, title_text: String, sub: String, accent: Color
 		s.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		vb.add_child(s)
 	_pic_line(vb, pic)
+	if pct >= 0:
+		var bar := ProgressBar.new()
+		bar.min_value = 0
+		bar.max_value = 100
+		bar.value = pct
+		bar.show_percentage = true
+		bar.custom_minimum_size = Vector2(0, 16)
+		vb.add_child(bar)
 	if not open_path.is_empty():
 		var b := Button.new()
 		b.text = I18n.t("btn_open_files")
@@ -265,13 +273,14 @@ func _refresh() -> void:
 		_project_row(topic, Color(1.0, 0.72, 0.32))
 		if _project_visible(topic) and _passes(topic, a_role):
 			var accent: Color = ROLE_COLOR.get(a_role, Color.GRAY)
+			var pct := int(TaskQueue.jobs.get(topic, {}).get("pct", 50))
 			if bool(info["review"]):
 				_card(review, str(topic).left(70), I18n.t("review_wait"),
-					Color(0.95, 0.45, 0.33), "", a_role)
+					Color(0.95, 0.45, 0.33), "", a_role, 75)
 			else:
 				_card(prog, str(topic).left(70),
 					I18n.t("card_stage") % [str(info["stage"]), a_role],
-					accent, "", a_role)
+					accent, "", a_role, pct)
 
 	# DONE: shipped packages. Selecting a shipped project EXPANDS it
 	# into its stage deliverables, each with its PIC and an open button.
