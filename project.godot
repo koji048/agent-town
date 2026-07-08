@@ -24,6 +24,7 @@ Memory="*res://scripts/autoload/memory.gd"
 Chronicle="*res://scripts/autoload/chronicle.gd"
 Storyteller="*res://scripts/autoload/storyteller.gd"
 Transcriber="*res://scripts/autoload/transcriber.gd"
+ReelRunner="*res://scripts/autoload/reel_runner.gd"
 I18n="*res://scripts/autoload/i18n.gd"
 
 [gui]

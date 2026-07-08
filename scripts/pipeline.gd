@@ -79,11 +79,118 @@ func _run(request: Dictionary) -> void:
 	EventBus.log_line.emit("Done: %s -> %s" % [topic, out_dir.get_file()])
 
 
-## THE CLIP WORKFLOW (one door: talk to the Director — or AirDrop into
-## inbox/ and the Director routes it): Director plans, Editor runs REAL
-## Whisper transcription + caption cleanup, owner approves at the desk,
-## Publisher packages titles/hashtags, SRT ships EP-numbered.
+## THE CLIP WORKFLOW — follows the owner's reels-pipeline skill EXACTLY
+## when its scripts are installed: reel.sh ingest (EP auto-number, batch
+## folders, footage renamed) -> reel.sh subs (faster-whisper large-v3,
+## pythainlp wrapping, glossary) -> Claude review pass written back to
+## 05_EXPORTS -> owner approval -> reel.sh burn (9:16 reframe + subs).
+## Falls back to the built-in Whisper flow if the skill isn't installed.
 func _run_clip(request: Dictionary) -> void:
+	if ReelRunner.available():
+		await _run_clip_reels(request)
+		return
+	await _run_clip_legacy(request)
+
+
+func _run_clip_reels(request: Dictionary) -> void:
+	results = {}
+	var topic := str(request.get("topic", "clip"))
+	var clip := str(request.get("clip", ""))
+	var lang := str(request.get("language", Config.language))
+	var niche := str(request.get("niche", Config.niche))
+
+	# 1) Director: reel.sh ingest — EP number, batch folders, renaming
+	await _walk_stage("plan", "director", request)
+	EventBus.log_line.emit("🎬 reel.sh ingest %s ..." % clip.get_file())
+	ReelRunner.run(PackedStringArray(["ingest", clip]))
+	var r: Array = await ReelRunner.finished
+	var ingest_out := str(r[0])
+	if int(r[1]) != 0:
+		EventBus.log_line.emit("ingest failed — falling back to built-in flow")
+		EventBus.stage_completed.emit("plan", "director", request, "(ingest failed)")
+		await _run_clip_legacy(request)
+		return
+	var batch := ReelRunner.latest_batch()
+	var ep_re := RegEx.new()
+	ep_re.compile("EP(\\d+)")
+	var ep_m := ep_re.search(ingest_out)
+	var ep := int(ep_m.get_string(1)) if ep_m else 0
+	var brief := "EP%d ingested by the book:\n%s" % [ep, ingest_out.strip_edges().left(400)]
+	results["plan"] = brief
+	Memory.remember("director", I18n.f("mem_clip_routed", [Config.owner_name, clip.get_file()]), 6.0)
+	EventBus.stage_completed.emit("plan", "director", request, brief)
+
+	# 2) Editor: reel.sh subs — the skill's transcription, exactly
+	await _walk_stage("edit", "editor", request)
+	var slug := _slugify(clip.get_file().get_basename(), ep)
+	EventBus.log_line.emit("🎙 reel.sh subs %s (large-v3, Thai word-aware)..." % slug)
+	ReelRunner.run(PackedStringArray(["subs", slug, "--prompt", topic]))
+	r = await ReelRunner.finished
+	var exports := batch.path_join("05_EXPORTS")
+	var srt_path := ReelRunner.newest_file(exports, "-clean.srt")
+	if int(r[1]) != 0 or srt_path.is_empty():
+		results["edit"] = "(reel.sh subs failed)\n" + str(r[0]).right(400)
+		EventBus.stage_completed.emit("edit", "editor", request, str(results["edit"]))
+	else:
+		var srt := FileAccess.get_file_as_string(srt_path)
+		results["script"] = srt
+		# the skill's mandated Claude REVIEW pass — written back to the
+		# same 05_EXPORTS file, so the editor export stays the truth
+		var reviewed := srt
+		if Config.provider_resolved != "simulate":
+			var c: String = await Claude.complete(
+				Prompts.editor(lang, niche),
+				("Review this cleaned SRT per the reels-pipeline rules: fix " +
+				"mis-hears, keep English tech terms as-is, keep ALL timing and " +
+				"numbering exactly. Return ONLY the corrected SRT:\n\n") + srt.left(6000),
+				"edit")
+			if not c.is_empty() and c.contains("-->"):
+				reviewed = c.strip_edges() + "\n"
+				var wf := FileAccess.open(srt_path, FileAccess.WRITE)
+				if wf:
+					wf.store_string(reviewed)
+		results["edit"] = reviewed
+		Memory.remember("editor", I18n.f("mem_clip_edited", [Config.owner_name, clip.get_file()]), 7.0)
+		EventBus.stage_completed.emit("edit", "editor", request, reviewed)
+
+		# 3) the approval desk
+		await _await_approval(request, reviewed)
+
+		# 4) reel.sh burn — the actual cut: 9:16 reframe (+ subs w/ libass)
+		EventBus.log_line.emit("🔥 reel.sh burn (1080x1920)...")
+		ReelRunner.run(PackedStringArray(["burn"]))
+		r = await ReelRunner.finished
+		var mp4 := ReelRunner.newest_file(exports, ".mp4")
+		if not mp4.is_empty():
+			results["publish"] = "Burned reel: %s\n\n%s" % [mp4.get_file(), str(r[0]).right(300)]
+			EventBus.log_line.emit("🎞 Cut file: %s" % mp4.get_file())
+		else:
+			results["publish"] = "(burn produced no mp4 — import the .srt in your editor)\n" + str(r[0]).right(300)
+
+	results["review"] = "EP%d files live in:\n%s" % [ep, batch]
+	var out_dir: String = OutputWriter.write_package(request, results)
+	var done_dest := clip.get_base_dir().path_join("done").path_join(clip.get_file())
+	if FileAccess.file_exists(clip):
+		DirAccess.rename_absolute(clip, done_dest)
+	TaskQueue.finish(request)
+	# deliver the REAL folder: the batch 05_EXPORTS, not the town package
+	EventBus.request_completed.emit(request, out_dir)
+	EventBus.log_line.emit("📦 EP%d -> %s" % [ep, batch.path_join("05_EXPORTS")])
+	OS.shell_open(batch.path_join("05_EXPORTS"))
+
+
+func _slugify(name: String, ep: int) -> String:
+	var s := name.to_lower().replace(" ", "-")
+	var re := RegEx.new()
+	re.compile("[^a-z0-9\\-]")
+	s = re.sub(s, "", true).left(40)
+	while s.contains("--"):
+		s = s.replace("--", "-")
+	s = s.trim_prefix("-").trim_suffix("-")
+	return s if s.length() >= 3 else "reel-ep%d" % ep
+
+
+func _run_clip_legacy(request: Dictionary) -> void:
 	results = {}
 	var topic := str(request.get("topic", "clip"))
 	var clip := str(request.get("clip", ""))
