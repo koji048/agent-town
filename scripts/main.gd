@@ -383,7 +383,8 @@ func _show_inspector(agent: TownAgent3D) -> void:
 		lines.append("")
 		lines.append("Remembers:")
 		for m in mems:
-			lines.append("• " + str(m["text"]).left(64))
+			var t := str(m["text"])
+			lines.append("• " + (t if t.length() <= 160 else t.left(157) + "..."))
 	var rels: Array[String] = []
 	for other in Memory.ROLES:
 		if other == agent.role:

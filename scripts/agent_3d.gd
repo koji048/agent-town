@@ -418,11 +418,11 @@ func _gossip_with(o: TownAgent3D) -> void:
 				opener = line.substr(2).strip_edges()
 			elif line.begins_with("B:"):
 				reply = line.substr(2).strip_edges()
-	_say(opener.left(64))
-	Memory.remember(o.role, "The %s told me: %s" % [role, opener.left(80)], 4.0)
+	_say(opener)
+	Memory.remember(o.role, "The %s told me: %s" % [role, opener], 4.0)
 	get_tree().create_timer(1.8).timeout.connect(func() -> void:
 		if is_instance_valid(o):
-			o._say(reply.left(64)))
+			o._say(reply))
 	Memory.remember(role, "Chatted with the %s on a break." % o.role, 3.0)
 	Memory.nudge_affinity(role, o.role, 0.03)
 	needs["social"] = clampf(needs["social"] + 0.35, 0.0, 1.0)
