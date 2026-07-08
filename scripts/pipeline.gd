@@ -172,6 +172,7 @@ func _run_clip_reels(request: Dictionary) -> void:
 			results["publish"] = "(burn produced no mp4 — import the .srt in your editor)\n" + str(r[0]).right(300)
 
 	results["review"] = "EP%d files live in:\n%s" % [ep, batch]
+	request["_batch"] = batch  # so a typed fix can revise the REAL files
 	var out_dir: String = OutputWriter.write_package(request, results)
 	var done_dest := clip.get_base_dir().path_join("done").path_join(clip.get_file())
 	if FileAccess.file_exists(clip):
@@ -358,6 +359,56 @@ func _await_approval(request: Dictionary, preview: String) -> bool:
 		Memory.nudge_affinity("writer", "owner", -0.02)
 	RoleLocks.release("approval_desk")
 	return decided[1]
+
+
+## A typed fix after delivery becomes real work (the team asked for it):
+## clip jobs revise the actual clean.srt + re-burn in the same batch;
+## idea jobs re-queue with the feedback baked into the brief.
+func revise(request: Dictionary, feedback: String) -> void:
+	var topic := str(request.get("topic", "")).left(40)
+	Memory.remember_all(I18n.f("mem_feedback_fix", [Config.owner_name, topic, feedback.left(80)]), 8.0)
+	EventBus.agent_say.emit("director", I18n.f("say_feedback_fix", [Config.owner_name]))
+	if request.has("_batch"):
+		_revise_clip(str(request["_batch"]), feedback, request)
+		return
+	# idea job: a revision request with the feedback in the notes
+	var path := "res://queue/pending/fix_%d.json" % int(Time.get_unix_time_from_system())
+	var f := FileAccess.open(path, FileAccess.WRITE)
+	if f:
+		f.store_string(JSON.stringify({
+			"topic": "แก้ไข: %s" % topic,
+			"notes": "REVISION requested by %s of a delivered package. Feedback: %s. Improve on the previous version accordingly." % [Config.owner_name, feedback],
+		}, "  "))
+		EventBus.log_line.emit("✍ Revision queued: %s" % topic)
+
+
+func _revise_clip(batch: String, feedback: String, request: Dictionary) -> void:
+	var exports := batch.path_join("05_EXPORTS")
+	var srt_path := ReelRunner.newest_file(exports, "-clean.srt")
+	if srt_path.is_empty():
+		EventBus.log_line.emit("(no clean.srt found to revise)")
+		return
+	await _walk_stage("edit", "editor", request)
+	var srt := FileAccess.get_file_as_string(srt_path)
+	var fixed := srt
+	if Config.provider_resolved != "simulate":
+		var c: String = await Claude.complete(
+			Prompts.editor(Config.language, Config.niche),
+			("The owner reviewed this SRT and asked: \"%s\". Apply the fix, " +
+			"keep ALL timing and numbering exactly, return ONLY the corrected SRT:\n\n%s") % [
+			feedback, srt.left(6000)], "edit")
+		if not c.is_empty() and c.contains("-->"):
+			fixed = c.strip_edges() + "\n"
+			var wf := FileAccess.open(srt_path, FileAccess.WRITE)
+			if wf:
+				wf.store_string(fixed)
+	EventBus.stage_completed.emit("edit", "editor", request, fixed)
+	EventBus.log_line.emit("🔥 re-burn after revision...")
+	ReelRunner.run(PackedStringArray(["burn", "--batch", batch]))
+	await ReelRunner.finished
+	Memory.remember("editor", I18n.f("mem_clip_edited", [Config.owner_name, batch.get_file()]), 7.0)
+	EventBus.log_line.emit("📦 Revised files -> %s" % exports)
+	OS.shell_open(exports)
 
 
 func _describe(request: Dictionary) -> String:

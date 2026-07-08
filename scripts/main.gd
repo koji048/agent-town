@@ -23,6 +23,7 @@ var _meter_needle: Node3D
 var _meter_label: Label3D
 var _tokens_est := 0
 var _calls_inflight := 0
+var _pipeline: Pipeline
 var _inspector: PanelContainer
 var _inspector_text: Label
 var _inspector_timer: Timer
@@ -65,7 +66,8 @@ func _ready() -> void:
 		agent.position = office.grid_to_world(spawn)
 		world.add_child(agent)
 
-	add_child(Pipeline.new())
+	_pipeline = Pipeline.new()
+	add_child(_pipeline)
 
 	# --- environment & light
 	var env := Environment.new()
@@ -132,7 +134,7 @@ func _ready() -> void:
 		_status.text = "NOW: %s -> %s  (%s)" % [role, stage, str(request.get("topic", "")).left(40)])
 	EventBus.stage_completed.connect(func(stage: String, role: String, _request: Dictionary, _result: String) -> void:
 		_append_log("%s finished %s" % [role, stage]))
-	EventBus.request_completed.connect(func(_request: Dictionary, output_dir: String) -> void:
+	EventBus.request_completed.connect(func(request: Dictionary, output_dir: String) -> void:
 		if TaskQueue.active <= 0:
 			_status.text = I18n.t("status_idle")
 		else:
@@ -140,6 +142,9 @@ func _ready() -> void:
 		_append_log("Package saved: output/%s" % output_dir.get_file())
 		_append_log("The crew gathers in the town hall!")
 		_deliver(output_dir)
+		# the team ASKS before closing the job: anything to fix?
+		get_tree().create_timer(6.0).timeout.connect(func() -> void:
+			_ask_feedback(request))
 		# the ONE loud moment (reserved juice): chime + confetti + a slow
 		# 4-second push-in on the celebration, then ease back
 		Sfx.play_ui("chime", -6.0)
@@ -286,6 +291,64 @@ func _ask_clip(path: String) -> void:
 	panel.add_child(vb)
 	hud.add_child(panel)
 	get_tree().create_timer(60.0).timeout.connect(func() -> void:
+		if is_instance_valid(hud):
+			hud.queue_free())
+
+
+## The team asks the owner before closing a job: anything to fix?
+## "Good" = the crew remembers being appreciated; a typed fix becomes
+## a real revision (clip: re-edit the actual SRT + re-burn).
+func _ask_feedback(request: Dictionary) -> void:
+	var topic := str(request.get("topic", "")).left(36)
+	var hud := CanvasLayer.new()
+	hud.layer = 6
+	add_child(hud)
+	var panel := PanelContainer.new()
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.10, 0.10, 0.14, 0.96)
+	sb.border_color = Color(1.0, 0.85, 0.35)
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(8)
+	sb.set_content_margin_all(14)
+	panel.add_theme_stylebox_override("panel", sb)
+	panel.position = Vector2(560, 150)
+	var vb := VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 8)
+	var l := Label.new()
+	l.text = I18n.t("ask_feedback") % topic
+	l.add_theme_font_size_override("font_size", 15)
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.custom_minimum_size = Vector2(700, 0)
+	vb.add_child(l)
+	var edit := LineEdit.new()
+	edit.custom_minimum_size = Vector2(700, 0)
+	vb.add_child(edit)
+	var hb := HBoxContainer.new()
+	hb.add_theme_constant_override("separation", 12)
+	var send_fix := func() -> void:
+		var text := edit.text.strip_edges()
+		if not text.is_empty():
+			_pipeline.revise(request, text)
+		hud.queue_free()
+	var fix_btn := Button.new()
+	fix_btn.text = I18n.t("btn_send_fix")
+	fix_btn.pressed.connect(send_fix)
+	hb.add_child(fix_btn)
+	edit.text_submitted.connect(func(_t: String) -> void: send_fix.call())
+	var good := Button.new()
+	good.text = I18n.t("btn_good")
+	good.pressed.connect(func() -> void:
+		Memory.remember_all(I18n.f("mem_feedback_good", [Config.owner_name, topic]), 7.0)
+		for r in Memory.ROLES:
+			Memory.nudge_affinity(r, "owner", 0.04)
+		EventBus.agent_say.emit("director", I18n.f("say_feedback_good", [Config.owner_name]))
+		Sfx.play_ui("chime", -12.0)
+		hud.queue_free())
+	hb.add_child(good)
+	vb.add_child(hb)
+	panel.add_child(vb)
+	hud.add_child(panel)
+	get_tree().create_timer(90.0).timeout.connect(func() -> void:
 		if is_instance_valid(hud):
 			hud.queue_free())
 
