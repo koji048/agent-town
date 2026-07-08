@@ -568,8 +568,10 @@ func coached(note: String) -> void:
 	_say(I18n.f("say_noted", [Config.owner_name]))
 
 
-## Click-to-chat: an in-character reply built from real memories,
-## remembered on both sides — in the toggle's language.
+## Click-to-chat: an in-character reply built from real memories —
+## and the agent TELLS APART casual talk from a work order. A clear
+## commission becomes a queued job (routed through the Director's
+## desk); chitchat stays chitchat.
 func chat_reply(msg: String) -> void:
 	Memory.remember(role, I18n.f("mem_owner_said", [Config.owner_name, msg.left(90)]), 5.0)
 	if Config.provider_resolved == "simulate":
@@ -578,13 +580,42 @@ func chat_reply(msg: String) -> void:
 	_think("…")
 	var sys := ("You are %s at Agent Town, a small Thai short-video studio. " +
 		"Reply to your boss %s IN CHARACTER, one or two short sentences " +
-		"(under 140 characters total), warm and specific. %s%s") % [
+		"(under 140 characters total), warm and specific. %s%s\n\n" +
+		"INTENT RULE: only if the boss is CLEARLY commissioning new content " +
+		"(e.g. 'ทำรีลเรื่อง...', 'อยากได้คลิปเกี่ยวกับ...', 'make a reel about...') " +
+		"add a FINAL line exactly: IDEA: <short topic>. Questions, opinions, " +
+		"praise and smalltalk are NOT commissions — then add no IDEA line. " +
+		"When you do accept a job, your reply must acknowledge queuing it.") % [
 		PERSONA[role], Config.owner_name, I18n.t("lang_directive"), Memory.context_for(role, msg)]
 	var out: String = await Claude.complete(sys, msg, "chat")
 	if out.is_empty():
 		out = I18n.f("say_lost", [Config.owner_name])
-	_say(out.strip_edges().left(170))
+	# split off the intent line before showing the reply
+	var idea := ""
+	var reply_lines: Array[String] = []
+	for line in out.split("\n", false):
+		if line.strip_edges().begins_with("IDEA:"):
+			idea = line.strip_edges().substr(5).strip_edges()
+		else:
+			reply_lines.append(line)
+	_say("\n".join(reply_lines).strip_edges().left(170))
 	Memory.remember(role, I18n.f("mem_i_told", [Config.owner_name, out.left(90)]), 4.0)
+	if not idea.is_empty():
+		_queue_idea(idea)
+
+
+## A commission heard in chat becomes a real queued request.
+func _queue_idea(topic: String) -> void:
+	var path := "res://queue/pending/chat_%d.json" % int(Time.get_unix_time_from_system())
+	var f := FileAccess.open(path, FileAccess.WRITE)
+	if f:
+		f.store_string(JSON.stringify({
+			"topic": topic,
+			"notes": "Commissioned by %s in a chat with the %s." % [Config.owner_name, role],
+		}, "  "))
+		EventBus.log_line.emit("📌 Commissioned in chat: %s" % topic.left(48))
+		Sfx.play_at(self, "paper", -8.0)
+		Memory.remember(role, I18n.f("mem_owner_said", [Config.owner_name, topic]), 6.0)
 
 
 func _restart_wander() -> void:
