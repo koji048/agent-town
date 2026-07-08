@@ -21,23 +21,16 @@ const SIM_TEXT := {
 signal _cli_finished(text: String, code: int)
 
 
-var _in_flight := false
-
-
 ## Sends one completion request. Returns the text result, or "" on failure.
 ## Provider chain: claude-code CLI -> Anthropic API -> simulate.
-## SERIALIZED: the CLI invocation shares prompt files on disk, so
-## concurrent calls (pipeline vs gossip/chat) would cross responses.
+## PARALLEL-SAFE: every call gets its own temp files and its own result
+## slot — agents never wait for EACH OTHER, only a person waits for
+## their own previous task (per-role locks live in RoleLocks).
 func complete(system_prompt: String, user_prompt: String, sim_stage: String = "") -> String:
 	if Config.provider_resolved == "simulate":
 		await get_tree().create_timer(randf_range(2.5, 5.0)).timeout
 		return SIM_TEXT.get(sim_stage, "[demo] done.")
-	while _in_flight:
-		await get_tree().create_timer(0.3).timeout
-	_in_flight = true
-	var out := await _complete_live(system_prompt, user_prompt)
-	_in_flight = false
-	return out
+	return await _complete_live(system_prompt, user_prompt)
 
 
 func _complete_live(system_prompt: String, user_prompt: String) -> String:
@@ -97,22 +90,32 @@ func _complete_live(system_prompt: String, user_prompt: String) -> String:
 	return ""
 
 
+var _next_call_id := 0
+var _call_results: Dictionary = {}
+
+
 ## Headless Claude Code session (production brain): runs `claude -p` in a
 ## worker thread so the office never blocks, using the owner's login.
 ## Everything (prompts AND the invocation) travels via files on disk —
 ## Godot's OS.execute pipe path mangles shell metacharacters in args, so
-## no generated content may ever appear in the argument list.
+## no generated content may ever appear in the argument list. Each call
+## gets UNIQUE temp files + its own result slot: fully concurrent.
 func _cli_complete(system_prompt: String, user_prompt: String) -> String:
-	var user_f := ProjectSettings.globalize_path("user://cli_user_prompt.txt")
-	var sys_f := ProjectSettings.globalize_path("user://cli_system_prompt.txt")
-	var run_f := ProjectSettings.globalize_path("user://cli_run.zsh")
-	var fu := FileAccess.open("user://cli_user_prompt.txt", FileAccess.WRITE)
+	var id := _next_call_id
+	_next_call_id += 1
+	var user_res := "user://cli_user_%d.txt" % id
+	var sys_res := "user://cli_sys_%d.txt" % id
+	var run_res := "user://cli_run_%d.zsh" % id
+	var user_f := ProjectSettings.globalize_path(user_res)
+	var sys_f := ProjectSettings.globalize_path(sys_res)
+	var run_f := ProjectSettings.globalize_path(run_res)
+	var fu := FileAccess.open(user_res, FileAccess.WRITE)
 	fu.store_string(user_prompt)
 	fu.close()
-	var fs := FileAccess.open("user://cli_system_prompt.txt", FileAccess.WRITE)
+	var fs := FileAccess.open(sys_res, FileAccess.WRITE)
 	fs.store_string(system_prompt)
 	fs.close()
-	var fr := FileAccess.open("user://cli_run.zsh", FileAccess.WRITE)
+	var fr := FileAccess.open(run_res, FileAccess.WRITE)
 	fr.store_string("exec " + _shq(Config.cli_path)
 		+ " -p \"$(cat " + _shq(user_f) + ")\""
 		+ " --append-system-prompt \"$(cat " + _shq(sys_f) + ")\""
@@ -125,9 +128,14 @@ func _cli_complete(system_prompt: String, user_prompt: String) -> String:
 		var text := ""
 		for line in out:
 			text += str(line)
-		call_deferred("emit_signal", "_cli_finished", text, code))
-	var res: Array = await _cli_finished
+		call_deferred("_store_result", id, text, code))
+	while not _call_results.has(id):
+		await get_tree().create_timer(0.15).timeout
+	var res: Array = _call_results[id]
+	_call_results.erase(id)
 	th.wait_to_finish()
+	for tmp in [user_res, sys_res, run_res]:
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(tmp))
 	var text := str(res[0]).strip_edges()
 	var code := int(res[1])
 	if code != 0:
@@ -137,6 +145,10 @@ func _cli_complete(system_prompt: String, user_prompt: String) -> String:
 	if text.is_empty():
 		printerr("claude-code EMPTY output (code 0)")
 	return text
+
+
+func _store_result(id: int, text: String, code: int) -> void:
+	_call_results[id] = [text, code]
 
 
 ## Single-quote shell escaping for zsh -c command strings.

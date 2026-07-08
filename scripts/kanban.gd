@@ -13,7 +13,9 @@ const STAGE_LABEL := {
 const CARD_W := 0.30
 const COL_W := 0.37
 
-var _active_card: Node3D
+# parallel jobs: one card per active request, stacked in rows
+var _cards: Dictionary = {}
+var _rows: Array = []
 var _pending_cards: Array = []
 var _poll: Timer
 
@@ -92,18 +94,33 @@ func _on_stage_started(stage: String, _role: String, request: Dictionary) -> voi
 	var idx := STAGES.find(stage)
 	if idx < 0:
 		return
-	if _active_card == null:
-		_active_card = _make_card(str(request.get("topic", "reel")), Color(0.95, 0.45, 0.33))
-		_active_card.position = _col_pos(0) + Vector3(0, 0.05, 0.035)
-		Juice.pop_in(_active_card)
-	Juice.slide_to(_active_card, _col_pos(idx) + Vector3(0, 0.05, 0.035), 0.5)
+	var topic := str(request.get("topic", "reel"))
+	if not _cards.has(topic):
+		var card := _make_card(topic, Color(0.95, 0.45, 0.33))
+		card.position = _col_pos(0) + Vector3(0, _row_y(_rows.size()), 0.035)
+		_cards[topic] = card
+		_rows.append(topic)
+		Juice.pop_in(card)
+	var row := _rows.find(topic)
+	Juice.slide_to(_cards[topic], _col_pos(idx) + Vector3(0, _row_y(row), 0.035), 0.5)
 	Sfx.play_at(self, "paper", -14.0)
 
 
-func _on_request_completed(_request: Dictionary, _output_dir: String) -> void:
-	if _active_card:
-		Juice.pop_out(_active_card, 0.4)
-		_active_card = null
+func _row_y(row: int) -> float:
+	return 0.16 - row * 0.24
+
+
+func _on_request_completed(request: Dictionary, _output_dir: String) -> void:
+	var topic := str(request.get("topic", "reel"))
+	if _cards.has(topic):
+		Juice.pop_out(_cards[topic], 0.4)
+		_cards.erase(topic)
+		_rows.erase(topic)
+		# reflow the remaining cards upward
+		for i in _rows.size():
+			var c: Node3D = _cards.get(_rows[i])
+			if c:
+				Juice.slide_to(c, Vector3(c.position.x, _row_y(i), c.position.z), 0.4)
 
 
 func _refresh_pending() -> void:

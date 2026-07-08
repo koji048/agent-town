@@ -8,8 +8,6 @@ extends Node
 
 const ARRIVAL_TIMEOUT := 15.0
 
-var results: Dictionary = {}
-
 
 func _ready() -> void:
 	EventBus.request_received.connect(_on_request)
@@ -29,7 +27,7 @@ func _run(request: Dictionary) -> void:
 	if request.has("clip"):
 		await _run_clip(request)
 		return
-	results = {}
+	var results: Dictionary = {}
 	var topic := str(request.get("topic", "untitled"))
 	var lang := str(request.get("language", Config.language))
 	var niche := str(request.get("niche", Config.niche))
@@ -37,19 +35,19 @@ func _run(request: Dictionary) -> void:
 
 	var plan := await _stage("plan", "director", request,
 		Prompts.director_plan(lang, niche),
-		"Content request:\n%s" % brief)
+		"Content request:\n%s" % brief, results)
 
 	var research := await _stage("research", "researcher", request,
 		Prompts.researcher(lang, niche),
-		"Request:\n%s\n\nDirector's brief:\n%s" % [brief, plan])
+		"Request:\n%s\n\nDirector's brief:\n%s" % [brief, plan], results)
 
 	var script := await _stage("script", "writer", request,
 		Prompts.scriptwriter(lang, niche),
-		"Request:\n%s\n\nDirector's brief:\n%s\n\nResearch notes:\n%s" % [brief, plan, research])
+		"Request:\n%s\n\nDirector's brief:\n%s\n\nResearch notes:\n%s" % [brief, plan, research], results)
 
 	var captions := await _stage("edit", "editor", request,
 		Prompts.editor(lang, niche),
-		"Script:\n%s" % script)
+		"Script:\n%s" % script, results)
 
 	# ---- the approval desk: work WAITS for the human at a designed
 	# checkpoint (Devin's lesson: the cheapest intervention is a gate,
@@ -60,18 +58,18 @@ func _run(request: Dictionary) -> void:
 		Memory.nudge_affinity("writer", "director", -0.03)
 		script = await _stage("script", "writer", request,
 			Prompts.scriptwriter(lang, niche),
-			"Request:\n%s\n\nDirector's brief:\n%s\n\nResearch notes:\n%s\n\nREVIEWER FEEDBACK: tighten the hook, cut anything slow, keep it punchy. Revise the script." % [brief, plan, research])
+			"Request:\n%s\n\nDirector's brief:\n%s\n\nResearch notes:\n%s\n\nREVIEWER FEEDBACK: tighten the hook, cut anything slow, keep it punchy. Revise the script." % [brief, plan, research], results)
 		captions = await _stage("edit", "editor", request,
 			Prompts.editor(lang, niche),
-			"Script:\n%s" % script)
+			"Script:\n%s" % script, results)
 
 	var publish := await _stage("publish", "publisher", request,
 		Prompts.publisher(lang, niche),
-		"Script:\n%s\n\nResearch notes:\n%s" % [script, research])
+		"Script:\n%s\n\nResearch notes:\n%s" % [script, research], results)
 
 	await _stage("review", "director", request,
 		Prompts.director_review(lang, niche),
-		"Research:\n%s\n\nScript:\n%s\n\nCaptions:\n%s\n\nPublish plan:\n%s" % [research, script, captions, publish])
+		"Research:\n%s\n\nScript:\n%s\n\nCaptions:\n%s\n\nPublish plan:\n%s" % [research, script, captions, publish], results)
 
 	var out_dir: String = OutputWriter.write_package(request, results)
 	TaskQueue.finish(request)
@@ -99,7 +97,7 @@ func _run_clip(request: Dictionary) -> void:
 
 
 func _run_clip_reels(request: Dictionary) -> void:
-	results = {}
+	var results: Dictionary = {}
 	var topic := str(request.get("topic", "clip"))
 	var clip := str(request.get("clip", ""))
 	var lang := str(request.get("language", Config.language))
@@ -197,7 +195,7 @@ func _slugify(name: String, ep: int) -> String:
 
 
 func _run_clip_legacy(request: Dictionary) -> void:
-	results = {}
+	var results: Dictionary = {}
 	var topic := str(request.get("topic", "clip"))
 	var clip := str(request.get("clip", ""))
 	var lang := str(request.get("language", Config.language))
@@ -253,7 +251,7 @@ func _run_clip_legacy(request: Dictionary) -> void:
 		if Config.provider_resolved != "simulate":
 			await _stage("publish", "publisher", request,
 				Prompts.publisher(lang, niche),
-				"Transcript of the owner's real clip:\n%s" % raw_srt.left(4000))
+				"Transcript of the owner's real clip:\n%s" % raw_srt.left(4000), results)
 
 	results["review"] = "Cleared for export by %s's desk." % Config.owner_name
 	var out_dir: String = OutputWriter.write_package(request, results)
@@ -280,7 +278,11 @@ func _walk_stage(stage: String, role: String, request: Dictionary) -> void:
 	EventBus.agent_arrived.disconnect(cb)
 
 
-func _stage(stage: String, role: String, request: Dictionary, system_prompt: String, user_prompt: String) -> String:
+func _stage(stage: String, role: String, request: Dictionary, system_prompt: String,
+		user_prompt: String, results: Dictionary) -> String:
+	# the owner's rule: nobody waits for anyone else — a person only
+	# queues behind THEIR OWN previous task
+	await RoleLocks.acquire(role)
 	await _walk_stage(stage, role, request)
 
 	# memories + team dynamics color every call (retrieval by topic)
@@ -307,6 +309,7 @@ func _stage(stage: String, role: String, request: Dictionary, system_prompt: Str
 		Memory.remember(role, I18n.f("mem_stage_done", [stage, topic]), 6.0)
 	results[stage] = out
 	EventBus.stage_completed.emit(stage, role, request, out)
+	RoleLocks.release(role)
 	return out
 
 
@@ -329,6 +332,8 @@ func _ask_owner(role: String, question: String) -> String:
 ## Wait at the approval desk: Y approves, N requests one revision,
 ## silence auto-approves after 45 s. Returns true when approved.
 func _await_approval(request: Dictionary, preview: String) -> bool:
+	# one desk: concurrent jobs take turns waiting for the owner
+	await RoleLocks.acquire("approval_desk")
 	var decided := [false, true]
 	var cb := func(approved: bool) -> void:
 		decided[0] = true
@@ -351,6 +356,7 @@ func _await_approval(request: Dictionary, preview: String) -> bool:
 		var topic2 := str(request.get("topic", "")).left(40)
 		Memory.remember("writer", I18n.f("mem_rejected", [Config.owner_name, topic2]), 7.0)
 		Memory.nudge_affinity("writer", "owner", -0.02)
+	RoleLocks.release("approval_desk")
 	return decided[1]
 
 

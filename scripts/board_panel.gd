@@ -20,10 +20,8 @@ const STAGE_PIC := {
 }
 
 var _cols: Dictionary = {}
-var _active_topic := ""
-var _active_stage := ""
-var _active_role := ""
-var _in_review := false
+# parallel jobs: topic -> {"stage": String, "role": String, "review": bool}
+var _active: Dictionary = {}
 # quick filters (Jira avatar-filter pattern) + selected project
 var _filter_text := ""
 var _filter_role := ""
@@ -120,24 +118,23 @@ func _ready() -> void:
 			_refresh())
 
 	EventBus.stage_started.connect(func(stage: String, role: String, request: Dictionary) -> void:
-		_active_topic = str(request.get("topic", "untitled"))
-		_active_stage = stage
-		_active_role = role
-		_in_review = false
+		var topic := str(request.get("topic", "untitled"))
+		_active[topic] = {"stage": stage, "role": role, "review": false}
 		if visible:
 			_refresh())
-	EventBus.approval_requested.connect(func(_r, _p) -> void:
-		_in_review = true
+	EventBus.approval_requested.connect(func(request: Dictionary, _p) -> void:
+		var topic := str(request.get("topic", "untitled"))
+		if _active.has(topic):
+			_active[topic]["review"] = true
 		if visible:
 			_refresh())
 	EventBus.approval_resolved.connect(func(_a) -> void:
-		_in_review = false
+		for t in _active:
+			_active[t]["review"] = false
 		if visible:
 			_refresh())
-	EventBus.request_completed.connect(func(_r, _o) -> void:
-		_active_topic = ""
-		_active_stage = ""
-		_in_review = false
+	EventBus.request_completed.connect(func(request: Dictionary, _o) -> void:
+		_active.erase(str(request.get("topic", "untitled")))
 		if visible:
 			_refresh())
 	var t := Timer.new()
@@ -257,22 +254,24 @@ func _refresh() -> void:
 					_card(backlog, topic.left(70), I18n.t("waiting_director"),
 						Color(0.55, 0.55, 0.6), "", "director")
 
-	# IN PROGRESS / REVIEW: the active request (PIC: the live assignee)
+	# IN PROGRESS / REVIEW: every running request (PIC: live assignee)
 	var prog: VBoxContainer = _cols["IN PROGRESS"]
 	var review: VBoxContainer = _cols["REVIEW"]
 	_clear(prog)
 	_clear(review)
-	if not _active_topic.is_empty():
-		_project_row(_active_topic, Color(1.0, 0.72, 0.32))
-		if _project_visible(_active_topic) and _passes(_active_topic, _active_role):
-			var accent: Color = ROLE_COLOR.get(_active_role, Color.GRAY)
-			if _in_review:
-				_card(review, _active_topic.left(70), I18n.t("review_wait"),
-					Color(0.95, 0.45, 0.33), "", _active_role)
+	for topic in _active:
+		var info: Dictionary = _active[topic]
+		var a_role := str(info["role"])
+		_project_row(topic, Color(1.0, 0.72, 0.32))
+		if _project_visible(topic) and _passes(topic, a_role):
+			var accent: Color = ROLE_COLOR.get(a_role, Color.GRAY)
+			if bool(info["review"]):
+				_card(review, str(topic).left(70), I18n.t("review_wait"),
+					Color(0.95, 0.45, 0.33), "", a_role)
 			else:
-				_card(prog, _active_topic.left(70),
-					I18n.t("card_stage") % [_active_stage, _active_role],
-					accent, "", _active_role)
+				_card(prog, str(topic).left(70),
+					I18n.t("card_stage") % [str(info["stage"]), a_role],
+					accent, "", a_role)
 
 	# DONE: shipped packages. Selecting a shipped project EXPANDS it
 	# into its stage deliverables, each with its PIC and an open button.

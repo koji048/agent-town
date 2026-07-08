@@ -3,7 +3,14 @@
 ## processed at a time.
 extends Node
 
-var busy: bool = false
+## Assembly line (per the owner): agents never wait for each other, so
+## up to MAX_PARALLEL requests run at once — a person only queues
+## behind their own tasks (RoleLocks). Clips stay exclusive (whisper +
+## the reels-pipeline batch scripts are single-flight by nature).
+const MAX_PARALLEL := 3
+
+var active: int = 0
+var clip_active: bool = false
 var _timer: Timer
 
 
@@ -28,7 +35,9 @@ func finish(request: Dictionary) -> void:
 	var fname: String = str(request.get("_file", ""))
 	if not fname.is_empty():
 		DirAccess.rename_absolute(_qdir("processing").path_join(fname), _qdir("done").path_join(fname))
-	busy = false
+	active = maxi(active - 1, 0)
+	if request.has("clip"):
+		clip_active = false
 
 
 func _qdir(sub: String) -> String:
@@ -36,17 +45,18 @@ func _qdir(sub: String) -> String:
 
 
 func _poll() -> void:
-	if busy:
+	if active >= MAX_PARALLEL:
 		return
 	# footage first: AirDropped clips dropped into inbox/ become real
-	# transcription jobs (talk to the Director; the Director routes it)
-	if Transcriber.available():
+	# transcription jobs (exclusive: one clip pipeline at a time)
+	if (Transcriber.available() or ReelRunner.available()) and not clip_active:
 		var inbox := DirAccess.open(_inbox())
 		if inbox:
 			for f in inbox.get_files():
 				var ext := f.get_extension().to_lower()
 				if ext in ["mov", "mp4", "m4v", "mkv", "webm"]:
-					busy = true
+					active += 1
+					clip_active = true
 					var abs := _inbox().path_join(f)
 					EventBus.log_line.emit("🎬 Footage arrived: %s" % f)
 					EventBus.request_received.emit({
@@ -79,6 +89,6 @@ func _take(fname: String) -> void:
 	DirAccess.rename_absolute(src, _qdir("processing").path_join(fname))
 	var request: Dictionary = data
 	request["_file"] = fname
-	busy = true
-	EventBus.log_line.emit("Picked up request: %s" % fname)
+	active += 1
+	EventBus.log_line.emit("Picked up request: %s (%d running)" % [fname, active])
 	EventBus.request_received.emit(request)

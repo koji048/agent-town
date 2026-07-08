@@ -133,7 +133,10 @@ func _ready() -> void:
 	EventBus.stage_completed.connect(func(stage: String, role: String, _request: Dictionary, _result: String) -> void:
 		_append_log("%s finished %s" % [role, stage]))
 	EventBus.request_completed.connect(func(_request: Dictionary, output_dir: String) -> void:
-		_status.text = "IDLE — drop a .json into queue/pending/"
+		if TaskQueue.active <= 0:
+			_status.text = I18n.t("status_idle")
+		else:
+			_status.text = "%d jobs running" % TaskQueue.active
 		_append_log("Package saved: output/%s" % output_dir.get_file())
 		_append_log("The crew gathers in the town hall!")
 		_deliver(output_dir)
