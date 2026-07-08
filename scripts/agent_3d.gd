@@ -95,11 +95,14 @@ func _ready() -> void:
 	add_child(_bubble)
 
 	# nameplate: role name (gold for the boss) + live state pill
-	var plate_name := _make_plate(role.to_upper(), 64,
-		Color(1.0, 0.85, 0.35) if role == "director" else Color(0.96, 0.96, 0.92))
-	plate_name.position = Vector3(0, CHAR_H + 0.5, 0)
-	_plate_state = _make_plate("IDLE", 44, Color(0.72, 0.76, 0.72))
-	_plate_state.position = Vector3(0, CHAR_H + 0.28, 0)
+	# (design-at-viewing-size: large glyphs, opaque outline, and the
+	# state label only appears when the agent is actually doing something)
+	var plate_name := _make_plate(role.to_upper(), 78,
+		Color(1.0, 0.85, 0.35) if role == "director" else Color(0.98, 0.98, 0.94))
+	plate_name.position = Vector3(0, CHAR_H + 0.56, 0)
+	_plate_state = _make_plate("", 48, Color(0.72, 0.76, 0.72))
+	_plate_state.position = Vector3(0, CHAR_H + 0.30, 0)
+	_plate_state.visible = false
 
 	_bubble_timer = Timer.new()
 	_bubble_timer.one_shot = true
@@ -236,6 +239,8 @@ func _set_state(s: State) -> void:
 		var style: Array = STATE_STYLE[s]
 		_plate_state.text = style[0]
 		_plate_state.modulate = style[1]
+		# idle agents show only their name — less floating text to parse
+		_plate_state.visible = str(style[0]) != "IDLE"
 
 
 # ------------------------------------------------------------ character
@@ -312,12 +317,12 @@ func _make_plate(text: String, size: int, color: Color) -> Label3D:
 	var l := Label3D.new()
 	l.text = text
 	l.font_size = size
-	l.outline_size = size / 4
-	l.pixel_size = 0.0032
+	l.outline_size = size / 3
+	l.pixel_size = 0.0042
 	l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	l.no_depth_test = true
 	l.modulate = color
-	l.outline_modulate = Color(0.1, 0.1, 0.13, 0.9)
+	l.outline_modulate = Color(0.08, 0.08, 0.10)
 	add_child(l)
 	return l
 

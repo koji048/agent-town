@@ -516,17 +516,17 @@ func _wayfinding() -> void:
 func _zone_sign(text: String, pos: Vector3) -> void:
 	var steel := _mat("steel", Color(0.42, 0.42, 0.46))
 	_box(Vector3(0.16, 0.03, 0.16), pos + Vector3(0, 0.015, 0), steel, self, false)
-	_box(Vector3(0.025, 1.35, 0.025), pos + Vector3(0, 0.7, 0), steel, self, false)
-	var plate := _box(Vector3(0.66, 0.2, 0.03), pos + Vector3(0, 1.45, 0),
-		_mat("sign_plate", Color(0.16, 0.16, 0.19)), self, false)
+	_box(Vector3(0.025, 1.42, 0.025), pos + Vector3(0, 0.73, 0), steel, self, false)
+	var plate := _box(Vector3(0.98, 0.28, 0.03), pos + Vector3(0, 1.56, 0),
+		_mat("sign_plate", Color(0.14, 0.14, 0.17)), self, false)
 	plate.rotation_degrees = Vector3(0, 45, 0)
 	var l := Label3D.new()
 	l.text = text
-	l.font_size = 40
-	l.outline_size = 8
-	l.pixel_size = 0.0038
-	l.modulate = Color(0.95, 0.94, 0.9)
-	l.position = pos + Vector3(0.016, 1.45, 0.016)
+	l.font_size = 52
+	l.outline_size = 10
+	l.pixel_size = 0.0046
+	l.modulate = Color(0.97, 0.96, 0.92)
+	l.position = pos + Vector3(0.016, 1.56, 0.016)
 	l.rotation_degrees = Vector3(0, 45, 0)
 	add_child(l)
 
