@@ -21,6 +21,8 @@ OutputWriter="*res://scripts/autoload/output_writer.gd"
 Sfx="*res://scripts/autoload/sfx.gd"
 Juice="*res://scripts/autoload/juice.gd"
 Memory="*res://scripts/autoload/memory.gd"
+Chronicle="*res://scripts/autoload/chronicle.gd"
+Storyteller="*res://scripts/autoload/storyteller.gd"
 
 [display]
 

@@ -81,7 +81,8 @@ func _ready() -> void:
 	sun.light_angular_distance = 3.0
 	world.add_child(sun)
 
-	# --- isometric orthographic camera
+	# --- isometric camera with tilt-shift DoF (miniature faking: a
+	# shallow focus band on the action plane sells the toy-office look)
 	_cam = Camera3D.new()
 	_cam.projection = Camera3D.PROJECTION_PERSPECTIVE
 	_cam.fov = 27.0
@@ -90,6 +91,17 @@ func _ready() -> void:
 	world.add_child(_cam)
 	_cam.position = office.center() + Vector3(0.3, 0, 0.8) + _cam.global_transform.basis.z * 48.0
 	_cam.current = true
+	var attrs := CameraAttributesPractical.new()
+	attrs.dof_blur_far_enabled = true
+	attrs.dof_blur_far_distance = 58.0
+	attrs.dof_blur_far_transition = 14.0
+	attrs.dof_blur_near_enabled = true
+	attrs.dof_blur_near_distance = 34.0
+	attrs.dof_blur_near_transition = 10.0
+	attrs.dof_blur_amount = 0.06
+	_cam.attributes = attrs
+
+	Chronicle.attach_office(office)
 
 	_build_hud()
 	_build_costume_panel()
@@ -102,9 +114,16 @@ func _ready() -> void:
 		_status.text = "IDLE — drop a .json into queue/pending/"
 		_append_log("Package saved: output/%s" % output_dir.get_file())
 		_append_log("The crew gathers in the town hall!")
-		# the ONE loud moment (reserved juice): chime + confetti
+		# the ONE loud moment (reserved juice): chime + confetti + a slow
+		# 4-second push-in on the celebration, then ease back
 		Sfx.play_ui("chime", -6.0)
 		_confetti(office.grid_to_world(Vector2i(12, 9)) + Vector3(0, 2.2, 0))
+		var base_fov := _cam.fov
+		var tw := _cam.create_tween()
+		tw.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		tw.tween_property(_cam, "fov", base_fov * 0.82, 2.2)
+		tw.tween_interval(3.0)
+		tw.tween_property(_cam, "fov", base_fov, 2.2)
 		var agents := get_tree().get_nodes_in_group("agents")
 		for i in agents.size():
 			var spot: Vector2i = Office3D.TOWNHALL_SPOTS[i % Office3D.TOWNHALL_SPOTS.size()]

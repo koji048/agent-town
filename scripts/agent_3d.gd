@@ -348,6 +348,8 @@ func _wander() -> void:
 	var best_score := 0.0
 	for ad in Office3D.SMART_OBJECTS:
 		var need: String = str(ad["need"])
+		if need == "energy" and Storyteller.espresso_down:
+			continue  # the machine is broken — drama by subtraction
 		var deficit: float = (1.0 - float(needs[need])) * float(w.get(need, 1.0))
 		if deficit < 0.45:
 			continue
