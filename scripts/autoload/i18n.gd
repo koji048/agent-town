@@ -66,6 +66,13 @@ const S := {
 	"say_greet": {"en": "Morning, %s! Good to have you in the office.", "th": "สวัสดีครับ %s! ดีใจที่เข้ามาที่ออฟฟิศนะครับ"},
 	"say_meeting": {"en": "Team huddle! New job: '%s'", "th": "ประชุมด่วน! งานใหม่: '%s'"},
 	"say_overdue": {"en": "'%s' is taking longer than usual — on it, sorry!", "th": "งาน '%s' ช้ากว่าปกติ กำลังเร่งอยู่ครับ ขอโทษด้วย!"},
+	# short stage names for the overhead status chip
+	"stg_plan": {"en": "brief", "th": "บรีฟ"},
+	"stg_research": {"en": "research", "th": "วิจัย"},
+	"stg_script": {"en": "script", "th": "เขียน"},
+	"stg_edit": {"en": "edit", "th": "ตัดต่อ"},
+	"stg_publish": {"en": "publish", "th": "เผยแพร่"},
+	"stg_review": {"en": "review", "th": "ตรวจ"},
 	"chat_feed_title": {"en": "OFFICE CHAT", "th": "แชทออฟฟิศ"},
 	"clip_received": {"en": "🎬 Got the clip — sending it to the team!", "th": "🎬 รับคลิปแล้ว — ส่งให้ทีมเลย!"},
 	"clip_found": {"en": "New clip in Downloads: %s — send it to the team?", "th": "เจอคลิปใหม่ใน Downloads: %s — ส่งให้ทีมทำเลยไหม?"},

@@ -71,6 +71,9 @@ var _wander_timer: Timer
 var _step_accum := 0.0
 var _type_timer: Timer
 var _doc: Node3D
+var _status_chip: Label3D
+var _current_topic := ""
+var _chip_accum := 0.0
 
 ## Decaying needs (The Sims): a reason to move, always. Personality
 ## weights make each role satisfy needs differently.
@@ -143,6 +146,10 @@ func _ready() -> void:
 	_plate_state = _make_plate("", 34, Color(0.72, 0.76, 0.72, 0.85))
 	_plate_state.position = Vector3(0, 0.08, 0)
 	_plate_state.visible = false
+	# overhead status chip: stage + live % while working (per owner)
+	_status_chip = _make_plate("", 40, Color(1.0, 0.78, 0.32))
+	_status_chip.position = Vector3(0, CHAR_H + 0.26, 0)
+	_status_chip.visible = false
 
 	_bubble_timer = Timer.new()
 	_bubble_timer.one_shot = true
@@ -185,6 +192,12 @@ func _process(delta: float) -> void:
 	needs["energy"] = clampf(needs["energy"] - drain * delta * 4.0, 0.0, 1.0)
 	needs["social"] = clampf(needs["social"] - 0.0030 * delta * 4.0, 0.0, 1.0)
 	needs["inspiration"] = clampf(needs["inspiration"] - 0.0026 * delta * 4.0, 0.0, 1.0)
+	# overhead status chip refresh (twice a second is plenty)
+	if _status_chip.visible:
+		_chip_accum += delta
+		if _chip_accum >= 0.5:
+			_chip_accum = 0.0
+			_update_status_chip("")
 	# smooth turning toward the travel direction
 	if _model:
 		_model.rotation.y = lerp_angle(_model.rotation.y, _target_yaw, TURN_SPEED * delta)
@@ -209,6 +222,18 @@ func _process(delta: float) -> void:
 		if _step_accum >= 0.55:
 			_step_accum = 0.0
 			Sfx.play_at(self, _floor_step_group(), -14.0, 0.10)
+
+
+## The overhead chip: short stage name + live % from the job registry.
+func _update_status_chip(stage_hint: String) -> void:
+	if _current_topic.is_empty():
+		return
+	var j: Dictionary = TaskQueue.jobs.get(_current_topic, {})
+	var stage := stage_hint if not stage_hint.is_empty() else str(j.get("stage", ""))
+	var pct := int(j.get("pct", 0))
+	var key := "stg_" + stage
+	var label := I18n.t(key) if I18n.S.has(key) else stage
+	_status_chip.text = "⚙ %s %d%%" % [label, pct] if pct > 0 else "⚙ %s" % label
 
 
 func _floor_step_group() -> String:
@@ -295,6 +320,9 @@ func _on_stage_started(stage: String, r: String, _request: Dictionary) -> void:
 	_target_is_work = true
 	_wander_timer.stop()
 	current_task = "%s — '%s'" % [stage, str(_request.get("topic", "")).left(22)]
+	_current_topic = str(_request.get("topic", ""))
+	_update_status_chip(stage)
+	_status_chip.visible = true
 	_pop_fx("!", Color(1.0, 0.78, 0.3))
 	var say_key := "say_" + stage
 	_think(I18n.t(say_key) if I18n.S.has(say_key) else I18n.t("say_onit"))
@@ -355,6 +383,8 @@ func _on_stage_completed(_stage: String, r: String, _request: Dictionary, result
 	_set_state(State.IDLE)
 	_type_timer.stop()
 	current_task = "available"
+	_status_chip.visible = false
+	_current_topic = ""
 	if result.begins_with("(stage"):
 		_pop_fx("x", Color(1.0, 0.42, 0.42))
 		_think(I18n.t("say_fail"))
