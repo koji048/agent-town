@@ -302,7 +302,9 @@ func _start_chirps(world: Node) -> void:
 		host.position.y = randf_range(1.5, 2.4)
 		world.add_child(host)
 		Sfx.play_at(host, "chirp", -12.0, 0.15)
-		get_tree().create_timer(2.0).timeout.connect(host.queue_free)
+		get_tree().create_timer(2.0).timeout.connect(func() -> void:
+			if is_instance_valid(host):
+				host.queue_free())
 		t.start(randf_range(18.0, 45.0)))
 	add_child(t)
 	t.start(randf_range(6.0, 15.0))

@@ -17,6 +17,15 @@ var _timer: Timer
 func _ready() -> void:
 	for sub in ["pending", "processing", "done"]:
 		DirAccess.make_dir_recursive_absolute(_qdir(sub))
+	# crash recovery: requests orphaned mid-run (app killed/quit) go
+	# back to pending so the crew picks them up again
+	var proc := DirAccess.open(_qdir("processing"))
+	if proc:
+		for f in proc.get_files():
+			if f.ends_with(".json"):
+				DirAccess.rename_absolute(_qdir("processing").path_join(f),
+					_qdir("pending").path_join(f))
+				EventBus.log_line.emit("↩ Recovered orphaned request: %s" % f)
 	DirAccess.make_dir_recursive_absolute(_inbox())
 	DirAccess.make_dir_recursive_absolute(_inbox().path_join("done"))
 	_timer = Timer.new()
