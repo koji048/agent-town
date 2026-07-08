@@ -503,6 +503,16 @@ func _build_costume_panel() -> void:
 	board_btn.pressed.connect(func() -> void:
 		board_panel.visible = not board_panel.visible)
 	hud.add_child(board_btn)
+	# the office group chat feed (watch the crew talk to each other)
+	var feed := ChatFeed.new()
+	feed.visible = false
+	hud.add_child(feed)
+	var feed_btn := Button.new()
+	I18n.reg(feed_btn, "text", "btn_chat_feed")
+	feed_btn.position = Vector2(1190, 16)
+	feed_btn.pressed.connect(func() -> void:
+		feed.visible = not feed.visible)
+	hud.add_child(feed_btn)
 	# ไทย/EN toggle — the chrome flips live, content keeps its language
 	var lang_btn := Button.new()
 	lang_btn.text = "  ไทย  " if I18n.lang == "en" else "  EN  "
@@ -694,7 +704,9 @@ func _build_approval_panel() -> void:
 		if _inspected:
 			var who := _inspected
 			_open_input("Say something to the %s" % who.role,
-				func(text: String) -> void: who.chat_reply(text)))
+				func(text: String) -> void:
+					EventBus.chat_line.emit(Config.owner_name, text)
+					who.chat_reply(text)))
 	actions.add_child(chat)
 	ivb.add_child(actions)
 	_inspector.add_child(ivb)

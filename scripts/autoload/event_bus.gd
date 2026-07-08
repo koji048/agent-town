@@ -26,3 +26,5 @@ signal agent_question(role: String, question: String)
 signal guidance_given(text: String)
 ## The Director calls a kickoff huddle before a new job starts.
 signal meeting_called(request: Dictionary)
+## Anything anyone actually said out loud (for the office chat feed).
+signal chat_line(speaker: String, text: String)

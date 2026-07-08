@@ -557,6 +557,8 @@ func _restart_wander() -> void:
 
 
 func _say(text: String) -> void:
+	if text != "...":
+		EventBus.chat_line.emit(role, text)
 	_bubble.text = text
 	_bubble.visible = true
 	# the thought POPS: a springy scale-in every time they speak

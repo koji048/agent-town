@@ -64,6 +64,8 @@ const S := {
 	"say_lost": {"en": "Sorry %s — lost my train of thought there.", "th": "ขอโทษครับ %s — เมื่อกี้หลุดโฟกัสไปแป๊บ"},
 	"say_greet": {"en": "Morning, %s! Good to have you in the office.", "th": "สวัสดีครับ %s! ดีใจที่เข้ามาที่ออฟฟิศนะครับ"},
 	"say_meeting": {"en": "Team huddle! New job: '%s'", "th": "ประชุมด่วน! งานใหม่: '%s'"},
+	"chat_feed_title": {"en": "OFFICE CHAT", "th": "แชทออฟฟิศ"},
+	"btn_chat_feed": {"en": "  💬 Chat  ", "th": "  💬 แชท  "},
 	"say_celebrate_1": {"en": "Great work, team!", "th": "สุดยอดมากทีม!"},
 	"say_celebrate_2": {"en": "We shipped it!", "th": "งานออกแล้วโว้ย!"},
 	"say_celebrate_3": {"en": "To the town hall!", "th": "ไปฉลองที่ลานกัน!"},
