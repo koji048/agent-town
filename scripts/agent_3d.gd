@@ -72,8 +72,50 @@ var _step_accum := 0.0
 var _type_timer: Timer
 var _doc: Node3D
 var _status_chip: Label3D
+var _status_bar: MeshInstance3D
+var _bar_mat: ShaderMaterial
+var _bar_fill := 0.0
+var _bar_target := 0.0
 var _current_topic := ""
 var _chip_accum := 0.0
+
+## Overhead progress bar (game HP-bar style): billboarded rounded quad,
+## amber fill + highlight, drawn on top like the label plates.
+const BAR_SHADER := """
+shader_type spatial;
+render_mode unshaded, cull_disabled, depth_test_disabled, blend_mix;
+
+uniform float fill : hint_range(0.0, 1.0) = 0.0;
+uniform vec4 fill_color : source_color = vec4(1.0, 0.60, 0.16, 1.0);
+uniform vec4 fill_hi : source_color = vec4(1.0, 0.86, 0.42, 1.0);
+uniform vec4 back_color : source_color = vec4(0.09, 0.09, 0.13, 0.92);
+uniform vec4 border_color : source_color = vec4(0.93, 0.93, 1.0, 0.95);
+
+void vertex() {
+	MODELVIEW_MATRIX = VIEW_MATRIX * mat4(
+		INV_VIEW_MATRIX[0], INV_VIEW_MATRIX[1], INV_VIEW_MATRIX[2],
+		MODEL_MATRIX[3]);
+	MODELVIEW_NORMAL_MATRIX = mat3(MODELVIEW_MATRIX);
+}
+
+float sd_box(vec2 p, vec2 b, float r) {
+	vec2 q = abs(p) - b + vec2(r);
+	return length(max(q, vec2(0.0))) + min(max(q.x, q.y), 0.0) - r;
+}
+
+void fragment() {
+	float aspect = 6.0;
+	vec2 p = (UV - vec2(0.5)) * vec2(aspect, 1.0);
+	float d = sd_box(p, vec2(aspect * 0.5, 0.5), 0.5);
+	float mask = smoothstep(0.03, -0.03, d);
+	vec4 fc = mix(fill_color, fill_hi, clamp(0.65 - UV.y, 0.0, 1.0));
+	vec4 col = mix(back_color, fc, step(UV.x, fill));
+	float ring = smoothstep(-0.13, -0.05, d);
+	col = mix(col, border_color, ring * 0.9);
+	ALBEDO = col.rgb;
+	ALPHA = col.a * mask;
+}
+"""
 
 ## Decaying needs (The Sims): a reason to move, always. Personality
 ## weights make each role satisfy needs differently.
@@ -146,9 +188,15 @@ func _ready() -> void:
 	_plate_state = _make_plate("", 34, Color(0.72, 0.76, 0.72, 0.85))
 	_plate_state.position = Vector3(0, 0.08, 0)
 	_plate_state.visible = false
-	# overhead status chip: stage + live % while working (per owner)
-	_status_chip = _make_plate("", 40, Color(1.0, 0.78, 0.32))
-	_status_chip.position = Vector3(0, CHAR_H + 0.26, 0)
+	# overhead progress: big HP-style bar + stage/% text ON the bar
+	# (per owner: the old text chip was too small to read at play zoom)
+	_status_bar = _make_status_bar()
+	_status_bar.position = Vector3(0, CHAR_H + 0.30, 0)
+	_status_bar.visible = false
+	_status_chip = _make_plate("", 46, Color(1.0, 0.97, 0.90))
+	_status_chip.position = Vector3(0, CHAR_H + 0.30, 0)
+	_status_chip.render_priority = 12
+	_status_chip.outline_render_priority = 11
 	_status_chip.visible = false
 
 	_bubble_timer = Timer.new()
@@ -192,12 +240,15 @@ func _process(delta: float) -> void:
 	needs["energy"] = clampf(needs["energy"] - drain * delta * 4.0, 0.0, 1.0)
 	needs["social"] = clampf(needs["social"] - 0.0030 * delta * 4.0, 0.0, 1.0)
 	needs["inspiration"] = clampf(needs["inspiration"] - 0.0026 * delta * 4.0, 0.0, 1.0)
-	# overhead status chip refresh (twice a second is plenty)
+	# overhead status refresh (twice a second) + smooth bar fill
 	if _status_chip.visible:
 		_chip_accum += delta
 		if _chip_accum >= 0.5:
 			_chip_accum = 0.0
 			_update_status_chip("")
+	if _status_bar.visible:
+		_bar_fill = lerpf(_bar_fill, _bar_target, minf(delta * 3.5, 1.0))
+		_bar_mat.set_shader_parameter("fill", _bar_fill)
 	# smooth turning toward the travel direction
 	if _model:
 		_model.rotation.y = lerp_angle(_model.rotation.y, _target_yaw, TURN_SPEED * delta)
@@ -224,7 +275,8 @@ func _process(delta: float) -> void:
 			Sfx.play_at(self, _floor_step_group(), -14.0, 0.10)
 
 
-## The overhead chip: short stage name + live % from the job registry.
+## The overhead bar: short stage name + live % from the job registry,
+## text sits ON the fill bar so both read together at any zoom.
 func _update_status_chip(stage_hint: String) -> void:
 	if _current_topic.is_empty():
 		return
@@ -233,7 +285,23 @@ func _update_status_chip(stage_hint: String) -> void:
 	var pct := int(j.get("pct", 0))
 	var key := "stg_" + stage
 	var label := I18n.t(key) if I18n.S.has(key) else stage
-	_status_chip.text = "⚙ %s %d%%" % [label, pct] if pct > 0 else "⚙ %s" % label
+	_status_chip.text = "%s %d%%" % [label, pct] if pct > 0 else label
+	_bar_target = clampf(pct / 100.0, 0.0, 1.0)
+
+
+func _make_status_bar() -> MeshInstance3D:
+	var m := MeshInstance3D.new()
+	var quad := QuadMesh.new()
+	quad.size = Vector2(1.32, 0.22)
+	m.mesh = quad
+	var sh := Shader.new()
+	sh.code = BAR_SHADER
+	_bar_mat = ShaderMaterial.new()
+	_bar_mat.shader = sh
+	_bar_mat.render_priority = 10
+	m.material_override = _bar_mat
+	add_child(m)
+	return m
 
 
 func _floor_step_group() -> String:
@@ -321,8 +389,10 @@ func _on_stage_started(stage: String, r: String, _request: Dictionary) -> void:
 	_wander_timer.stop()
 	current_task = "%s — '%s'" % [stage, str(_request.get("topic", "")).left(22)]
 	_current_topic = str(_request.get("topic", ""))
+	_bar_fill = 0.0
 	_update_status_chip(stage)
 	_status_chip.visible = true
+	_status_bar.visible = true
 	_pop_fx("!", Color(1.0, 0.78, 0.3))
 	var say_key := "say_" + stage
 	_think(I18n.t(say_key) if I18n.S.has(say_key) else I18n.t("say_onit"))
@@ -384,6 +454,7 @@ func _on_stage_completed(_stage: String, r: String, _request: Dictionary, result
 	_type_timer.stop()
 	current_task = "available"
 	_status_chip.visible = false
+	_status_bar.visible = false
 	_current_topic = ""
 	if result.begins_with("(stage"):
 		_pop_fx("x", Color(1.0, 0.42, 0.42))
