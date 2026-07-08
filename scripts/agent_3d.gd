@@ -100,12 +100,15 @@ func _ready() -> void:
 	_bubble = Label3D.new()
 	_bubble.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_bubble.no_depth_test = true
-	_bubble.font_size = 64
-	_bubble.outline_size = 18
+	_bubble.font_size = 58
+	_bubble.outline_size = 16
 	_bubble.pixel_size = 0.0042
 	_bubble.modulate = Color(0.98, 0.97, 0.94)
 	_bubble.outline_modulate = Color(0.13, 0.12, 0.16)
-	_bubble.position = Vector3(0, CHAR_H + 0.72, 0)
+	# wrapped speech: fits the conversation, floats clear of the name
+	_bubble.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_bubble.width = 420.0
+	_bubble.position = Vector3(0, CHAR_H + 1.06, 0)
 	_bubble.visible = false
 	add_child(_bubble)
 
@@ -114,9 +117,9 @@ func _ready() -> void:
 	# state label only appears when the agent is actually doing something)
 	var plate_name := _make_plate(role.to_upper(), 78,
 		Color(1.0, 0.85, 0.35) if role == "director" else Color(0.98, 0.98, 0.94))
-	plate_name.position = Vector3(0, CHAR_H + 0.56, 0)
-	_plate_state = _make_plate("", 48, Color(0.72, 0.76, 0.72))
-	_plate_state.position = Vector3(0, CHAR_H + 0.30, 0)
+	plate_name.position = Vector3(0, CHAR_H + 0.54, 0)
+	_plate_state = _make_plate("", 44, Color(0.72, 0.76, 0.72))
+	_plate_state.position = Vector3(0, CHAR_H + 0.24, 0)
 	_plate_state.visible = false
 
 	_bubble_timer = Timer.new()

@@ -321,6 +321,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 ## Mouse events land on the SubViewportContainer — route them here.
+## Click-first: left = inspect, wheel = zoom, right/middle drag = pan.
 func _on_view_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed:
 		match event.button_index:
@@ -330,6 +331,16 @@ func _on_view_input(event: InputEvent) -> void:
 				_cam.fov = clampf(_cam.fov * 1.08, 12.0, 55.0)
 			MOUSE_BUTTON_LEFT:
 				_pick_agent(event.position)
+	elif event is InputEventMouseMotion and \
+			event.button_mask & (MOUSE_BUTTON_MASK_RIGHT | MOUSE_BUTTON_MASK_MIDDLE):
+		var right := _cam.global_transform.basis.x
+		right.y = 0.0
+		right = right.normalized()
+		var fwd := -_cam.global_transform.basis.z
+		fwd.y = 0.0
+		fwd = fwd.normalized()
+		var k := 0.011 * (_cam.fov / 27.0)
+		_cam.position += right * -event.relative.x * k + fwd * event.relative.y * k
 
 
 ## No physics needed: ray-vs-agent distance picking. Click an agent to
@@ -445,12 +456,13 @@ func _build_costume_panel() -> void:
 			if agent.role == role:
 				agent.apply_costume(c))
 	hud.add_child(_costume_panel)
-	var hint := Label.new()
-	hint.text = "C — costumes"
-	hint.add_theme_font_size_override("font_size", 12)
-	hint.modulate = Color(1, 1, 1, 0.7)
-	hint.position = Vector2(1790, 20)
-	hud.add_child(hint)
+	# click-first UX: a real button (C still works as a shortcut)
+	var btn := Button.new()
+	btn.text = "  Costumes  "
+	btn.position = Vector2(1770, 16)
+	btn.pressed.connect(func() -> void:
+		_costume_panel.visible = not _costume_panel.visible)
+	hud.add_child(btn)
 	# show the panel in dev screenshots
 	if not OS.get_environment("AGENT_TOWN_SHOT").is_empty():
 		_costume_panel.visible = true
@@ -506,7 +518,8 @@ func _build_approval_panel() -> void:
 	_inspector.position = Vector2(12, 200)
 	_inspector_text = Label.new()
 	_inspector_text.add_theme_font_size_override("font_size", 13)
-	_inspector_text.custom_minimum_size = Vector2(330, 0)
+	_inspector_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_inspector_text.custom_minimum_size = Vector2(360, 0)
 	_inspector.add_child(_inspector_text)
 	_inspector.visible = false
 	hud.add_child(_inspector)
