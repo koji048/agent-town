@@ -21,13 +21,26 @@ const SIM_TEXT := {
 signal _cli_finished(text: String, code: int)
 
 
+var _in_flight := false
+
+
 ## Sends one completion request. Returns the text result, or "" on failure.
 ## Provider chain: claude-code CLI -> Anthropic API -> simulate.
+## SERIALIZED: the CLI invocation shares prompt files on disk, so
+## concurrent calls (pipeline vs gossip/chat) would cross responses.
 func complete(system_prompt: String, user_prompt: String, sim_stage: String = "") -> String:
 	if Config.provider_resolved == "simulate":
 		await get_tree().create_timer(randf_range(2.5, 5.0)).timeout
 		return SIM_TEXT.get(sim_stage, "[demo] done.")
+	while _in_flight:
+		await get_tree().create_timer(0.3).timeout
+	_in_flight = true
+	var out := await _complete_live(system_prompt, user_prompt)
+	_in_flight = false
+	return out
 
+
+func _complete_live(system_prompt: String, user_prompt: String) -> String:
 	if Config.provider_resolved == "claude-code":
 		var cli_text := await _cli_complete(system_prompt, user_prompt)
 		if not cli_text.is_empty():
