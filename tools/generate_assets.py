@@ -891,6 +891,139 @@ def make_pbr_textures() -> None:
     print("wrote atrium + concrete_dark variants")
 
 
+# ---------------------------------------------------------------- audio
+# Procedural foley, synthesized deterministically (stdlib only).
+# Sprint 1 of the creative direction: "a silent diorama is a screenshot;
+# a foley'd diorama is a place" (see docs/CREATIVE_DIRECTION.md).
+def make_audio() -> None:
+    import math
+    import struct
+    import wave
+
+    SR = 22050
+    out_dir = os.path.join(ASSETS, "audio")
+    os.makedirs(out_dir, exist_ok=True)
+    rng = random.Random(4242)
+
+    def write_wav(name: str, samples: list) -> None:
+        p = os.path.join(out_dir, name + ".wav")
+        with wave.open(p, "w") as w:
+            w.setnchannels(1)
+            w.setsampwidth(2)
+            w.setframerate(SR)
+            frames = b"".join(
+                struct.pack("<h", max(-32767, min(32767, int(s * 32767)))) for s in samples)
+            w.writeframes(frames)
+        print("wrote", os.path.relpath(p, ROOT))
+
+    def env_exp(n: int, decay: float) -> list:
+        return [math.exp(-i / (SR * decay)) for i in range(n)]
+
+    def lowpass(xs: list, alpha: float) -> list:
+        out = []
+        y = 0.0
+        for x in xs:
+            y += alpha * (x - y)
+            out.append(y)
+        return out
+
+    def highpass(xs: list, alpha: float) -> list:
+        out = []
+        y = 0.0
+        prev = 0.0
+        for x in xs:
+            y = alpha * (y + x - prev)
+            prev = x
+            out.append(y)
+        return out
+
+    def noise(n: int) -> list:
+        return [rng.uniform(-1, 1) for _ in range(n)]
+
+    # -- keyboard clicks: tiny bright noise tick + plastic ping
+    for k in range(4):
+        n = int(SR * 0.03)
+        e = env_exp(n, 0.004 + k * 0.001)
+        body = highpass(noise(n), 0.6)
+        f = 1800 + k * 350
+        s = [(body[i] * 0.7 + 0.3 * math.sin(TAU_ := 2 * math.pi * f * i / SR)) * e[i] * 0.5
+             for i in range(n)]
+        write_wav("key_%02d" % k, s)
+
+    # -- footsteps per floor material
+    def step(name: str, thump_hz: float, noise_amt: float, bright: float, decay: float, vol: float) -> None:
+        n = int(SR * 0.09)
+        e = env_exp(n, decay)
+        nz = lowpass(noise(n), bright)
+        s = [(math.sin(2 * math.pi * thump_hz * i / SR) * (1.0 - noise_amt)
+              + nz[i] * noise_amt) * e[i] * vol for i in range(n)]
+        write_wav(name, s)
+
+    for v in range(2):
+        step("step_wood_%02d" % v, 85 + v * 12, 0.45, 0.30, 0.020, 0.55)
+        step("step_hard_%02d" % v, 120 + v * 15, 0.55, 0.45, 0.014, 0.45)
+        step("step_soft_%02d" % v, 60 + v * 8, 0.80, 0.12, 0.030, 0.30)
+
+    # -- paper shuffle: fluttering high noise
+    for v in range(2):
+        n = int(SR * 0.16)
+        nz = highpass(noise(n), 0.45)
+        s = [nz[i] * (0.5 + 0.5 * math.sin(2 * math.pi * (9 + v * 4) * i / SR))
+             * math.exp(-i / (SR * 0.06)) * 0.35 for i in range(n)]
+        write_wav("paper_%02d" % v, s)
+
+    # -- chair scrape: falling band of noise
+    n = int(SR * 0.20)
+    nz = lowpass(noise(n), 0.25)
+    s = [nz[i] * math.exp(-i / (SR * 0.07))
+         * (0.6 + 0.4 * math.sin(2 * math.pi * (140 - 90 * i / n) * i / SR)) * 0.4
+         for i in range(n)]
+    write_wav("chair_00", s)
+
+    # -- publish chime: soft mallet arpeggio (C5 E5 G5 C6), reserved juice
+    n = int(SR * 1.9)
+    s = [0.0] * n
+    for gi, freq in enumerate([523.25, 659.25, 783.99, 1046.5]):
+        start = int(gi * 0.13 * SR)
+        for i in range(start, n):
+            t = (i - start) / SR
+            a = math.exp(-t * 2.4) * 0.22
+            s[i] += a * (math.sin(2 * math.pi * freq * t)
+                         + 0.35 * math.sin(2 * math.pi * freq * 2 * t)
+                         + 0.12 * math.sin(2 * math.pi * freq * 3 * t))
+    write_wav("chime", [x * 0.8 for x in s])
+
+    # -- room tone: 6 s loopable brown-noise HVAC bed (very quiet)
+    n = SR * 6
+    y = 0.0
+    s = []
+    for i in range(n):
+        y = max(-1.0, min(1.0, y + rng.uniform(-1, 1) * 0.02))
+        wob = 0.85 + 0.15 * math.sin(2 * math.pi * 0.23 * i / SR)
+        s.append(y * 0.16 * wob)
+    # crossfade tail into head for a clean loop
+    fade = SR // 2
+    for i in range(fade):
+        f = i / fade
+        s[i] = s[i] * f + s[n - fade + i] * (1.0 - f)
+    write_wav("roomtone", s[: n - fade])
+
+    # -- courtyard bird chirps: quick descending sine pairs
+    for v in range(3):
+        n = int(SR * 0.22)
+        s = []
+        for i in range(n):
+            t = i / SR
+            chunk = 0.0
+            for (t0, f0, f1) in [(0.0, 3800 - v * 300, 2900), (0.11, 4300 - v * 300, 3200)]:
+                if t >= t0 and t < t0 + 0.08:
+                    tt = (t - t0) / 0.08
+                    f = f0 + (f1 - f0) * tt
+                    chunk += math.sin(2 * math.pi * f * t) * math.sin(math.pi * tt) * 0.20
+            s.append(chunk)
+        write_wav("chirp_%02d" % v, s)
+
+
 if __name__ == "__main__":
     make_tiles()
     make_walls()
@@ -899,6 +1032,7 @@ if __name__ == "__main__":
     make_characters()
     make_textures_3d()
     make_pbr_textures()
+    make_audio()
     make_icon()
     make_map_json()
     make_preview()

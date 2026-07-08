@@ -18,6 +18,8 @@ EventBus="*res://scripts/autoload/event_bus.gd"
 Claude="*res://scripts/autoload/claude_client.gd"
 TaskQueue="*res://scripts/autoload/task_queue.gd"
 OutputWriter="*res://scripts/autoload/output_writer.gd"
+Sfx="*res://scripts/autoload/sfx.gd"
+Juice="*res://scripts/autoload/juice.gd"
 
 [display]
 

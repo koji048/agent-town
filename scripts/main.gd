@@ -24,6 +24,7 @@ func _ready() -> void:
 	add_child(container)
 	var vp := SubViewport.new()
 	vp.msaa_3d = Viewport.MSAA_4X
+	vp.audio_listener_enable_3d = true
 	container.add_child(vp)
 
 	var world := Node3D.new()
@@ -101,11 +102,18 @@ func _ready() -> void:
 		_status.text = "IDLE — drop a .json into queue/pending/"
 		_append_log("Package saved: output/%s" % output_dir.get_file())
 		_append_log("The crew gathers in the town hall!")
+		# the ONE loud moment (reserved juice): chime + confetti
+		Sfx.play_ui("chime", -6.0)
+		_confetti(office.grid_to_world(Vector2i(12, 9)) + Vector3(0, 2.2, 0))
 		var agents := get_tree().get_nodes_in_group("agents")
 		for i in agents.size():
 			var spot: Vector2i = Office3D.TOWNHALL_SPOTS[i % Office3D.TOWNHALL_SPOTS.size()]
 			(agents[i] as TownAgent3D).celebrate_at(spot))
 	_append_log("Agent Town office is open.")
+
+	# ambient bed: HVAC room tone + occasional courtyard birds
+	Sfx.start_room_tone(world, -26.0)
+	_start_chirps(world)
 
 	# Dev helper: AGENT_TOWN_SHOT=/path/out.png godot --path . -> renders a
 	# few seconds, saves a screenshot, quits. Used for README captures.
@@ -117,6 +125,59 @@ func _ready() -> void:
 	var demo_dir := OS.get_environment("AGENT_TOWN_DEMO")
 	if not demo_dir.is_empty():
 		_run_demo_capture(demo_dir)
+
+
+## Courtyard birds on a lazy random timer (Tiny Glade: the world
+## rewards you with unprompted small events).
+func _start_chirps(world: Node) -> void:
+	var t := Timer.new()
+	t.one_shot = true
+	t.timeout.connect(func() -> void:
+		var host := Node3D.new()
+		host.position = office.grid_to_world(
+			Vector2i(randi_range(10, 14), randi_range(8, 11)))
+		host.position.y = randf_range(1.5, 2.4)
+		world.add_child(host)
+		Sfx.play_at(host, "chirp", -12.0, 0.15)
+		get_tree().create_timer(2.0).timeout.connect(host.queue_free)
+		t.start(randf_range(18.0, 45.0)))
+	add_child(t)
+	t.start(randf_range(6.0, 15.0))
+
+
+## One-shot confetti burst (GPUParticles3D), publish celebrations only.
+func _confetti(pos: Vector3) -> void:
+	var p := GPUParticles3D.new()
+	p.position = pos
+	p.amount = 140
+	p.lifetime = 2.4
+	p.one_shot = true
+	p.explosiveness = 0.95
+	var mat := ParticleProcessMaterial.new()
+	mat.direction = Vector3(0, 1, 0)
+	mat.spread = 65.0
+	mat.initial_velocity_min = 3.0
+	mat.initial_velocity_max = 5.5
+	mat.gravity = Vector3(0, -4.5, 0)
+	mat.angular_velocity_min = -360.0
+	mat.angular_velocity_max = 360.0
+	mat.scale_min = 0.6
+	mat.scale_max = 1.2
+	var grad := Gradient.new()
+	grad.set_color(0, Color(0.95, 0.45, 0.33))
+	grad.add_point(0.34, Color(0.98, 0.74, 0.02))
+	grad.add_point(0.67, Color(0.26, 0.52, 0.96))
+	grad.set_color(1, Color(0.20, 0.66, 0.33))
+	var gt := GradientTexture1D.new()
+	gt.gradient = grad
+	mat.color_initial_ramp = gt
+	p.process_material = mat
+	var quad := QuadMesh.new()
+	quad.size = Vector2(0.055, 0.075)
+	p.draw_pass_1 = quad
+	office.add_child(p)
+	p.emitting = true
+	get_tree().create_timer(4.0).timeout.connect(p.queue_free)
 
 
 func _run_demo_capture(dir: String) -> void:

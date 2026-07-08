@@ -58,6 +58,9 @@ var _target_yaw := 0.0
 var _bubble: Label3D
 var _bubble_timer: Timer
 var _wander_timer: Timer
+var _step_accum := 0.0
+var _type_timer: Timer
+var _doc: Node3D
 var _plate_state: Label3D
 
 var costume: Dictionary = {}
@@ -115,6 +118,15 @@ func _ready() -> void:
 	add_child(_wander_timer)
 	_restart_wander()
 
+	# typing foley while working (Unpacking rule: variants + jitter)
+	_type_timer = Timer.new()
+	_type_timer.one_shot = true
+	_type_timer.timeout.connect(func() -> void:
+		if state == State.WORKING:
+			Sfx.play_at(self, "key", -10.0, 0.14)
+			_type_timer.start(randf_range(0.10, 0.38)))
+	add_child(_type_timer)
+
 	EventBus.stage_started.connect(_on_stage_started)
 	EventBus.stage_completed.connect(_on_stage_completed)
 	EventBus.agent_say.connect(func(r: String, text: String) -> void:
@@ -142,6 +154,24 @@ func _process(delta: float) -> void:
 	else:
 		position += to_target.normalized() * step
 		_target_yaw = atan2(to_target.x, to_target.z)
+		# footsteps: one tap per stride, sound picked by floor material
+		_step_accum += step
+		if _step_accum >= 0.55:
+			_step_accum = 0.0
+			Sfx.play_at(self, _floor_step_group(), -14.0, 0.10)
+
+
+func _floor_step_group() -> String:
+	if office == null:
+		return "step_hard"
+	var row := str(office.map_rows[grid_pos.y])
+	match row[grid_pos.x]:
+		"r", "g":
+			return "step_soft"
+		"#", "P":
+			return "step_wood"
+		_:
+			return "step_hard"
 
 
 func walk_to(cell: Vector2i) -> void:
@@ -174,6 +204,9 @@ func _on_path_done() -> void:
 		_play(str(WORK_ANIM.get(role, "Interact")))
 		# face the desk (north) while working
 		_target_yaw = PI
+		Sfx.play_at(self, "chair", -10.0)
+		_drop_doc()
+		_type_timer.start(randf_range(0.3, 0.8))
 		EventBus.agent_arrived.emit(role)
 	else:
 		_set_state(State.IDLE)
@@ -188,7 +221,54 @@ func _on_stage_started(stage: String, r: String, _request: Dictionary) -> void:
 	_wander_timer.stop()
 	_pop_fx("!", Color(1.0, 0.78, 0.3))
 	_say(str(SAY_START.get(stage, "On it...")))
+	_carry_doc()
 	walk_to(office.workstation(role))
+
+
+## The handoff made visible: a document carried in front of the chest
+## while walking to the desk (MetaGPT artifacts as theater).
+func _carry_doc() -> void:
+	_drop_doc()
+	_doc = Node3D.new()
+	_doc.position = Vector3(0.0, 0.78, 0.22)
+	add_child(_doc)
+	var page := MeshInstance3D.new()
+	var pm := BoxMesh.new()
+	pm.size = Vector3(0.20, 0.025, 0.27)
+	page.mesh = pm
+	page.material_override = _paper_mat()
+	page.rotation_degrees = Vector3(24, 0, 0)
+	_doc.add_child(page)
+	var clip := MeshInstance3D.new()
+	var cm := BoxMesh.new()
+	cm.size = Vector3(0.20, 0.028, 0.05)
+	clip.mesh = cm
+	clip.material_override = _chip_mat()
+	clip.position = Vector3(0, 0.004, -0.11)
+	clip.rotation_degrees = Vector3(24, 0, 0)
+	_doc.add_child(clip)
+	Juice.pop_in(_doc)
+	Sfx.play_at(self, "paper", -8.0)
+
+
+func _drop_doc() -> void:
+	if _doc:
+		_doc.queue_free()
+		_doc = null
+
+
+func _paper_mat() -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color(0.92, 0.91, 0.87)
+	m.roughness = 0.75
+	return m
+
+
+func _chip_mat() -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Office3D.ROLE_ACCENT.get(role, Color(0.6, 0.6, 0.6))
+	m.roughness = 0.5
+	return m
 
 
 func _on_stage_completed(_stage: String, r: String, _request: Dictionary, result: String) -> void:
@@ -196,6 +276,7 @@ func _on_stage_completed(_stage: String, r: String, _request: Dictionary, result
 		return
 	_target_is_work = false
 	_set_state(State.IDLE)
+	_type_timer.stop()
 	if result.begins_with("(stage"):
 		_pop_fx("x", Color(1.0, 0.42, 0.42))
 		_say("That one failed...")
@@ -203,6 +284,10 @@ func _on_stage_completed(_stage: String, r: String, _request: Dictionary, result
 	else:
 		_pop_fx("+", Color(0.45, 1.0, 0.55))
 		_say("Done!")
+		# permanence: the finished page stays on the desk
+		if office:
+			office.add_desk_paper(role)
+		Sfx.play_at(self, "paper", -10.0)
 		_play_once_then_idle("Cheer")
 	_restart_wander()
 

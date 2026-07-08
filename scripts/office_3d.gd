@@ -572,13 +572,10 @@ func _zone_meeting_nook() -> void:
 # visible — requests enter the building here) ============
 func _zone_reception() -> void:
 	var white := _mat("counter_white", Color(0.82, 0.81, 0.78))
-	# INTAKE kanban wall on the north wall
-	var note_cols := [Color(1.0, 0.84, 0.47), Color(1.0, 0.59, 0.7), Color(0.35, 0.86, 0.86), Color(0.66, 0.94, 0.78)]
-	_box(Vector3(2.6, 1.0, 0.04), Vector3(19.7, 1.95, 0.20), _mat("kanban", Color(0.30, 0.30, 0.36)))
-	for r in 3:
-		for cn in 6:
-			_box(Vector3(0.24, 0.24, 0.02), Vector3(18.7 + cn * 0.4, 2.24 - r * 0.32, 0.23),
-				_mat("note_%d" % ((r + cn) % 4), note_cols[(r + cn) % 4]), self, false)
+	# INTAKE: the LIVE kanban wall — real queue state as physical cards
+	var board := KanbanBoard.new()
+	board.position = Vector3(19.7, 1.95, 0.22)
+	add_child(board)
 	var sign := Label3D.new()
 	sign.text = "INTAKE"
 	sign.font_size = 64
@@ -640,6 +637,33 @@ func _task_chair(x: float, z: float, rot_deg: float) -> void:
 	for sx in [-0.25, 0.25]:
 		_box(Vector3(0.04, 0.15, 0.05), Vector3(sx, 0.545, 0.03), steel, root, false)
 		_box(Vector3(0.06, 0.025, 0.24), Vector3(sx, 0.63, 0.0), seatm, root, false)
+
+
+## Permanence (juice doctrine): each finished stage leaves a page on the
+## agent's desk — the set dressing becomes a readable progress record.
+var _desk_papers: Dictionary = {}
+
+
+func add_desk_paper(role: String) -> void:
+	var ws := workstation(role)
+	if not _desk_papers.has(role):
+		_desk_papers[role] = []
+	var stack: Array = _desk_papers[role]
+	if stack.size() >= 6:
+		var oldest: Node = stack.pop_front()
+		if is_instance_valid(oldest):
+			oldest.queue_free()
+	var paper := MeshInstance3D.new()
+	var pm := BoxMesh.new()
+	pm.size = Vector3(0.16, 0.008, 0.22)
+	paper.mesh = pm
+	paper.material_override = _mat("desk_paper", Color(0.92, 0.91, 0.87))
+	var desk := grid_to_world(ws) + Vector3(randf_range(-0.45, -0.25), DESK_H + 0.03 + stack.size() * 0.009, randf_range(-1.15, -0.95))
+	paper.position = desk
+	paper.rotation_degrees = Vector3(0, randf_range(-25, 25), 0)
+	add_child(paper)
+	Juice.pop_in(paper)
+	stack.append(paper)
 
 
 # ---- the rest of the modern kit (procedural, measured materials) ----
