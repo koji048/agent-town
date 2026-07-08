@@ -164,6 +164,11 @@ func _ready() -> void:
 	Sfx.start_room_tone(world, -26.0)
 	_start_chirps(world)
 
+	# drop a video ANYWHERE on the window -> straight into the pipeline
+	get_window().files_dropped.connect(_on_files_dropped)
+	# ...and AirDrops are noticed automatically (Downloads watcher asks once)
+	_start_downloads_watch()
+
 	# the approval desk gate + the diegetic cost meter
 	_build_approval_panel()
 	EventBus.approval_requested.connect(func(request: Dictionary, preview: String) -> void:
@@ -195,6 +200,94 @@ func _ready() -> void:
 	var demo_dir := OS.get_environment("AGENT_TOWN_DEMO")
 	if not demo_dir.is_empty():
 		_run_demo_capture(demo_dir)
+
+
+const VIDEO_EXT := ["mov", "mp4", "m4v", "mkv", "webm"]
+
+
+## Drag-and-drop onto the window: videos go straight into the inbox.
+func _on_files_dropped(files: PackedStringArray) -> void:
+	for f in files:
+		if f.get_extension().to_lower() in VIDEO_EXT:
+			_ingest_dropped(f)
+
+
+func _ingest_dropped(path: String) -> void:
+	var dest := ProjectSettings.globalize_path("res://inbox").path_join(path.get_file())
+	if DirAccess.copy_absolute(path, dest) == OK:
+		_append_log(I18n.t("clip_received"))
+		Sfx.play_ui("paper", -6.0)
+
+
+## Watch Downloads for videos that appear AFTER boot (AirDrop lands
+## there) — ask once per file, never grab silently.
+var _dl_seen: Dictionary = {}
+var _boot_time := 0
+
+
+func _start_downloads_watch() -> void:
+	_boot_time = int(Time.get_unix_time_from_system())
+	var dl := OS.get_environment("HOME") + "/Downloads"
+	var t := Timer.new()
+	t.wait_time = 6.0
+	t.timeout.connect(func() -> void:
+		var dir := DirAccess.open(dl)
+		if dir == null:
+			return
+		for f in dir.get_files():
+			if not (f.get_extension().to_lower() in VIDEO_EXT):
+				continue
+			if _dl_seen.has(f):
+				continue
+			var p := dl.path_join(f)
+			if FileAccess.get_modified_time(p) < _boot_time:
+				_dl_seen[f] = true
+				continue
+			_dl_seen[f] = true
+			_ask_clip(p))
+	add_child(t)
+	t.start()
+
+
+func _ask_clip(path: String) -> void:
+	var hud := CanvasLayer.new()
+	hud.layer = 6
+	add_child(hud)
+	var panel := PanelContainer.new()
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.10, 0.12, 0.16, 0.96)
+	sb.border_color = Color(0.55, 0.75, 1.0)
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(8)
+	sb.set_content_margin_all(12)
+	panel.add_theme_stylebox_override("panel", sb)
+	panel.position = Vector2(620, 90)
+	var vb := VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 8)
+	var l := Label.new()
+	l.text = I18n.t("clip_found") % path.get_file()
+	l.add_theme_font_size_override("font_size", 15)
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.custom_minimum_size = Vector2(620, 0)
+	vb.add_child(l)
+	var hb := HBoxContainer.new()
+	hb.add_theme_constant_override("separation", 12)
+	var yes := Button.new()
+	yes.text = I18n.t("btn_send_team")
+	yes.pressed.connect(func() -> void:
+		_ingest_dropped(path)
+		hud.queue_free())
+	hb.add_child(yes)
+	var no := Button.new()
+	no.text = I18n.t("btn_not_work")
+	no.pressed.connect(hud.queue_free)
+	hb.add_child(no)
+	vb.add_child(hb)
+	panel.add_child(vb)
+	hud.add_child(panel)
+	get_tree().create_timer(60.0).timeout.connect(func() -> void:
+		if is_instance_valid(hud):
+			hud.queue_free())
 
 
 ## Courtyard birds on a lazy random timer (Tiny Glade: the world
