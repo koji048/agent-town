@@ -203,6 +203,9 @@ const SURFACE_SPECS := {
 	"booth_felt": [0.92, 0.0, 0.3],
 	"chair_mesh": [0.90, 0.0, 0.3],      # breathable mesh back
 	"chair_seat": [0.90, 0.0, 0.3],
+	"sofa_": [0.92, 0.0, 0.3],           # upholstery volumes
+	"shell_": [0.40, 0.0, 0.5],          # molded shell chairs
+	"spine_": [0.60, 0.0, 0.5],          # book spines
 	"bench_cushion": [0.92, 0.0, 0.3],
 	"cushion_": [0.92, 0.0, 0.3],
 	"beanbag_": [0.95, 0.0, 0.3],
@@ -251,7 +254,7 @@ const SURFACE_SPECS := {
 func _spec_for(key: String) -> Array:
 	if SURFACE_SPECS.has(key):
 		return SURFACE_SPECS[key]
-	for prefix in ["chip_", "cushion_", "beanbag_", "kilim_"]:
+	for prefix in ["chip_", "cushion_", "beanbag_", "kilim_", "sofa_", "shell_", "spine_"]:
 		if key.begins_with(prefix):
 			return SURFACE_SPECS[prefix]
 	return []
@@ -549,18 +552,18 @@ func _zone_director() -> void:
 	_prop("computerScreen", 9.2, 1.6, 165, 1.0, DESK_H + 0.18, 0.40)
 	_prop("computerKeyboard", 9.7, 1.95, 165, 0.3, DESK_H + 0.03)
 	_task_chair(10.0, 2.6, 205)
-	_prop("kaykit/cabinet_medium_decorated", 13.8, 1.0, 180, 1.0, 0.0, 1.0)
+	_credenza(13.8, 1.0, 1.3)
 	_prop("kaykit/cactus_small_A", 12.9, 0.8, 0, 1.0, 0.0, 0.42)
 	_pendant(Vector3(10.5, 2.4, 2.5))
 
 
 # ============ MEETING NOOK (kickoff table beside the director) ============
 func _zone_meeting_nook() -> void:
-	_prop("kaykit/table_medium", 3.5, 2.0, 0, 1.1, 0.0, DESK_H)
-	_prop("kaykit/chair_A_wood", 3.5, 1.1, 0, 1.0, 0.0, 0.9)
-	_prop("kaykit/chair_A_wood", 2.6, 2.7, 135, 1.0, 0.0, 0.9)
-	_prop("kaykit/chair_A_wood", 4.4, 2.7, 225, 1.0, 0.0, 0.9)
-	_prop("laptop", 3.6, 1.9, 210, 0.3, DESK_H)
+	_round_table(3.5, 2.0)
+	_shell_chair(3.5, 1.1, 0, Color(0.88, 0.87, 0.84))
+	_shell_chair(2.6, 2.7, 135, CORAL)
+	_shell_chair(4.4, 2.7, 225, Color(0.35, 0.62, 0.62))
+	_prop("laptop", 3.6, 1.9, 210, 0.3, DESK_H + 0.02)
 	_prop("kaykit/pictureframe_large_A", 3.5, 0.24, 0, 1.0, 1.55, 0.65)
 	_pendant(Vector3(3.5, 2.4, 2.0))
 
@@ -584,10 +587,12 @@ func _zone_reception() -> void:
 	sign.modulate = Color(0.95, 0.94, 0.9)
 	sign.position = Vector3(19.7, 2.62, 0.24)
 	add_child(sign)
-	# reception counter: cabinet pair + white top, facing the entrance
-	_prop("kaykit/cabinet_medium", 19.4, 2.9, 180, 1.0, 0.0, 0.9)
-	_prop("kaykit/cabinet_medium", 20.4, 2.9, 180, 1.0, 0.0, 0.9)
-	_box(Vector3(2.1, 0.06, 0.6), Vector3(19.9, 0.94, 2.9), white, self, false)
+	# reception counter: white monolith on a shadow-gap kick
+	_box(Vector3(1.9, 0.08, 0.5), Vector3(19.9, 0.04, 2.9),
+		_mat("black_frame", Color(0.13, 0.13, 0.14)), self, false)
+	_box(Vector3(2.0, 0.86, 0.55), Vector3(19.9, 0.51, 2.9), white)
+	_box(Vector3(2.1, 0.05, 0.62), Vector3(19.9, 0.965, 2.9),
+		_mat("marble", Color(0.83, 0.79, 0.75)), self, false)
 	_prop("laptop", 19.6, 2.8, 10, 0.32, 0.97)
 	_task_chair(19.9, 2.2, 0)
 	# coral doormat at the NE entrance
@@ -637,6 +642,188 @@ func _task_chair(x: float, z: float, rot_deg: float) -> void:
 		_box(Vector3(0.06, 0.025, 0.24), Vector3(sx, 0.63, 0.0), seatm, root, false)
 
 
+# ---- the rest of the modern kit (procedural, measured materials) ----
+
+## Round meeting table: white top on a steel pedestal with a disc base.
+func _round_table(x: float, z: float, r: float = 0.55) -> void:
+	var steel := _mat("steel", Color(0.42, 0.42, 0.46))
+	var top := MeshInstance3D.new()
+	var cyl := CylinderMesh.new()
+	cyl.top_radius = r
+	cyl.bottom_radius = r
+	cyl.height = 0.04
+	top.mesh = cyl
+	top.material_override = _mat("counter_white", Color(0.82, 0.81, 0.78))
+	top.position = Vector3(x, DESK_H, z)
+	add_child(top)
+	_box(Vector3(0.07, DESK_H - 0.05, 0.07), Vector3(x, (DESK_H - 0.05) / 2.0, z), steel)
+	var base := MeshInstance3D.new()
+	var bc := CylinderMesh.new()
+	bc.top_radius = 0.26
+	bc.bottom_radius = 0.30
+	bc.height = 0.03
+	base.mesh = bc
+	base.material_override = steel
+	base.position = Vector3(x, 0.015, z)
+	add_child(base)
+
+
+## Molded shell side chair on slim steel legs. Front faces +Z.
+func _shell_chair(x: float, z: float, rot_deg: float, col: Color) -> void:
+	var root := Node3D.new()
+	root.position = Vector3(x, 0, z)
+	root.rotation_degrees = Vector3(0, rot_deg, 0)
+	add_child(root)
+	var steel := _mat("steel", Color(0.42, 0.42, 0.46))
+	var shell := _mat("shell_%02x%02x" % [int(col.r * 255), int(col.g * 255)], col)
+	for lx in [-0.16, 0.16]:
+		for lz in [-0.15, 0.15]:
+			_box(Vector3(0.028, 0.42, 0.028), Vector3(lx, 0.21, lz), steel, root, false)
+	_box(Vector3(0.42, 0.05, 0.40), Vector3(0, 0.44, 0), shell, root)
+	var back := _box(Vector3(0.40, 0.40, 0.045), Vector3(0, 0.66, -0.19), shell, root)
+	back.rotation_degrees = Vector3(8, 0, 0)
+
+
+## Open shelving: black steel frame, oak shelves, colored book spines.
+func _shelving(x: float, z: float, rot_deg: float, w: float = 1.1, h: float = 1.8) -> void:
+	var root := Node3D.new()
+	root.position = Vector3(x, 0, z)
+	root.rotation_degrees = Vector3(0, rot_deg, 0)
+	add_child(root)
+	var frame := _mat("black_frame", Color(0.13, 0.13, 0.14))
+	var oak := _mat("oak", Color.WHITE, "res://assets/textures/deck.png")
+	var spine_cols := [Color(0.77, 0.30, 0.30), Color(0.30, 0.48, 0.68),
+		Color(0.86, 0.70, 0.34), Color(0.36, 0.60, 0.44), Color(0.55, 0.42, 0.62)]
+	for sx in [-w / 2.0, w / 2.0]:
+		_box(Vector3(0.04, h, 0.30), Vector3(sx, h / 2.0, 0), frame, root)
+	for i in 4:
+		var sy := 0.22 + i * (h - 0.34) / 3.0
+		_box(Vector3(w - 0.06, 0.035, 0.30), Vector3(0, sy, 0), oak, root)
+		if i < 3:
+			var bx := -w / 2.0 + 0.14
+			for b in 6:
+				var bh := 0.17 + fmod(float(b * 7 + i * 3), 5.0) * 0.012
+				_box(Vector3(0.042, bh, 0.15), Vector3(bx, sy + bh / 2.0 + 0.02, 0),
+					_mat("spine_%d" % ((b + i) % 5), spine_cols[(b + i) % 5]), root, false)
+				bx += 0.058
+	_box(Vector3(0.22, 0.16, 0.16), Vector3(w / 2.0 - 0.2, h - 0.12 + 0.10, 0),
+		_mat("basket", Color(0.72, 0.58, 0.38)), root, false)
+
+
+## Low-profile modern sofa: boxy fabric volumes on slim steel legs,
+## two throw pillows. Front faces +Z.
+func _modern_sofa(x: float, z: float, rot_deg: float, col: Color, w: float = 1.75) -> void:
+	var root := Node3D.new()
+	root.position = Vector3(x, 0, z)
+	root.rotation_degrees = Vector3(0, rot_deg, 0)
+	add_child(root)
+	var steel := _mat("steel", Color(0.42, 0.42, 0.46))
+	var fab := _mat("sofa_%02x%02x" % [int(col.r * 255), int(col.g * 255)], col)
+	for lx in [-w / 2.0 + 0.08, w / 2.0 - 0.08]:
+		for lz in [-0.3, 0.3]:
+			_box(Vector3(0.03, 0.12, 0.03), Vector3(lx, 0.06, lz), steel, root, false)
+	_box(Vector3(w, 0.16, 0.80), Vector3(0, 0.20, 0), fab, root)
+	for cx in [-w / 4.0 + 0.02, w / 4.0 - 0.02]:
+		_box(Vector3(w / 2.0 - 0.1, 0.11, 0.60), Vector3(cx, 0.33, 0.06), fab, root, false)
+	_box(Vector3(w, 0.36, 0.16), Vector3(0, 0.46, -0.32), fab, root)
+	for ax in [-w / 2.0 + 0.06, w / 2.0 - 0.06]:
+		_box(Vector3(0.12, 0.28, 0.78), Vector3(ax, 0.42, 0), fab, root, false)
+	var pil_cols := [CORAL, Color(0.30, 0.36, 0.55)]
+	for i in 2:
+		var p := _box(Vector3(0.30, 0.30, 0.10), Vector3(-w / 4.0 + i * w / 2.0, 0.50, -0.22),
+			_mat("kilim_%d" % i, pil_cols[i]), root, false)
+		p.rotation_degrees = Vector3(-10, 0, i * 8 - 4)
+
+
+## Modern lounge armchair: the sofa language at one-seat width.
+func _modern_armchair(x: float, z: float, rot_deg: float, col: Color) -> void:
+	var root := Node3D.new()
+	root.position = Vector3(x, 0, z)
+	root.rotation_degrees = Vector3(0, rot_deg, 0)
+	add_child(root)
+	var steel := _mat("steel", Color(0.42, 0.42, 0.46))
+	var fab := _mat("sofa_%02x%02x" % [int(col.r * 255), int(col.g * 255)], col)
+	for lx in [-0.32, 0.32]:
+		for lz in [-0.28, 0.28]:
+			_box(Vector3(0.03, 0.12, 0.03), Vector3(lx, 0.06, lz), steel, root, false)
+	_box(Vector3(0.80, 0.16, 0.74), Vector3(0, 0.20, 0), fab, root)
+	_box(Vector3(0.54, 0.11, 0.56), Vector3(0, 0.33, 0.04), fab, root, false)
+	_box(Vector3(0.80, 0.34, 0.15), Vector3(0, 0.45, -0.29), fab, root)
+	for ax in [-0.34, 0.34]:
+		_box(Vector3(0.12, 0.26, 0.72), Vector3(ax, 0.41, 0), fab, root, false)
+
+
+## Bar stool: steel disc base + post, round seat.
+func _bar_stool(x: float, z: float) -> void:
+	var steel := _mat("steel", Color(0.42, 0.42, 0.46))
+	for part in [[0.15, 0.025, 0.0125], [0.025, 0.60, 0.31]]:
+		var mi := MeshInstance3D.new()
+		var cyl := CylinderMesh.new()
+		cyl.top_radius = part[0]
+		cyl.bottom_radius = part[0]
+		cyl.height = part[1]
+		mi.mesh = cyl
+		mi.material_override = steel
+		mi.position = Vector3(x, part[2], z)
+		add_child(mi)
+	var seat := MeshInstance3D.new()
+	var sc := CylinderMesh.new()
+	sc.top_radius = 0.17
+	sc.bottom_radius = 0.17
+	sc.height = 0.05
+	seat.mesh = sc
+	seat.material_override = _mat("chair_seat", Color(0.26, 0.27, 0.30))
+	seat.position = Vector3(x, 0.63, z)
+	add_child(seat)
+
+
+## Small desk task lamp: steel base + angled arm + white head.
+func _task_lamp(x: float, z: float, rot_deg: float, y: float) -> void:
+	var root := Node3D.new()
+	root.position = Vector3(x, y, z)
+	root.rotation_degrees = Vector3(0, rot_deg, 0)
+	add_child(root)
+	var steel := _mat("steel", Color(0.42, 0.42, 0.46))
+	_box(Vector3(0.09, 0.02, 0.09), Vector3(0, 0.01, 0), steel, root, false)
+	var arm := _box(Vector3(0.018, 0.28, 0.018), Vector3(0.04, 0.15, 0), steel, root, false)
+	arm.rotation_degrees = Vector3(0, 0, -22)
+	_box(Vector3(0.13, 0.035, 0.05), Vector3(0.12, 0.285, 0),
+		_mat("softbox", Color(0.95, 0.94, 0.9), "", Color(0.9, 0.88, 0.8)), root, false)
+
+
+## Floor lamp: steel pole + drum shade with a warm pool.
+func _floor_lamp(x: float, z: float) -> void:
+	var steel := _mat("steel", Color(0.42, 0.42, 0.46))
+	_box(Vector3(0.18, 0.02, 0.18), Vector3(x, 0.01, z), steel, self, false)
+	_box(Vector3(0.03, 1.45, 0.03), Vector3(x, 0.725, z), steel, self, false)
+	var shade := MeshInstance3D.new()
+	var cyl := CylinderMesh.new()
+	cyl.top_radius = 0.15
+	cyl.bottom_radius = 0.16
+	cyl.height = 0.22
+	shade.mesh = cyl
+	shade.material_override = _mat("pendant_bulb", Color(1.0, 0.9, 0.7) * 0.8, "", Color(1.0, 0.88, 0.65))
+	shade.position = Vector3(x, 1.42, z)
+	add_child(shade)
+	var light := OmniLight3D.new()
+	light.position = Vector3(x, 1.3, z)
+	light.light_color = Color(1.0, 0.9, 0.72)
+	light.omni_range = 2.4
+	light.light_energy = 0.6
+	light.shadow_enabled = false
+	add_child(light)
+
+
+## Walnut credenza with honed-marble top on black steel legs.
+func _credenza(x: float, z: float, w: float = 1.5) -> void:
+	_box(Vector3(w, 0.52, 0.42), Vector3(x, 0.44, z), _mat("walnut", Color(0.36, 0.25, 0.18)))
+	_box(Vector3(w + 0.06, 0.04, 0.48), Vector3(x, 0.72, z),
+		_mat("marble", Color(0.83, 0.79, 0.75)), self, false)
+	for lp in [[-w / 2.0 + 0.1, -0.14], [-w / 2.0 + 0.1, 0.14], [w / 2.0 - 0.1, -0.14], [w / 2.0 - 0.1, 0.14]]:
+		_box(Vector3(0.04, 0.18, 0.04), Vector3(x + lp[0], 0.09, z + lp[1]),
+			_mat("black_frame", Color(0.13, 0.13, 0.14)), self, false)
+
+
 ## A standard agent station: felt partition with coral trim + role chip,
 ## modern sit-stand desk with dual monitors on arms, keyboard, task lamp,
 ## mesh task chair, trashcan. Tech props stay Kenney (KayKit has none).
@@ -653,7 +840,7 @@ func _station(role: String, sx: float, sz: float) -> void:
 	for arm in [[sx - 0.25, sz - 0.1], [sx + 0.3, sz - 0.1]]:
 		_box(Vector3(0.03, 0.22, 0.03), Vector3(arm[0], DESK_H + 0.11, arm[1]), steel, self, false)
 	_prop("computerKeyboard", sx - 0.2, sz + 0.2, 180, 0.28, DESK_H + 0.03)
-	_prop("kaykit/lamp_table", sx + 0.6, sz - 0.15, 200, 1.0, DESK_H + 0.02, 0.30)
+	_task_lamp(sx + 0.6, sz - 0.15, 200, DESK_H + 0.02)
 	_task_chair(sx, sz + 0.9, 175 + randf_range(-15.0, 15.0))
 	_prop("trashcan", sx - 0.75, sz + 0.85, 0, 1.0, 0.0, 0.35)
 
@@ -661,13 +848,13 @@ func _station(role: String, sx: float, sz: float) -> void:
 # ============ 3. RESEARCH LIBRARY (west quiet band) ============
 func _zone_library() -> void:
 	_station("researcher", 2.0, 6.0)
-	# tall shelves along the west wall + books
-	_prop("kaykit/shelf_B_large_decorated", 0.75, 5.6, 90, 1.15)
-	_prop("kaykit/shelf_A_big", 0.75, 7.2, 90, 1.05)
+	# steel-frame shelving along the west wall + books
+	_shelving(0.75, 5.6, 90)
+	_shelving(0.75, 7.2, 90)
 	_prop("kaykit/book_set", 2.4, 5.85, 15, 0.3, DESK_H + 0.02)
 	# reading chair + floor lamp in the window corner
-	_prop("kaykit/armchair_pillows", 1.6, 8.4, 55, 1.0, 0.0, 0.85)
-	_prop("kaykit/lamp_standing", 2.7, 8.6, 0, 1.0, 0.0, 1.45)
+	_modern_armchair(1.6, 8.4, 55, Color(0.42, 0.52, 0.44))
+	_floor_lamp(2.7, 8.6)
 	_prop("kaykit/cactus_medium_A", 3.5, 8.5, 0, 1.0, 0.0, 0.6)
 
 
@@ -798,17 +985,22 @@ func _zone_studio() -> void:
 		lb.rotation_degrees = Vector3(cos(ang) * 12, 0, sin(ang) * 12)
 	_box(Vector3(0.22, 0.16, 0.3), Vector3(13.5, 1.05, 16.6),
 		_mat("screen_frame", Color(0.16, 0.16, 0.19)))
-	# equipment cart
-	_prop("kaykit/cabinet_small", 14.5, 17.5, 270, 1.0, 0.0, 0.75)
-	_prop("cardboardBoxOpen", 14.5, 17.5, 20, 0.5, 0.76)
+	# steel equipment cart
+	for px in [-0.22, 0.22]:
+		for pz in [-0.18, 0.18]:
+			_box(Vector3(0.025, 0.72, 0.025), Vector3(14.5 + px, 0.36, 17.5 + pz), steel)
+	for sy in [0.12, 0.70]:
+		_box(Vector3(0.52, 0.03, 0.42), Vector3(14.5, sy, 17.5), steel, self, false)
+	_prop("cardboardBoxOpen", 14.5, 17.5, 20, 0.5, 0.72)
 
 
 # ============ 8. PUBLISHING (SE: straight out of the studio) ============
 func _zone_publishing() -> void:
 	_station("publisher", 18.0, 16.0)
 	# storage + copier along the east side
-	_prop("kaykit/shelf_B_large_decorated", 20.5, 14.55, 0, 1.15)
-	_prop("kaykit/cabinet_small", 21.6, 15.5, 270, 1.0, 0.0, 0.75)
+	_shelving(20.5, 14.55, 0)
+	_box(Vector3(0.55, 0.72, 0.5), Vector3(21.6, 0.36, 15.5),
+		_mat("counter_white", Color(0.82, 0.81, 0.78)))
 	_box(Vector3(0.5, 0.4, 0.55), Vector3(21.6, 0.95, 15.5), _mat("printer", Color(0.86, 0.85, 0.82)))
 	_prop("cardboardBoxClosed", 21.5, 16.6, 15, 0.55)
 	_pendant(Vector3(18.0, 2.4, 15.6))
@@ -817,15 +1009,20 @@ func _zone_publishing() -> void:
 # ============ COFFEE BAR (east band, the loop midpoint — every daily
 # path passes it) ============
 func _zone_coffee_bar() -> void:
-	_prop("kitchenBar", 19.2, 6.2, 0, 1.0, 0.0, 0.95)
-	_prop("kitchenBar", 20.2, 6.2, 0, 1.0, 0.0, 0.95)
+	# island counter: white body on a shadow-gap kick, oak worktop
+	_box(Vector3(1.9, 0.08, 0.58), Vector3(19.7, 0.04, 6.2),
+		_mat("black_frame", Color(0.13, 0.13, 0.14)), self, false)
+	_box(Vector3(2.1, 0.82, 0.70), Vector3(19.7, 0.49, 6.2),
+		_mat("counter_white", Color(0.82, 0.81, 0.78)))
+	_box(Vector3(2.2, 0.05, 0.80), Vector3(19.7, 0.925, 6.2),
+		_mat("oak", Color.WHITE, "res://assets/textures/deck.png"), self, false)
 	_prop("kitchenCoffeeMachine", 19.2, 6.2, 0, 1.0, 0.95, 0.35)
-	_box(Vector3(0.5, 0.18, 0.3), Vector3(20.2, 1.04, 6.15),
+	_box(Vector3(0.5, 0.16, 0.3), Vector3(20.2, 1.03, 6.15),
 		_mat("pantry_tray", Color(0.85, 0.80, 0.72)), self, false)
 	_prop("kitchenFridgeSmall", 21.7, 5.5, 180, 1.0, 0.0, 1.1)
-	_prop("kaykit/chair_stool_wood", 19.2, 7.3, 190, 0.45)
-	_prop("kaykit/chair_stool_wood", 20.2, 7.3, 170, 0.45)
-	_prop("kaykit/chair_stool_wood", 18.3, 6.3, 95, 0.45)
+	_bar_stool(19.2, 7.3)
+	_bar_stool(20.2, 7.3)
+	_bar_stool(18.3, 6.3)
 	_pendant(Vector3(19.7, 2.4, 6.2))
 	_pendant(Vector3(21.0, 2.4, 5.6))
 
@@ -843,11 +1040,11 @@ func _relax_area() -> void:
 	# diagonal wood-slat screens (north edge, semi-enclosure from coffee)
 	_slat_screen(Vector3(18.45, 0, 9.42), 1.8)
 	_slat_screen(Vector3(20.3, 0, 9.42), 1.8)
-	# couch with pillows, back to the screens, facing the seating group
-	_prop("kaykit/couch_pillows", 19.5, 10.15, 0, 1.0, 0.0, 0.8)
+	# modern sofa with throw pillows, back to the screens
+	_modern_sofa(19.5, 10.15, 0, Color(0.55, 0.54, 0.53))
 	var kilim_cols := [Color(0.80, 0.35, 0.28), Color(0.85, 0.66, 0.30), Color(0.30, 0.36, 0.55)]
-	# armchair + tan leather ottoman
-	_prop("kaykit/armchair_pillows", 18.05, 12.15, 75, 1.0, 0.0, 0.85)
+	# indigo lounge armchair + tan leather ottoman
+	_modern_armchair(18.05, 12.15, 75, Color(0.30, 0.38, 0.62))
 	_box(Vector3(0.5, 0.26, 0.4), Vector3(18.85, 0.16, 12.35),
 		_mat("leather_tan", Color(0.62, 0.44, 0.28)), self, false)
 	# plaid round pouf at the center of the group
@@ -890,12 +1087,7 @@ func _relax_area() -> void:
 	var wp2 := _prop("kaykit/pillow_B", 17.45, 12.35, -70, 0.4, 0.52)
 	_tint_meshes(wp2, kilim_cols[2])
 	# walnut credenza with honed-marble top on black steel legs
-	_box(Vector3(1.5, 0.52, 0.42), Vector3(20.9, 0.44, 13.42), _mat("walnut", Color(0.36, 0.25, 0.18)))
-	_box(Vector3(1.56, 0.04, 0.48), Vector3(20.9, 0.72, 13.42),
-		_mat("marble", Color(0.83, 0.79, 0.75)), self, false)
-	for lp in [[20.25, 13.28], [20.25, 13.56], [21.55, 13.28], [21.55, 13.56]]:
-		_box(Vector3(0.04, 0.18, 0.04), Vector3(lp[0], 0.09, lp[1]),
-			_mat("black_frame", Color(0.13, 0.13, 0.14)), self, false)
+	_credenza(20.9, 13.42)
 	_prop("kaykit/cactus_small_A", 20.5, 13.42, 0, 1.0, 0.74, 0.24)
 	# woven basket + the big biophilic corner plant
 	var bask := MeshInstance3D.new()
