@@ -42,6 +42,20 @@ func _run(request: Dictionary) -> void:
 		Prompts.editor(lang, niche),
 		"Script:\n%s" % script)
 
+	# ---- the approval desk: work WAITS for the human at a designed
+	# checkpoint (Devin's lesson: the cheapest intervention is a gate,
+	# not a popup). Auto-approves after a timeout so ambient mode lives.
+	if not await _await_approval(request, script):
+		EventBus.log_line.emit("✍ Revision requested — the Writer takes another pass.")
+		Memory.remember("writer", "The reviewer sent my script for '%s' back. Round two." % topic, 7.0)
+		Memory.nudge_affinity("writer", "director", -0.03)
+		script = await _stage("script", "writer", request,
+			Prompts.scriptwriter(lang, niche),
+			"Request:\n%s\n\nDirector's brief:\n%s\n\nResearch notes:\n%s\n\nREVIEWER FEEDBACK: tighten the hook, cut anything slow, keep it punchy. Revise the script." % [brief, plan, research])
+		captions = await _stage("edit", "editor", request,
+			Prompts.editor(lang, niche),
+			"Script:\n%s" % script)
+
 	var publish := await _stage("publish", "publisher", request,
 		Prompts.publisher(lang, niche),
 		"Script:\n%s\n\nResearch notes:\n%s" % [script, research])
@@ -91,6 +105,25 @@ func _stage(stage: String, role: String, request: Dictionary, system_prompt: Str
 	results[stage] = out
 	EventBus.stage_completed.emit(stage, role, request, out)
 	return out
+
+
+## Wait at the approval desk: Y approves, N requests one revision,
+## silence auto-approves after 45 s. Returns true when approved.
+func _await_approval(request: Dictionary, preview: String) -> bool:
+	var decided := [false, true]
+	var cb := func(approved: bool) -> void:
+		decided[0] = true
+		decided[1] = approved
+	EventBus.approval_resolved.connect(cb)
+	EventBus.approval_requested.emit(request, preview)
+	var waited := 0.0
+	while not decided[0] and waited < 45.0:
+		await get_tree().create_timer(0.25).timeout
+		waited += 0.25
+	EventBus.approval_resolved.disconnect(cb)
+	if not decided[0]:
+		EventBus.log_line.emit("⏱ Auto-approved (no reviewer at the desk).")
+	return decided[1]
 
 
 func _describe(request: Dictionary) -> String:

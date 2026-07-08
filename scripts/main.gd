@@ -13,6 +13,16 @@ var _status: Label
 var _log: Label
 var _log_lines: PackedStringArray = []
 var _costume_panel: CostumePanel
+var _approval_panel: PanelContainer
+var _approval_text: Label
+var _awaiting_approval := false
+var _sun: DirectionalLight3D
+var _env: Environment
+var _day_t := 150.0  # start mid-morning
+var _meter_needle: Node3D
+var _meter_label: Label3D
+var _tokens_est := 0
+var _calls_inflight := 0
 
 
 func _ready() -> void:
@@ -70,6 +80,7 @@ func _ready() -> void:
 	var we := WorldEnvironment.new()
 	we.environment = env
 	world.add_child(we)
+	_env = env
 
 	# faint exterior fill only — the office is lit by its own luminaires
 	# (per request: no sunlight through the office)
@@ -80,6 +91,7 @@ func _ready() -> void:
 	sun.shadow_enabled = true
 	sun.light_angular_distance = 3.0
 	world.add_child(sun)
+	_sun = sun
 
 	# --- isometric camera with tilt-shift DoF (miniature faking: a
 	# shallow focus band on the action plane sells the toy-office look)
@@ -133,6 +145,27 @@ func _ready() -> void:
 	# ambient bed: HVAC room tone + occasional courtyard birds
 	Sfx.start_room_tone(world, -26.0)
 	_start_chirps(world)
+
+	# the approval desk gate + the diegetic cost meter
+	_build_approval_panel()
+	EventBus.approval_requested.connect(func(request: Dictionary, preview: String) -> void:
+		_awaiting_approval = true
+		_approval_text.text = "APPROVAL DESK — '%s'\n\n%s...\n\n[Y] approve · [N] request revision · auto-approve in 45 s" % [
+			str(request.get("topic", "")).left(48),
+			preview.strip_edges().left(280)]
+		_approval_panel.visible = true
+		Sfx.play_ui("paper", -6.0))
+	EventBus.approval_resolved.connect(func(_a: bool) -> void:
+		_awaiting_approval = false
+		_approval_panel.visible = false)
+	_build_cost_meter()
+	EventBus.stage_started.connect(func(_s, _r, _q) -> void:
+		_calls_inflight += 1)
+	EventBus.stage_completed.connect(func(_s, _r, _q, out: String) -> void:
+		_calls_inflight = maxi(_calls_inflight - 1, 0)
+		_tokens_est += out.length() / 4
+		if _meter_label:
+			_meter_label.text = "≈%dk tok" % (_tokens_est / 1000) if _tokens_est >= 1000 else "≈%d tok" % _tokens_est)
 
 	# Dev helper: AGENT_TOWN_SHOT=/path/out.png godot --path . -> renders a
 	# few seconds, saves a screenshot, quits. Used for README captures.
@@ -234,6 +267,25 @@ func _capture_and_quit(path: String) -> void:
 
 
 func _process(delta: float) -> void:
+	# day/night: a 10-minute loop shifting ONLY the exterior (interior
+	# luminaires stay constant — interior-safe per the craft research,
+	# and the office itself gets no direct sun, per the owner's rule)
+	_day_t = fmod(_day_t + delta, 600.0)
+	var phase := _day_t / 600.0  # 0..1, 0 = dawn
+	var daylight := clampf(sin(phase * TAU) * 0.5 + 0.55, 0.0, 1.0)
+	if _sun:
+		_sun.light_energy = lerpf(0.10, 0.45, daylight)
+		_sun.light_color = Color(0.85, 0.90, 1.0).lerp(Color(1.0, 0.72, 0.5),
+			clampf(1.0 - absf(daylight - 0.35) * 4.0, 0.0, 1.0) * 0.7)
+	if _env:
+		var day_bg := Color(0.80, 0.87, 0.88)
+		var night_bg := Color(0.16, 0.18, 0.26)
+		_env.background_color = night_bg.lerp(day_bg, daylight)
+		_env.ambient_light_energy = lerpf(0.38, 0.5, daylight)
+	# cost meter needle spins while calls are in flight
+	if _meter_needle and _calls_inflight > 0:
+		_meter_needle.rotation.z -= delta * 6.0
+
 	var pan := Vector2.ZERO
 	pan.x = Input.get_axis(&"ui_left", &"ui_right")
 	pan.y = Input.get_axis(&"ui_up", &"ui_down")
@@ -251,6 +303,11 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_C:
 			_costume_panel.visible = not _costume_panel.visible
+		elif _awaiting_approval and event.keycode == KEY_Y:
+			EventBus.approval_resolved.emit(true)
+			EventBus.log_line.emit("✔ Approved at the desk.")
+		elif _awaiting_approval and event.keycode == KEY_N:
+			EventBus.approval_resolved.emit(false)
 	if event is InputEventMouseButton and event.pressed:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
 			_cam.fov = clampf(_cam.fov / 1.08, 12.0, 55.0)
@@ -322,6 +379,79 @@ func _build_costume_panel() -> void:
 	# show the panel in dev screenshots
 	if not OS.get_environment("AGENT_TOWN_SHOT").is_empty():
 		_costume_panel.visible = true
+
+
+## The approval-desk HUD panel (hidden until the pipeline waits on you).
+func _build_approval_panel() -> void:
+	var hud := CanvasLayer.new()
+	hud.layer = 6
+	add_child(hud)
+	_approval_panel = PanelContainer.new()
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.10, 0.10, 0.14, 0.94)
+	sb.border_color = Color(0.95, 0.45, 0.33)
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(8)
+	sb.set_content_margin_all(14)
+	_approval_panel.add_theme_stylebox_override("panel", sb)
+	_approval_panel.position = Vector2(560, 320)
+	_approval_panel.custom_minimum_size = Vector2(800, 0)
+	_approval_text = Label.new()
+	_approval_text.add_theme_font_size_override("font_size", 15)
+	_approval_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_approval_text.custom_minimum_size = Vector2(770, 0)
+	_approval_panel.add_child(_approval_text)
+	_approval_panel.visible = false
+	hud.add_child(_approval_panel)
+
+
+## A wall-mounted "electric meter" by the intake wall: the needle spins
+## while Claude calls are in flight, the dial counts estimated tokens.
+func _build_cost_meter() -> void:
+	var base := Node3D.new()
+	base.position = Vector3(16.9, 2.1, 0.24)
+	office.add_child(base)
+	var plate := MeshInstance3D.new()
+	var pm := BoxMesh.new()
+	pm.size = Vector3(0.5, 0.5, 0.05)
+	plate.mesh = pm
+	var mm := StandardMaterial3D.new()
+	mm.albedo_color = Color(0.85, 0.84, 0.80)
+	mm.roughness = 0.4
+	plate.material_override = mm
+	base.add_child(plate)
+	var dial := MeshInstance3D.new()
+	var dm := CylinderMesh.new()
+	dm.top_radius = 0.16
+	dm.bottom_radius = 0.16
+	dm.height = 0.02
+	dial.mesh = dm
+	dial.rotation_degrees = Vector3(90, 0, 0)
+	var dmat := StandardMaterial3D.new()
+	dmat.albedo_color = Color(0.94, 0.93, 0.9)
+	dial.material_override = dmat
+	dial.position = Vector3(0, 0.06, 0.03)
+	base.add_child(dial)
+	_meter_needle = Node3D.new()
+	_meter_needle.position = Vector3(0, 0.06, 0.045)
+	base.add_child(_meter_needle)
+	var needle := MeshInstance3D.new()
+	var nm := BoxMesh.new()
+	nm.size = Vector3(0.02, 0.13, 0.01)
+	needle.mesh = nm
+	var nmat := StandardMaterial3D.new()
+	nmat.albedo_color = Color(0.95, 0.45, 0.33)
+	needle.material_override = nmat
+	needle.position = Vector3(0, 0.055, 0)
+	_meter_needle.add_child(needle)
+	_meter_label = Label3D.new()
+	_meter_label.text = "≈0 tok"
+	_meter_label.font_size = 30
+	_meter_label.outline_size = 6
+	_meter_label.pixel_size = 0.0032
+	_meter_label.modulate = Color(0.25, 0.25, 0.3)
+	_meter_label.position = Vector3(0, -0.17, 0.035)
+	base.add_child(_meter_label)
 
 
 func _panel_style() -> StyleBoxFlat:

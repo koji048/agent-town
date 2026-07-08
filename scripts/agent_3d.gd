@@ -386,23 +386,44 @@ func _try_gossip() -> bool:
 		var to_o := o.position - position
 		_target_yaw = atan2(to_o.x, to_o.z)
 		o._target_yaw = atan2(-to_o.x, -to_o.z)
-		var mine := Memory.recall(role, "", 1)
-		var opener := "How's it going over there?" if mine.is_empty() \
-			else "Did you hear? " + str(mine[0]["text"])
-		_say(opener.left(64))
-		Memory.remember(o.role, "The %s told me: %s" % [role, opener.left(80)], 4.0)
-		var theirs := Memory.recall(o.role, "", 1)
-		var reply := "Busy, but good." if theirs.is_empty() \
-			else "Same energy here — " + str(theirs[0]["text"])
-		get_tree().create_timer(1.8).timeout.connect(func() -> void:
-			if is_instance_valid(o):
-				o._say(reply.left(64)))
-		Memory.remember(role, "Chatted with the %s on a break." % o.role, 3.0)
-		Memory.nudge_affinity(role, o.role, 0.03)
-		needs["social"] = clampf(needs["social"] + 0.35, 0.0, 1.0)
-		o.needs["social"] = clampf(o.needs["social"] + 0.35, 0.0, 1.0)
+		_gossip_with(o)
 		return true
 	return false
+
+
+static var _llm_gossips := 0
+
+
+## The exchange itself: real Claude-written banter when the provider is
+## live (capped per session), template lines otherwise/as fallback.
+func _gossip_with(o: TownAgent3D) -> void:
+	var mine := Memory.recall(role, "", 1)
+	var theirs := Memory.recall(o.role, "", 1)
+	var opener := "How's it going over there?" if mine.is_empty() \
+		else "Did you hear? " + str(mine[0]["text"])
+	var reply := "Busy, but good." if theirs.is_empty() \
+		else "Same energy here — " + str(theirs[0]["text"])
+	if Config.provider_resolved != "simulate" and _llm_gossips < 8 and randf() < 0.4:
+		_llm_gossips += 1
+		_say("...")
+		var sys := "You write tiny in-character banter for a Thai content studio sim. Reply with EXACTLY two lines:\nA: <what the %s says>\nB: <what the %s replies>\nEach under 60 characters, casual coworker tone, English." % [role, o.role]
+		var ctx := "The %s recently: %s\nThe %s recently: %s" % [
+			role, opener, o.role, reply]
+		var out: String = await Claude.complete(sys, ctx, "gossip")
+		for line in out.split("\n", false):
+			if line.begins_with("A:"):
+				opener = line.substr(2).strip_edges()
+			elif line.begins_with("B:"):
+				reply = line.substr(2).strip_edges()
+	_say(opener.left(64))
+	Memory.remember(o.role, "The %s told me: %s" % [role, opener.left(80)], 4.0)
+	get_tree().create_timer(1.8).timeout.connect(func() -> void:
+		if is_instance_valid(o):
+			o._say(reply.left(64)))
+	Memory.remember(role, "Chatted with the %s on a break." % o.role, 3.0)
+	Memory.nudge_affinity(role, o.role, 0.03)
+	needs["social"] = clampf(needs["social"] + 0.35, 0.0, 1.0)
+	o.needs["social"] = clampf(o.needs["social"] + 0.35, 0.0, 1.0)
 
 
 func _restart_wander() -> void:

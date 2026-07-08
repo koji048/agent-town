@@ -16,3 +16,7 @@ signal agent_arrived(role: String)
 signal agent_say(role: String, text: String)
 ## A line for the HUD log.
 signal log_line(text: String)
+## The pipeline is waiting at the approval desk (pre-publish gate).
+signal approval_requested(request: Dictionary, preview: String)
+## The human decided (or the auto-approve timer did).
+signal approval_resolved(approved: bool)
