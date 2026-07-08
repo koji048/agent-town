@@ -28,6 +28,16 @@ const WORK_ANIM := {
 	"publisher": "Use_Item",
 }
 
+## Short character sketches: constraint is what makes dialogue read as
+## a PERSON (Inworld's lesson). Used in gossip + click-chat prompts.
+const PERSONA := {
+	"director": "the Director: decisive, warm-bossy, ex-agency, secretly sentimental about the team",
+	"researcher": "the Researcher: curious, precise, quotes numbers, mildly allergic to hype",
+	"writer": "the Writer: playful wordsmith, dramatic about deadlines, lives on garden breaks",
+	"editor": "the Editor: dry humor, perfectionist about timing, guards the espresso machine",
+	"publisher": "the Publisher: upbeat trend-watcher, speaks in hooks, loves shipping day",
+}
+
 const SAY_START := {
 	"plan": "New request! Drafting the brief...",
 	"research": "Digging for hooks and facts...",
@@ -473,35 +483,60 @@ func _try_gossip() -> bool:
 static var _llm_gossips := 0
 
 
-## The exchange itself: real Claude-written banter when the provider is
-## live (capped per session), template lines otherwise/as fallback.
+## The exchange itself: Claude writes a natural multi-turn beat when
+## the provider is live — personas + relationship + real memories in,
+## colloquial lines out, played with breathing room. Casual smalltalk
+## pool as fallback.
 func _gossip_with(o: TownAgent3D) -> void:
-	var mine := Memory.recall(role, "", 1)
-	var theirs := Memory.recall(o.role, "", 1)
-	var opener := I18n.t("gossip_opener_empty") if mine.is_empty() \
-		else I18n.t("gossip_opener") + str(mine[0]["text"])
-	var reply := I18n.t("gossip_reply_empty") if theirs.is_empty() \
-		else I18n.t("gossip_reply") + str(theirs[0]["text"])
-	if Config.provider_resolved != "simulate" and _llm_gossips < 8 and randf() < 0.4:
+	var lines: Array = []
+	if Config.provider_resolved != "simulate" and _llm_gossips < 24 and randf() < 0.75:
 		_llm_gossips += 1
 		_say("...")
-		var sys := ("You write tiny in-character banter for a Thai content studio sim. " +
-			"Reply with EXACTLY two lines:\nA: <what the %s says>\nB: <what the %s replies>\n" +
-			"Each under 60 characters, casual coworker tone. %s") % [
-			role, o.role, I18n.t("lang_directive")]
-		var ctx := "The %s recently: %s\nThe %s recently: %s" % [
-			role, opener, o.role, reply]
+		var aff := Memory.get_affinity(role, o.role)
+		var vibe := "close friends" if aff >= 0.65 else ("a bit tense lately" if aff <= 0.35 else "friendly colleagues")
+		var mine := Memory.recall(role, "", 2)
+		var theirs := Memory.recall(o.role, "", 2)
+		var ctx := "A is %s\nB is %s\nThey are %s.\n" % [
+			PERSONA[role], PERSONA[o.role], vibe]
+		ctx += "A remembers: "
+		for m in mine:
+			ctx += str(m["text"]) + " / "
+		ctx += "\nB remembers: "
+		for m in theirs:
+			ctx += str(m["text"]) + " / "
+		var sys := ("Write a NATURAL watercooler beat between two coworkers at a Thai " +
+			"short-video studio. 3 or 4 alternating lines starting with A:, then B:. " +
+			"Colloquial and specific — react to each other, tease, trail off; never " +
+			"recite the memory text verbatim, just let it color the chat. " +
+			"Each line under 55 characters. %s") % I18n.t("lang_directive")
 		var out: String = await Claude.complete(sys, ctx, "gossip")
 		for line in out.split("\n", false):
-			if line.begins_with("A:"):
-				opener = line.substr(2).strip_edges()
-			elif line.begins_with("B:"):
-				reply = line.substr(2).strip_edges()
-	_say(opener)
-	Memory.remember(o.role, I18n.f("mem_gossip_heard", [role, opener]), 4.0)
-	get_tree().create_timer(1.8).timeout.connect(func() -> void:
-		if is_instance_valid(o):
-			o._say(reply))
+			var s := line.strip_edges()
+			if s.begins_with("A:"):
+				lines.append([self, s.substr(2).strip_edges()])
+			elif s.begins_with("B:"):
+				lines.append([o, s.substr(2).strip_edges()])
+	if lines.size() < 2:
+		# fallback: casual smalltalk, never recited memories
+		var pick := randi_range(1, 4)
+		var a := I18n.t("small_%da" % pick)
+		if a.contains("%s"):
+			a = a % Config.owner_name
+		lines = [[self, a], [o, I18n.t("small_%db" % pick)]]
+	# play the beat with natural pauses
+	var delay := 0.0
+	for l in lines:
+		var who: TownAgent3D = l[0]
+		var text: String = l[1]
+		if delay == 0.0:
+			who._say(text)
+		else:
+			get_tree().create_timer(delay).timeout.connect(func() -> void:
+				if is_instance_valid(who):
+					who._say(text))
+		delay += randf_range(1.7, 2.4)
+	# what B heard from A colors B's memory (information diffusion)
+	Memory.remember(o.role, I18n.f("mem_gossip_heard", [role, str(lines[0][1])]), 4.0)
 	Memory.remember(role, I18n.f("mem_gossip_chat", [o.role]), 3.0)
 	Memory.nudge_affinity(role, o.role, 0.03)
 	needs["social"] = clampf(needs["social"] + 0.35, 0.0, 1.0)
@@ -541,10 +576,10 @@ func chat_reply(msg: String) -> void:
 		_say(I18n.f("say_chat_sim", [Config.owner_name]))
 		return
 	_say("...")
-	var sys := ("You are the %s of Agent Town, a small Thai short-video studio. " +
+	var sys := ("You are %s at Agent Town, a small Thai short-video studio. " +
 		"Reply to your boss %s IN CHARACTER, one or two short sentences " +
 		"(under 140 characters total), warm and specific. %s%s") % [
-		role, Config.owner_name, I18n.t("lang_directive"), Memory.context_for(role, msg)]
+		PERSONA[role], Config.owner_name, I18n.t("lang_directive"), Memory.context_for(role, msg)]
 	var out: String = await Claude.complete(sys, msg, "chat")
 	if out.is_empty():
 		out = I18n.f("say_lost", [Config.owner_name])
