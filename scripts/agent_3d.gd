@@ -61,6 +61,18 @@ var _wander_timer: Timer
 var _step_accum := 0.0
 var _type_timer: Timer
 var _doc: Node3D
+
+## Decaying needs (The Sims): a reason to move, always. Personality
+## weights make each role satisfy needs differently.
+var needs := {"energy": 1.0, "social": 1.0, "inspiration": 1.0}
+const NEED_WEIGHT := {
+	"director": {"energy": 1.2, "social": 1.1, "inspiration": 0.8},
+	"researcher": {"energy": 0.9, "social": 0.7, "inspiration": 1.3},
+	"writer": {"energy": 1.0, "social": 1.0, "inspiration": 1.4},
+	"editor": {"energy": 1.3, "social": 0.8, "inspiration": 1.0},
+	"publisher": {"energy": 1.0, "social": 1.3, "inspiration": 0.9},
+}
+var _break_ad: Dictionary = {}
 var _plate_state: Label3D
 
 var costume: Dictionary = {}
@@ -135,6 +147,11 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	# needs decay: working drains energy, everything drifts slowly down
+	var drain := 0.006 if state == State.WORKING else 0.0035
+	needs["energy"] = clampf(needs["energy"] - drain * delta * 4.0, 0.0, 1.0)
+	needs["social"] = clampf(needs["social"] - 0.0030 * delta * 4.0, 0.0, 1.0)
+	needs["inspiration"] = clampf(needs["inspiration"] - 0.0026 * delta * 4.0, 0.0, 1.0)
 	# smooth turning toward the travel direction
 	if _model:
 		_model.rotation.y = lerp_angle(_model.rotation.y, _target_yaw, TURN_SPEED * delta)
@@ -208,6 +225,19 @@ func _on_path_done() -> void:
 		_drop_doc()
 		_type_timer.start(randf_range(0.3, 0.8))
 		EventBus.agent_arrived.emit(role)
+	elif not _break_ad.is_empty():
+		# arrived at a smart object: linger, restore the need, remember
+		_set_state(State.IDLE)
+		_play("Idle")
+		var ad := _break_ad
+		_break_ad = {}
+		_say(str(ad["line"]))
+		var need: String = str(ad["need"])
+		get_tree().create_timer(randf_range(5.0, 8.0)).timeout.connect(func() -> void:
+			needs[need] = clampf(needs[need] + float(ad["amount"]), 0.0, 1.0)
+			if randf() < 0.3:
+				Memory.remember(role, "Took a break (%s). It helped." % need, 2.0)
+			_restart_wander())
 	else:
 		_set_state(State.IDLE)
 		_play("Idle")
@@ -283,7 +313,9 @@ func _on_stage_completed(_stage: String, r: String, _request: Dictionary, result
 		_play("Idle")
 	else:
 		_pop_fx("+", Color(0.45, 1.0, 0.55))
-		_say("Done!")
+		# quote the REAL output (legible trust: what did it actually write?)
+		var excerpt := result.strip_edges().replace("\n", " ").left(46)
+		_say("“%s…”" % excerpt)
 		# permanence: the finished page stays on the desk
 		if office:
 			office.add_desk_paper(role)
@@ -303,9 +335,72 @@ func celebrate_at(cell: Vector2i) -> void:
 
 
 func _wander() -> void:
-	if state == State.IDLE and not _target_is_work:
-		walk_to(office.random_walkable())
+	if state != State.IDLE or _target_is_work:
+		_restart_wander()
+		return
+	# 1) social opportunity: gossip with a nearby idle colleague
+	if _try_gossip():
+		_restart_wander()
+		return
+	# 2) needs-driven: score smart-object ads (Sims-style, local + free)
+	var w: Dictionary = NEED_WEIGHT.get(role, {})
+	var best: Dictionary = {}
+	var best_score := 0.0
+	for ad in Office3D.SMART_OBJECTS:
+		var need: String = str(ad["need"])
+		var deficit: float = (1.0 - float(needs[need])) * float(w.get(need, 1.0))
+		if deficit < 0.45:
+			continue
+		var dist := float((ad["cell"] as Vector2i - grid_pos).length())
+		var score: float = deficit * float(ad["amount"]) / (1.0 + dist * 0.04)
+		if score > best_score:
+			best_score = score
+			best = ad
+	if not best.is_empty() and not office.is_blocked(best["cell"]):
+		_break_ad = best
+		walk_to(best["cell"])
+		return
+	# 3) otherwise: an ordinary stroll
+	walk_to(office.random_walkable())
 	_restart_wander()
+
+
+## Water-cooler gossip: two idle agents near each other trade their top
+## memories — the listener REMEMBERS it (information diffusion), and the
+## pair warms up. Global cooldown prevents greeting loops (a16z AI Town).
+func _try_gossip() -> bool:
+	var now := Time.get_unix_time_from_system()
+	if now - Memory.last_gossip_at < 90.0:
+		return false
+	for other in get_tree().get_nodes_in_group("agents"):
+		if other == self:
+			continue
+		var o := other as TownAgent3D
+		if o == null or o.state != State.IDLE or o._target_is_work:
+			continue
+		if position.distance_to(o.position) > 3.2:
+			continue
+		Memory.last_gossip_at = now
+		var to_o := o.position - position
+		_target_yaw = atan2(to_o.x, to_o.z)
+		o._target_yaw = atan2(-to_o.x, -to_o.z)
+		var mine := Memory.recall(role, "", 1)
+		var opener := "How's it going over there?" if mine.is_empty() \
+			else "Did you hear? " + str(mine[0]["text"])
+		_say(opener.left(64))
+		Memory.remember(o.role, "The %s told me: %s" % [role, opener.left(80)], 4.0)
+		var theirs := Memory.recall(o.role, "", 1)
+		var reply := "Busy, but good." if theirs.is_empty() \
+			else "Same energy here — " + str(theirs[0]["text"])
+		get_tree().create_timer(1.8).timeout.connect(func() -> void:
+			if is_instance_valid(o):
+				o._say(reply.left(64)))
+		Memory.remember(role, "Chatted with the %s on a break." % o.role, 3.0)
+		Memory.nudge_affinity(role, o.role, 0.03)
+		needs["social"] = clampf(needs["social"] + 0.35, 0.0, 1.0)
+		o.needs["social"] = clampf(o.needs["social"] + 0.35, 0.0, 1.0)
+		return true
+	return false
 
 
 func _restart_wander() -> void:

@@ -52,6 +52,12 @@ func _run(request: Dictionary) -> void:
 
 	var out_dir: String = OutputWriter.write_package(request, results)
 	TaskQueue.finish(request)
+	# the whole crew remembers shipping this one (Smallville: shared
+	# events become each agent's own memory), and bonds strengthen
+	Memory.remember_all("We shipped the reel '%s' and celebrated in the garden." % topic, 8.0)
+	for i in Memory.ROLES.size():
+		for j in range(i + 1, Memory.ROLES.size()):
+			Memory.nudge_affinity(Memory.ROLES[i], Memory.ROLES[j], 0.03)
 	EventBus.request_completed.emit(request, out_dir)
 	EventBus.log_line.emit("Done: %s -> %s" % [topic, out_dir.get_file()])
 
@@ -71,9 +77,17 @@ func _stage(stage: String, role: String, request: Dictionary, system_prompt: Str
 		waited += 0.2
 	EventBus.agent_arrived.disconnect(cb)
 
-	var out: String = await Claude.complete(system_prompt, user_prompt, stage)
+	# memories + team dynamics color every call (retrieval by topic)
+	var topic := str(request.get("topic", ""))
+	var out: String = await Claude.complete(
+		system_prompt + Memory.context_for(role, topic), user_prompt, stage)
 	if out.is_empty():
 		out = "(stage '%s' produced no output — check the log)" % stage
+	if out.begins_with("(stage"):
+		Memory.remember(role, "My %s stage failed on '%s'. Frustrating." % [stage, topic], 7.0)
+		Memory.nudge_affinity(role, "director", -0.04)
+	else:
+		Memory.remember(role, "I finished the %s stage for '%s'." % [stage, topic], 6.0)
 	results[stage] = out
 	EventBus.stage_completed.emit(stage, role, request, out)
 	return out
