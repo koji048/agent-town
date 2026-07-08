@@ -347,6 +347,9 @@ func _await_approval(request: Dictionary, preview: String) -> bool:
 		waited += 0.25
 	EventBus.approval_resolved.disconnect(cb)
 	if not decided[0]:
+		# auto-approve IS a resolution: emit so the HUD panel closes
+		# (cb is already disconnected, so this can't loop back here)
+		EventBus.approval_resolved.emit(true)
 		EventBus.log_line.emit("⏱ Auto-approved (no reviewer at the desk).")
 	elif decided[1]:
 		# presence: the approval is remembered as coming from a PERSON
