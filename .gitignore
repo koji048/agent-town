@@ -22,3 +22,7 @@ Thumbs.db
 __pycache__/
 *.pyc
 .venv/
+
+inbox/*
+!inbox/.gitkeep
+inbox/done/

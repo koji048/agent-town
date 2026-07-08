@@ -10,12 +10,18 @@ var _timer: Timer
 func _ready() -> void:
 	for sub in ["pending", "processing", "done"]:
 		DirAccess.make_dir_recursive_absolute(_qdir(sub))
+	DirAccess.make_dir_recursive_absolute(_inbox())
+	DirAccess.make_dir_recursive_absolute(_inbox().path_join("done"))
 	_timer = Timer.new()
 	_timer.wait_time = maxf(Config.poll_interval, 1.0)
 	_timer.timeout.connect(_poll)
 	add_child(_timer)
 	_timer.start()
-	EventBus.log_line.emit("Watching queue/pending/ every %.0fs" % _timer.wait_time)
+	EventBus.log_line.emit("Watching queue/pending/ + inbox/ every %.0fs" % _timer.wait_time)
+
+
+func _inbox() -> String:
+	return Config.project_dir().path_join("inbox")
 
 
 func finish(request: Dictionary) -> void:
@@ -32,6 +38,23 @@ func _qdir(sub: String) -> String:
 func _poll() -> void:
 	if busy:
 		return
+	# footage first: AirDropped clips dropped into inbox/ become real
+	# transcription jobs (talk to the Director; the Director routes it)
+	if Transcriber.available():
+		var inbox := DirAccess.open(_inbox())
+		if inbox:
+			for f in inbox.get_files():
+				var ext := f.get_extension().to_lower()
+				if ext in ["mov", "mp4", "m4v", "mkv", "webm"]:
+					busy = true
+					var abs := _inbox().path_join(f)
+					EventBus.log_line.emit("🎬 Footage arrived: %s" % f)
+					EventBus.request_received.emit({
+						"topic": "clip: %s" % f.get_basename().left(28),
+						"clip": abs,
+						"clip_file": f,
+					})
+					return
 	var dir := DirAccess.open(_qdir("pending"))
 	if dir == null:
 		return

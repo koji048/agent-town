@@ -23,6 +23,7 @@ Juice="*res://scripts/autoload/juice.gd"
 Memory="*res://scripts/autoload/memory.gd"
 Chronicle="*res://scripts/autoload/chronicle.gd"
 Storyteller="*res://scripts/autoload/storyteller.gd"
+Transcriber="*res://scripts/autoload/transcriber.gd"
 
 [display]
 

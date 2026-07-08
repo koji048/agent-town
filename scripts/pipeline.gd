@@ -20,6 +20,9 @@ func _on_request(request: Dictionary) -> void:
 
 
 func _run(request: Dictionary) -> void:
+	if request.has("clip"):
+		await _run_clip(request)
+		return
 	results = {}
 	var topic := str(request.get("topic", "untitled"))
 	var lang := str(request.get("language", Config.language))
@@ -76,12 +79,86 @@ func _run(request: Dictionary) -> void:
 	EventBus.log_line.emit("Done: %s -> %s" % [topic, out_dir.get_file()])
 
 
-func _stage(stage: String, role: String, request: Dictionary, system_prompt: String, user_prompt: String) -> String:
-	# Listen BEFORE emitting: an agent already standing at its workstation
-	# emits agent_arrived synchronously during stage_started.
+## THE CLIP WORKFLOW (one door: talk to the Director — or AirDrop into
+## inbox/ and the Director routes it): Director plans, Editor runs REAL
+## Whisper transcription + caption cleanup, owner approves at the desk,
+## Publisher packages titles/hashtags, SRT ships EP-numbered.
+func _run_clip(request: Dictionary) -> void:
+	results = {}
+	var topic := str(request.get("topic", "clip"))
+	var clip := str(request.get("clip", ""))
+	var lang := str(request.get("language", Config.language))
+	var niche := str(request.get("niche", Config.niche))
+
+	# 1) the Director routes the footage
+	await _walk_stage("plan", "director", request)
+	var brief := ("Footage from %s: %s\nRouting: transcribe in the edit bay, " +
+		"clean captions to house rules, owner approval, EP-numbered export.") % [
+		Config.owner_name, clip.get_file()]
+	results["plan"] = brief
+	Memory.remember("director", "%s sent real footage '%s' — I routed it to the edit bay." % [
+		Config.owner_name, clip.get_file()], 6.0)
+	EventBus.stage_completed.emit("plan", "director", request, brief)
+
+	# 2) the Editor transcribes for real
+	await _walk_stage("edit", "editor", request)
+	EventBus.log_line.emit("🎙 Transcribing %s (Whisper large-v3-turbo)..." % clip.get_file())
+	Transcriber.transcribe(clip)
+	var r: Array = await Transcriber.done
+	var raw_srt: String = r[0]
+	if not bool(r[1]):
+		results["edit"] = "(transcription failed — see whisper install)"
+		EventBus.stage_completed.emit("edit", "editor", request, results["edit"])
+	else:
+		results["script"] = raw_srt
+		var cleaned := raw_srt
+		if Config.provider_resolved != "simulate":
+			var c: String = await Claude.complete(
+				Prompts.editor(lang, niche) + Memory.context_for("editor", topic),
+				("Raw Whisper SRT of the owner's real clip. Re-cut into caption-capped " +
+				"SRT per your rules — keep the timing, fix obvious mishearings:\n\n") +
+				raw_srt.left(6000), "edit")
+			if not c.is_empty():
+				cleaned = c
+		results["edit"] = cleaned
+		Memory.remember("editor", "I transcribed and captioned %s's real clip '%s'." % [
+			Config.owner_name, clip.get_file()], 7.0)
+		EventBus.stage_completed.emit("edit", "editor", request, cleaned)
+
+		# 3) the approval desk (one revision pass when live)
+		if not await _await_approval(request, cleaned):
+			if Config.provider_resolved != "simulate":
+				EventBus.log_line.emit("✍ Caption revision — the Editor tightens the cut.")
+				await _walk_stage("edit", "editor", request)
+				var c2: String = await Claude.complete(
+					Prompts.editor(lang, niche),
+					"REVIEWER FEEDBACK: tighten further, shorter captions, punchier. Revise:\n\n" +
+					cleaned.left(6000), "edit")
+				if not c2.is_empty():
+					results["edit"] = c2
+				EventBus.stage_completed.emit("edit", "editor", request, str(results["edit"]))
+
+		# 4) the Publisher packages it (live only)
+		if Config.provider_resolved != "simulate":
+			await _stage("publish", "publisher", request,
+				Prompts.publisher(lang, niche),
+				"Transcript of the owner's real clip:\n%s" % raw_srt.left(4000))
+
+	results["review"] = "Cleared for export by %s's desk." % Config.owner_name
+	var out_dir: String = OutputWriter.write_package(request, results)
+	var done_dest := clip.get_base_dir().path_join("done").path_join(clip.get_file())
+	DirAccess.rename_absolute(clip, done_dest)
+	TaskQueue.finish(request)
+	EventBus.request_completed.emit(request, out_dir)
+	EventBus.log_line.emit("Done: %s -> %s" % [topic, out_dir.get_file()])
+
+
+## Send the agent to its desk and wait for arrival (listen BEFORE
+## emitting: an agent already at its station arrives synchronously).
+func _walk_stage(stage: String, role: String, request: Dictionary) -> void:
 	var arrived := [false]
-	var cb := func(r: String) -> void:
-		if r == role:
+	var cb := func(rr: String) -> void:
+		if rr == role:
 			arrived[0] = true
 	EventBus.agent_arrived.connect(cb)
 	EventBus.stage_started.emit(stage, role, request)
@@ -90,6 +167,10 @@ func _stage(stage: String, role: String, request: Dictionary, system_prompt: Str
 		await get_tree().create_timer(0.2).timeout
 		waited += 0.2
 	EventBus.agent_arrived.disconnect(cb)
+
+
+func _stage(stage: String, role: String, request: Dictionary, system_prompt: String, user_prompt: String) -> String:
+	await _walk_stage(stage, role, request)
 
 	# memories + team dynamics color every call (retrieval by topic)
 	var topic := str(request.get("topic", ""))
