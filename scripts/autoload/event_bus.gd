@@ -24,3 +24,5 @@ signal approval_resolved(approved: bool)
 signal agent_question(role: String, question: String)
 ## The owner's typed guidance for the asking agent ("" = no answer).
 signal guidance_given(text: String)
+## The Director calls a kickoff huddle before a new job starts.
+signal meeting_called(request: Dictionary)

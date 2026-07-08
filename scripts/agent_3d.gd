@@ -73,8 +73,16 @@ const NEED_WEIGHT := {
 	"publisher": {"energy": 1.0, "social": 1.3, "inspiration": 0.9},
 }
 var _break_ad: Dictionary = {}
+var _meeting := false
 ## What this agent is doing right now, for the team board.
 var current_task := "available"
+
+## Standing spots around the meeting-nook table, one per role.
+const MEETING_SPOTS := {
+	"director": Vector2i(3, 3), "researcher": Vector2i(2, 2),
+	"writer": Vector2i(5, 2), "editor": Vector2i(4, 3),
+	"publisher": Vector2i(2, 3),
+}
 var _plate_state: Label3D
 
 var costume: Dictionary = {}
@@ -148,6 +156,14 @@ func _ready() -> void:
 
 	EventBus.stage_started.connect(_on_stage_started)
 	EventBus.stage_completed.connect(_on_stage_completed)
+	EventBus.meeting_called.connect(func(_req: Dictionary) -> void:
+		if state == State.WORKING or _target_is_work:
+			return
+		_meeting = true
+		_celebrating = false
+		_break_ad = {}
+		_wander_timer.stop()
+		walk_to(MEETING_SPOTS.get(role, Vector2i(3, 3))))
 	EventBus.agent_say.connect(func(r: String, text: String) -> void:
 		if r == role:
 			_say(text))
@@ -216,6 +232,15 @@ func walk_to(cell: Vector2i) -> void:
 
 
 func _on_path_done() -> void:
+	if _meeting:
+		_meeting = false
+		_set_state(State.IDLE)
+		_play("Idle")
+		# face the meeting table
+		var to_table := office.grid_to_world(Vector2i(3, 1)) + Vector3(0.5, 0, 1.0) - position
+		_target_yaw = atan2(to_table.x, to_table.z)
+		_wander_timer.start(randf_range(9.0, 13.0))
+		return
 	if _celebrating:
 		_celebrating = false
 		_set_state(State.IDLE)
@@ -356,7 +381,11 @@ func _wander() -> void:
 	if _try_gossip():
 		_restart_wander()
 		return
-	# 2) needs-driven: score smart-object ads (Sims-style, local + free)
+	# 2) personal space: if someone's standing on top of us, step away
+	if _too_crowded():
+		walk_to(_free_spot())
+		return
+	# 3) needs-driven: score smart-object ads (Sims-style, local + free)
 	var w: Dictionary = NEED_WEIGHT.get(role, {})
 	var best: Dictionary = {}
 	var best_score := 0.0
@@ -364,6 +393,8 @@ func _wander() -> void:
 		var need: String = str(ad["need"])
 		if need == "energy" and Storyteller.espresso_down:
 			continue  # the machine is broken — drama by subtraction
+		if _spot_taken(office.grid_to_world(ad["cell"])):
+			continue  # someone's already using that object
 		var deficit: float = (1.0 - float(needs[need])) * float(w.get(need, 1.0))
 		if deficit < 0.45:
 			continue
@@ -376,9 +407,43 @@ func _wander() -> void:
 		_break_ad = best
 		walk_to(best["cell"])
 		return
-	# 3) otherwise: an ordinary stroll
-	walk_to(office.random_walkable())
+	# 4) otherwise: a stroll to somewhere with breathing room
+	walk_to(_free_spot())
 	_restart_wander()
+
+
+## Is another agent already at (or heading to) this world position?
+func _spot_taken(world_pos: Vector3) -> bool:
+	for other in get_tree().get_nodes_in_group("agents"):
+		if other == self:
+			continue
+		var o := other as TownAgent3D
+		if o == null:
+			continue
+		if o.position.distance_to(world_pos) < 0.9:
+			return true
+		if not o._waypoints.is_empty() and o._waypoints[-1].distance_to(world_pos) < 0.9:
+			return true
+	return false
+
+
+func _too_crowded() -> bool:
+	for other in get_tree().get_nodes_in_group("agents"):
+		if other == self:
+			continue
+		var o := other as TownAgent3D
+		if o and o.state != State.WALKING and position.distance_to(o.position) < 0.85:
+			return true
+	return false
+
+
+## A random walkable cell with breathing room from everyone else.
+func _free_spot() -> Vector2i:
+	for _i in 10:
+		var g := office.random_walkable()
+		if not _spot_taken(office.grid_to_world(g)):
+			return g
+	return office.random_walkable()
 
 
 ## Water-cooler gossip: two idle agents near each other trade their top

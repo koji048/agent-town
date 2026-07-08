@@ -63,6 +63,7 @@ const S := {
 	"say_chat_sim": {"en": "Good to see you, %s! Heads-down today, but ask me anything.", "th": "ดีใจที่แวะมาครับ %s! วันนี้งานแน่นแต่ถามได้เลย"},
 	"say_lost": {"en": "Sorry %s — lost my train of thought there.", "th": "ขอโทษครับ %s — เมื่อกี้หลุดโฟกัสไปแป๊บ"},
 	"say_greet": {"en": "Morning, %s! Good to have you in the office.", "th": "สวัสดีครับ %s! ดีใจที่เข้ามาที่ออฟฟิศนะครับ"},
+	"say_meeting": {"en": "Team huddle! New job: '%s'", "th": "ประชุมด่วน! งานใหม่: '%s'"},
 	"say_celebrate_1": {"en": "Great work, team!", "th": "สุดยอดมากทีม!"},
 	"say_celebrate_2": {"en": "We shipped it!", "th": "งานออกแล้วโว้ย!"},
 	"say_celebrate_3": {"en": "To the town hall!", "th": "ไปฉลองที่ลานกัน!"},

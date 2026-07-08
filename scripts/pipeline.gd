@@ -20,6 +20,12 @@ func _on_request(request: Dictionary) -> void:
 
 
 func _run(request: Dictionary) -> void:
+	# kickoff huddle first (per the owner): the Director gathers the
+	# crew at the meeting nook before anyone touches the work
+	EventBus.meeting_called.emit(request)
+	EventBus.agent_say.emit("director",
+		I18n.f("say_meeting", [str(request.get("topic", "")).left(36)]))
+	await get_tree().create_timer(8.0).timeout
 	if request.has("clip"):
 		await _run_clip(request)
 		return
