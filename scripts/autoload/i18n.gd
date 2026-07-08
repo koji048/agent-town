@@ -44,6 +44,70 @@ const S := {
 	"state_idle": {"en": "IDLE", "th": "ว่าง"},
 	"state_walking": {"en": "WALKING", "th": "กำลังเดิน"},
 	"state_working": {"en": "WORKING", "th": "กำลังทำงาน"},
+	# board v2: filters + PIC
+	"filter_search": {"en": "Search...", "th": "ค้นหา..."},
+	"filter_all": {"en": " All ", "th": " ทั้งหมด "},
+	"pic": {"en": "PIC", "th": "ผู้ทำ"},
+	"stage_file": {"en": "%s (by %s)", "th": "%s (โดย %s)"},
+	# agent speech — the conversation follows the toggle too
+	"say_plan": {"en": "New request! Drafting the brief...", "th": "งานใหม่เข้า! กำลังร่างบรีฟ..."},
+	"say_research": {"en": "Digging for hooks and facts...", "th": "กำลังขุดหาฮุคกับข้อมูล..."},
+	"say_script": {"en": "Writing the script...", "th": "กำลังเขียนสคริปต์..."},
+	"say_edit": {"en": "Cutting captions to size...", "th": "กำลังตัดแคปชันให้พอดี..."},
+	"say_publish": {"en": "Packaging for publish...", "th": "กำลังแพ็กงานเตรียมโพสต์..."},
+	"say_review": {"en": "Final quality check...", "th": "ตรวจคุณภาพรอบสุดท้าย..."},
+	"say_onit": {"en": "On it...", "th": "จัดให้..."},
+	"say_fail": {"en": "That one failed...", "th": "งานนี้พลาดซะแล้ว..."},
+	"say_thanks": {"en": "Thanks, %s!", "th": "ขอบคุณครับ %s!"},
+	"say_noted": {"en": "Noted, %s.", "th": "รับทราบครับ %s"},
+	"say_chat_sim": {"en": "Good to see you, %s! Heads-down today, but ask me anything.", "th": "ดีใจที่แวะมาครับ %s! วันนี้งานแน่นแต่ถามได้เลย"},
+	"say_lost": {"en": "Sorry %s — lost my train of thought there.", "th": "ขอโทษครับ %s — เมื่อกี้หลุดโฟกัสไปแป๊บ"},
+	"say_greet": {"en": "Morning, %s! Good to have you in the office.", "th": "สวัสดีครับ %s! ดีใจที่เข้ามาที่ออฟฟิศนะครับ"},
+	"say_celebrate_1": {"en": "Great work, team!", "th": "สุดยอดมากทีม!"},
+	"say_celebrate_2": {"en": "We shipped it!", "th": "งานออกแล้วโว้ย!"},
+	"say_celebrate_3": {"en": "To the town hall!", "th": "ไปฉลองที่ลานกัน!"},
+	"gossip_opener": {"en": "Did you hear? ", "th": "ได้ยินยัง? "},
+	"gossip_reply": {"en": "Same energy here — ", "th": "ทางนี้ก็เหมือนกัน — "},
+	"gossip_opener_empty": {"en": "How's it going over there?", "th": "ทางนั้นเป็นไงบ้าง?"},
+	"gossip_reply_empty": {"en": "Busy, but good.", "th": "ยุ่งอยู่ แต่ก็ดีนะ"},
+	"ask_stuck": {"en": "My %s stage for '%s' came up empty. Any direction for the retry?", "th": "ขั้นตอน %s ของงาน '%s' ออกมาว่างเปล่า ช่วยชี้ทางให้หน่อยได้ไหมครับ?"},
+	"lang_directive": {"en": "Reply in casual English.", "th": "ตอบเป็นภาษาไทยแบบเพื่อนร่วมงาน สั้น กระชับ"},
+	# storyteller events
+	"st_trend_say": {"en": "Heads up team — %s!", "th": "ทีมฟังทางนี้ — %s!"},
+	"st_espresso_down": {"en": "Who broke the espresso machine?!", "th": "ใครทำเครื่องกาแฟพัง?!"},
+	"st_espresso_up": {"en": "Coffee's back. We live again.", "th": "กาแฟกลับมาแล้ว รอดตาย!"},
+	"st_rush_say": {"en": "Next one's a rush job — tight and sharp, people.", "th": "งานหน้าเป็นงานด่วน — กระชับและคมนะทุกคน"},
+	# smart-object break lines
+	"line_espresso": {"en": "Espresso o'clock.", "th": "ได้เวลาเอสเพรสโซ่"},
+	"line_coffee": {"en": "Coffee first, then genius.", "th": "กาแฟก่อน แล้วค่อยอัจฉริยะ"},
+	"line_couch": {"en": "Five-minute couch break.", "th": "พักโซฟาห้านาที"},
+	"line_howgoing": {"en": "So, how's your part going?", "th": "งานส่วนนายไปถึงไหนแล้ว?"},
+	"line_lounge": {"en": "Lounge check-in.", "th": "แวะเลานจ์หน่อย"},
+	"line_garden": {"en": "The garden helps me think.", "th": "สวนช่วยให้คิดออก"},
+	"line_freshair": {"en": "Fresh air, fresh hooks.", "th": "อากาศใหม่ ฮุคใหม่"},
+	"line_focus": {"en": "Focus booth. No pings.", "th": "ตู้โฟกัส ห้ามใครกวน"},
+	"line_library": {"en": "A chapter from the library.", "th": "อ่านสักบทจากห้องสมุด"},
+	# memory templates (written in the current language)
+	"mem_stage_done": {"en": "I finished the %s stage for '%s'.", "th": "ฉันทำขั้นตอน %s ของ '%s' เสร็จแล้ว"},
+	"mem_stage_fail": {"en": "My %s stage failed on '%s'. Frustrating.", "th": "ขั้นตอน %s ของ '%s' พลาด หงุดหงิดจริง"},
+	"mem_shipped": {"en": "We shipped the reel '%s' and celebrated in the garden.", "th": "พวกเราส่งรีล '%s' สำเร็จ แล้วไปฉลองกันที่สวน"},
+	"mem_praised": {"en": "%s praised my work%s. Felt great.", "th": "%s ชมผลงานของฉัน%s รู้สึกดีมาก"},
+	"mem_coached": {"en": "%s coached me: \"%s\" — I'll apply that next time.", "th": "%s แนะนำฉันว่า \"%s\" — คราวหน้าจะทำตามนั้น"},
+	"mem_owner_said": {"en": "%s said to me: \"%s\"", "th": "%s พูดกับฉันว่า \"%s\""},
+	"mem_i_told": {"en": "I told %s: \"%s\"", "th": "ฉันบอก %s ว่า \"%s\""},
+	"mem_approved": {"en": "%s approved my script for '%s' at the desk!", "th": "%s อนุมัติสคริปต์ '%s' ของฉันที่โต๊ะ!"},
+	"mem_rejected": {"en": "%s sent my script for '%s' back for revision.", "th": "%s ส่งสคริปต์ '%s' กลับมาให้แก้"},
+	"mem_guided": {"en": "%s helped me through a stuck %s stage: \"%s\"", "th": "%s ช่วยชี้ทางตอนขั้นตอน %s ติดขัด: \"%s\""},
+	"mem_gossip_heard": {"en": "The %s told me: %s", "th": "%s เล่าให้ฟังว่า: %s"},
+	"mem_gossip_chat": {"en": "Chatted with the %s on a break.", "th": "คุยเล่นกับ%sตอนพัก"},
+	"mem_break": {"en": "Took a break (%s). It helped.", "th": "พักเบรก (%s) แล้วรู้สึกดีขึ้น"},
+	"mem_trend": {"en": "Trend alert from the Director: %s.", "th": "ผู้กำกับแจ้งเทรนด์: %s"},
+	"mem_espresso_down": {"en": "The espresso machine broke down. Morale wobbled.", "th": "เครื่องกาแฟพัง ขวัญกำลังใจสั่นคลอน"},
+	"mem_espresso_up": {"en": "The espresso machine got fixed. Small victories.", "th": "เครื่องกาแฟซ่อมเสร็จแล้ว ชัยชนะเล็กๆ"},
+	"mem_rush": {"en": "The Director warned us: the next reel is a rush job.", "th": "ผู้กำกับเตือนว่า งานรีลตัวต่อไปเป็นงานด่วน"},
+	"mem_praise_about": {"en": " — about: %s", "th": " — เรื่อง: %s"},
+	"mem_clip_routed": {"en": "%s sent real footage '%s' — I routed it to the edit bay.", "th": "%s ส่งฟุตเทจจริง '%s' มา — ฉันส่งต่อให้ห้องตัดต่อ"},
+	"mem_clip_edited": {"en": "I transcribed and captioned %s's real clip '%s'.", "th": "ฉันถอดเสียงและทำแคปชันคลิปจริงของ %s เรื่อง '%s'"},
 	# zone signs
 	"z_reception": {"en": "RECEPTION", "th": "ต้อนรับ"},
 	"z_director": {"en": "DIRECTOR", "th": "ผู้กำกับ"},
@@ -74,6 +138,11 @@ func _ready() -> void:
 func t(key: String) -> String:
 	var entry: Dictionary = S.get(key, {})
 	return str(entry.get(lang, entry.get("en", key)))
+
+
+## Formatted template in the current language: I18n.f("mem_praised", [..]).
+func f(key: String, args: Array) -> String:
+	return t(key) % args
 
 
 ## Bind a node property to a string key — set now, re-set on toggle.

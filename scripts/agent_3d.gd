@@ -108,21 +108,23 @@ func _ready() -> void:
 	_bubble.font = I18n.ui_font
 	_bubble.modulate = Color(0.98, 0.97, 0.94)
 	_bubble.outline_modulate = Color(0.13, 0.12, 0.16)
-	# wrapped speech: fits the conversation, floats clear of the name
+	# wrapped speech above the head (name/state live at the feet now)
 	_bubble.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_bubble.width = 420.0
-	_bubble.position = Vector3(0, CHAR_H + 1.06, 0)
+	_bubble.position = Vector3(0, CHAR_H + 0.55, 0)
 	_bubble.visible = false
 	add_child(_bubble)
 
 	# nameplate: role name (gold for the boss) + live state pill
 	# (design-at-viewing-size: large glyphs, opaque outline, and the
 	# state label only appears when the agent is actually doing something)
+	# name + state at the FEET (per owner request): a grounded title
+	# plate instead of floating head text
 	var plate_name := _make_plate(role.to_upper(), 78,
 		Color(1.0, 0.85, 0.35) if role == "director" else Color(0.98, 0.98, 0.94))
-	plate_name.position = Vector3(0, CHAR_H + 0.54, 0)
+	plate_name.position = Vector3(0, 0.34, 0)
 	_plate_state = _make_plate("", 44, Color(0.72, 0.76, 0.72))
-	_plate_state.position = Vector3(0, CHAR_H + 0.24, 0)
+	_plate_state.position = Vector3(0, 0.10, 0)
 	_plate_state.visible = false
 
 	_bubble_timer = Timer.new()
@@ -237,13 +239,13 @@ func _on_path_done() -> void:
 		_play("Idle")
 		var ad := _break_ad
 		_break_ad = {}
-		_say(str(ad["line"]))
+		_say(I18n.t(str(ad["line"])))
 		var need: String = str(ad["need"])
 		current_task = "break (%s)" % need
 		get_tree().create_timer(randf_range(5.0, 8.0)).timeout.connect(func() -> void:
 			needs[need] = clampf(needs[need] + float(ad["amount"]), 0.0, 1.0)
 			if randf() < 0.3:
-				Memory.remember(role, "Took a break (%s). It helped." % need, 2.0)
+				Memory.remember(role, I18n.f("mem_break", [need]), 2.0)
 			if current_task.begins_with("break"):
 				current_task = "available"
 			_restart_wander())
@@ -260,7 +262,8 @@ func _on_stage_started(stage: String, r: String, _request: Dictionary) -> void:
 	_wander_timer.stop()
 	current_task = "%s — '%s'" % [stage, str(_request.get("topic", "")).left(22)]
 	_pop_fx("!", Color(1.0, 0.78, 0.3))
-	_say(str(SAY_START.get(stage, "On it...")))
+	var say_key := "say_" + stage
+	_say(I18n.t(say_key) if I18n.S.has(say_key) else I18n.t("say_onit"))
 	_carry_doc()
 	walk_to(office.workstation(role))
 
@@ -320,7 +323,7 @@ func _on_stage_completed(_stage: String, r: String, _request: Dictionary, result
 	current_task = "available"
 	if result.begins_with("(stage"):
 		_pop_fx("x", Color(1.0, 0.42, 0.42))
-		_say("That one failed...")
+		_say(I18n.t("say_fail"))
 		_play("Idle")
 	else:
 		_pop_fx("+", Color(0.45, 1.0, 0.55))
@@ -341,7 +344,8 @@ func celebrate_at(cell: Vector2i) -> void:
 		return
 	_celebrating = true
 	_wander_timer.stop()
-	_say(["Great work, team!", "We shipped it!", "To the town hall!"].pick_random())
+	_say([I18n.t("say_celebrate_1"), I18n.t("say_celebrate_2"),
+		I18n.t("say_celebrate_3")].pick_random())
 	walk_to(cell)
 
 
@@ -410,14 +414,17 @@ static var _llm_gossips := 0
 func _gossip_with(o: TownAgent3D) -> void:
 	var mine := Memory.recall(role, "", 1)
 	var theirs := Memory.recall(o.role, "", 1)
-	var opener := "How's it going over there?" if mine.is_empty() \
-		else "Did you hear? " + str(mine[0]["text"])
-	var reply := "Busy, but good." if theirs.is_empty() \
-		else "Same energy here — " + str(theirs[0]["text"])
+	var opener := I18n.t("gossip_opener_empty") if mine.is_empty() \
+		else I18n.t("gossip_opener") + str(mine[0]["text"])
+	var reply := I18n.t("gossip_reply_empty") if theirs.is_empty() \
+		else I18n.t("gossip_reply") + str(theirs[0]["text"])
 	if Config.provider_resolved != "simulate" and _llm_gossips < 8 and randf() < 0.4:
 		_llm_gossips += 1
 		_say("...")
-		var sys := "You write tiny in-character banter for a Thai content studio sim. Reply with EXACTLY two lines:\nA: <what the %s says>\nB: <what the %s replies>\nEach under 60 characters, casual coworker tone, English." % [role, o.role]
+		var sys := ("You write tiny in-character banter for a Thai content studio sim. " +
+			"Reply with EXACTLY two lines:\nA: <what the %s says>\nB: <what the %s replies>\n" +
+			"Each under 60 characters, casual coworker tone. %s") % [
+			role, o.role, I18n.t("lang_directive")]
 		var ctx := "The %s recently: %s\nThe %s recently: %s" % [
 			role, opener, o.role, reply]
 		var out: String = await Claude.complete(sys, ctx, "gossip")
@@ -427,11 +434,11 @@ func _gossip_with(o: TownAgent3D) -> void:
 			elif line.begins_with("B:"):
 				reply = line.substr(2).strip_edges()
 	_say(opener)
-	Memory.remember(o.role, "The %s told me: %s" % [role, opener], 4.0)
+	Memory.remember(o.role, I18n.f("mem_gossip_heard", [role, opener]), 4.0)
 	get_tree().create_timer(1.8).timeout.connect(func() -> void:
 		if is_instance_valid(o):
 			o._say(reply))
-	Memory.remember(role, "Chatted with the %s on a break." % o.role, 3.0)
+	Memory.remember(role, I18n.f("mem_gossip_chat", [o.role]), 3.0)
 	Memory.nudge_affinity(role, o.role, 0.03)
 	needs["social"] = clampf(needs["social"] + 0.35, 0.0, 1.0)
 	o.needs["social"] = clampf(o.needs["social"] + 0.35, 0.0, 1.0)
@@ -444,42 +451,41 @@ func _gossip_with(o: TownAgent3D) -> void:
 ## being taught is REMEMBERED.
 func praised() -> void:
 	var last := Memory.recall(role, "", 1)
-	var about := "" if last.is_empty() else " — about: %s" % str(last[0]["text"]).left(50)
-	Memory.remember(role, "%s praised my work%s. Felt great." % [Config.owner_name, about], 7.0)
+	var about := "" if last.is_empty() else I18n.f("mem_praise_about", [str(last[0]["text"]).left(50)])
+	Memory.remember(role, I18n.f("mem_praised", [Config.owner_name, about]), 7.0)
 	Memory.nudge_affinity(role, "owner", 0.06)
 	needs["social"] = clampf(needs["social"] + 0.3, 0.0, 1.0)
 	needs["inspiration"] = clampf(needs["inspiration"] + 0.2, 0.0, 1.0)
 	_pop_fx("♥", Color(1.0, 0.55, 0.6))
-	_say("Thanks, %s!" % Config.owner_name)
+	_say(I18n.f("say_thanks", [Config.owner_name]))
 	if state == State.IDLE:
 		_play_once_then_idle("Cheer")
 
 
 func coached(note: String) -> void:
-	Memory.remember(role, "%s coached me: \"%s\" — I'll apply that next time." % [
-		Config.owner_name, note], 8.0)
+	Memory.remember(role, I18n.f("mem_coached", [Config.owner_name, note]), 8.0)
 	Memory.nudge_affinity(role, "owner", 0.03)
 	_pop_fx("!", Color(1.0, 0.78, 0.3))
-	_say("Noted, %s." % Config.owner_name)
+	_say(I18n.f("say_noted", [Config.owner_name]))
 
 
 ## Click-to-chat: an in-character reply built from real memories,
-## remembered on both sides of the conversation.
+## remembered on both sides — in the toggle's language.
 func chat_reply(msg: String) -> void:
-	Memory.remember(role, "%s said to me: \"%s\"" % [Config.owner_name, msg.left(90)], 5.0)
+	Memory.remember(role, I18n.f("mem_owner_said", [Config.owner_name, msg.left(90)]), 5.0)
 	if Config.provider_resolved == "simulate":
-		_say("Good to see you, %s! Heads-down today, but ask me anything." % Config.owner_name)
+		_say(I18n.f("say_chat_sim", [Config.owner_name]))
 		return
 	_say("...")
 	var sys := ("You are the %s of Agent Town, a small Thai short-video studio. " +
 		"Reply to your boss %s IN CHARACTER, one or two short sentences " +
-		"(under 140 characters total), warm and specific.%s") % [
-		role, Config.owner_name, Memory.context_for(role, msg)]
+		"(under 140 characters total), warm and specific. %s%s") % [
+		role, Config.owner_name, I18n.t("lang_directive"), Memory.context_for(role, msg)]
 	var out: String = await Claude.complete(sys, msg, "chat")
 	if out.is_empty():
-		out = "Sorry %s — lost my train of thought there." % Config.owner_name
+		out = I18n.f("say_lost", [Config.owner_name])
 	_say(out.strip_edges().left(170))
-	Memory.remember(role, "I told %s: \"%s\"" % [Config.owner_name, out.left(90)], 4.0)
+	Memory.remember(role, I18n.f("mem_i_told", [Config.owner_name, out.left(90)]), 4.0)
 
 
 func _restart_wander() -> void:

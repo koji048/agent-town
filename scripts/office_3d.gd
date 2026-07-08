@@ -100,15 +100,15 @@ const COURTYARD := Rect2i(9, 7, 7, 6)
 ## Smart objects (The Sims): the furniture advertises need satisfaction;
 ## agents score ads locally — zero LLM cost, zero aimless idling.
 const SMART_OBJECTS: Array = [
-	{"cell": Vector2i(19, 7), "need": "energy", "amount": 0.55, "line": "Espresso o'clock."},
-	{"cell": Vector2i(18, 6), "need": "energy", "amount": 0.50, "line": "Coffee first, then genius."},
-	{"cell": Vector2i(18, 11), "need": "social", "amount": 0.50, "line": "Five-minute couch break."},
-	{"cell": Vector2i(20, 11), "need": "social", "amount": 0.50, "line": "So, how's your part going?"},
-	{"cell": Vector2i(21, 10), "need": "social", "amount": 0.40, "line": "Lounge check-in."},
-	{"cell": Vector2i(11, 9), "need": "inspiration", "amount": 0.60, "line": "The garden helps me think."},
-	{"cell": Vector2i(10, 10), "need": "inspiration", "amount": 0.55, "line": "Fresh air, fresh hooks."},
-	{"cell": Vector2i(3, 14), "need": "inspiration", "amount": 0.50, "line": "Focus booth. No pings."},
-	{"cell": Vector2i(2, 8), "need": "inspiration", "amount": 0.45, "line": "A chapter from the library."},
+	{"cell": Vector2i(19, 7), "need": "energy", "amount": 0.55, "line": "line_espresso"},
+	{"cell": Vector2i(18, 6), "need": "energy", "amount": 0.50, "line": "line_coffee"},
+	{"cell": Vector2i(18, 11), "need": "social", "amount": 0.50, "line": "line_couch"},
+	{"cell": Vector2i(20, 11), "need": "social", "amount": 0.50, "line": "line_howgoing"},
+	{"cell": Vector2i(21, 10), "need": "social", "amount": 0.40, "line": "line_lounge"},
+	{"cell": Vector2i(11, 9), "need": "inspiration", "amount": 0.60, "line": "line_garden"},
+	{"cell": Vector2i(10, 10), "need": "inspiration", "amount": 0.55, "line": "line_freshair"},
+	{"cell": Vector2i(3, 14), "need": "inspiration", "amount": 0.50, "line": "line_focus"},
+	{"cell": Vector2i(2, 8), "need": "inspiration", "amount": 0.45, "line": "line_library"},
 ]
 
 

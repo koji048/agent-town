@@ -57,8 +57,8 @@ func _tick() -> void:
 func _trend_alert() -> void:
 	var trend: String = TRENDS.pick_random()
 	EventBus.log_line.emit("📈 TREND ALERT: %s" % trend)
-	EventBus.agent_say.emit("director", "Heads up team — %s!" % trend)
-	Memory.remember_all("Trend alert from the Director: %s." % trend, 6.0)
+	EventBus.agent_say.emit("director", I18n.f("st_trend_say", [trend]))
+	Memory.remember_all(I18n.f("mem_trend", [trend]), 6.0)
 	Chronicle.record("trend", "Trend alert swept the office: %s" % trend)
 
 
@@ -67,18 +67,18 @@ func _espresso_outage() -> void:
 		return
 	espresso_down = true
 	EventBus.log_line.emit("☕ The espresso machine is DOWN.")
-	EventBus.agent_say.emit("editor", "Who broke the espresso machine?!")
-	Memory.remember_all("The espresso machine broke down. Morale wobbled.", 5.0)
+	EventBus.agent_say.emit("editor", I18n.t("st_espresso_down"))
+	Memory.remember_all(I18n.t("mem_espresso_down"), 5.0)
 	Chronicle.record("outage", "The Great Espresso Outage")
 	get_tree().create_timer(90.0).timeout.connect(func() -> void:
 		espresso_down = false
 		EventBus.log_line.emit("☕ Espresso machine repaired. Order restored.")
-		EventBus.agent_say.emit("publisher", "Coffee's back. We live again.")
-		Memory.remember_all("The espresso machine got fixed. Small victories.", 4.0))
+		EventBus.agent_say.emit("publisher", I18n.t("st_espresso_up"))
+		Memory.remember_all(I18n.t("mem_espresso_up"), 4.0))
 
 
 func _deadline_pressure() -> void:
 	EventBus.log_line.emit("⏰ A rush client wants the next reel FAST.")
-	EventBus.agent_say.emit("director", "Next one's a rush job — tight and sharp, people.")
-	Memory.remember_all("The Director warned us: the next reel is a rush job.", 6.0)
+	EventBus.agent_say.emit("director", I18n.t("st_rush_say"))
+	Memory.remember_all(I18n.t("mem_rush"), 6.0)
 	Chronicle.record("rush", "A rush deadline rattled the crew")

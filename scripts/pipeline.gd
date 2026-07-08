@@ -71,7 +71,7 @@ func _run(request: Dictionary) -> void:
 	TaskQueue.finish(request)
 	# the whole crew remembers shipping this one (Smallville: shared
 	# events become each agent's own memory), and bonds strengthen
-	Memory.remember_all("We shipped the reel '%s' and celebrated in the garden." % topic, 8.0)
+	Memory.remember_all(I18n.f("mem_shipped", [topic]), 8.0)
 	for i in Memory.ROLES.size():
 		for j in range(i + 1, Memory.ROLES.size()):
 			Memory.nudge_affinity(Memory.ROLES[i], Memory.ROLES[j], 0.03)
@@ -96,8 +96,7 @@ func _run_clip(request: Dictionary) -> void:
 		"clean captions to house rules, owner approval, EP-numbered export.") % [
 		Config.owner_name, clip.get_file()]
 	results["plan"] = brief
-	Memory.remember("director", "%s sent real footage '%s' — I routed it to the edit bay." % [
-		Config.owner_name, clip.get_file()], 6.0)
+	Memory.remember("director", I18n.f("mem_clip_routed", [Config.owner_name, clip.get_file()]), 6.0)
 	EventBus.stage_completed.emit("plan", "director", request, brief)
 
 	# 2) the Editor transcribes for real
@@ -121,8 +120,7 @@ func _run_clip(request: Dictionary) -> void:
 			if not c.is_empty():
 				cleaned = c
 		results["edit"] = cleaned
-		Memory.remember("editor", "I transcribed and captioned %s's real clip '%s'." % [
-			Config.owner_name, clip.get_file()], 7.0)
+		Memory.remember("editor", I18n.f("mem_clip_edited", [Config.owner_name, clip.get_file()]), 7.0)
 		EventBus.stage_completed.emit("edit", "editor", request, cleaned)
 
 		# 3) the approval desk (one revision pass when live)
@@ -179,23 +177,21 @@ func _stage(stage: String, role: String, request: Dictionary, system_prompt: Str
 	if out.is_empty():
 		# mixed initiative: the agent asks the owner ONE clarifying
 		# question, and the typed guidance feeds a single retry
-		var guidance := await _ask_owner(role,
-			"My %s stage for '%s' came up empty. Any direction for the retry?" % [stage, topic])
+		var guidance := await _ask_owner(role, I18n.f("ask_stuck", [stage, topic]))
 		var retry_prompt := user_prompt
 		if not guidance.is_empty():
 			retry_prompt += "\n\nGUIDANCE FROM %s: %s" % [Config.owner_name.to_upper(), guidance]
-			Memory.remember(role, "%s helped me through a stuck %s stage: \"%s\"" % [
-				Config.owner_name, stage, guidance.left(60)], 8.0)
+			Memory.remember(role, I18n.f("mem_guided", [Config.owner_name, stage, guidance.left(60)]), 8.0)
 			Memory.nudge_affinity(role, "owner", 0.06)
 		out = await Claude.complete(
 			system_prompt + Memory.context_for(role, topic), retry_prompt, stage)
 	if out.is_empty():
 		out = "(stage '%s' produced no output — check the log)" % stage
 	if out.begins_with("(stage"):
-		Memory.remember(role, "My %s stage failed on '%s'. Frustrating." % [stage, topic], 7.0)
+		Memory.remember(role, I18n.f("mem_stage_fail", [stage, topic]), 7.0)
 		Memory.nudge_affinity(role, "director", -0.04)
 	else:
-		Memory.remember(role, "I finished the %s stage for '%s'." % [stage, topic], 6.0)
+		Memory.remember(role, I18n.f("mem_stage_done", [stage, topic]), 6.0)
 	results[stage] = out
 	EventBus.stage_completed.emit(stage, role, request, out)
 	return out
@@ -236,13 +232,11 @@ func _await_approval(request: Dictionary, preview: String) -> bool:
 	elif decided[1]:
 		# presence: the approval is remembered as coming from a PERSON
 		var topic := str(request.get("topic", "")).left(40)
-		Memory.remember("writer", "%s approved my script for '%s' at the desk!" % [
-			Config.owner_name, topic], 7.0)
+		Memory.remember("writer", I18n.f("mem_approved", [Config.owner_name, topic]), 7.0)
 		Memory.nudge_affinity("writer", "owner", 0.05)
 	else:
 		var topic2 := str(request.get("topic", "")).left(40)
-		Memory.remember("writer", "%s sent my script for '%s' back for revision." % [
-			Config.owner_name, topic2], 7.0)
+		Memory.remember("writer", I18n.f("mem_rejected", [Config.owner_name, topic2]), 7.0)
 		Memory.nudge_affinity("writer", "owner", -0.02)
 	return decided[1]
 

@@ -13,11 +13,23 @@ const ROLE_COLOR := {
 	"publisher": Color(0.77, 0.24, 0.26),
 }
 
+const STAGE_PIC := {
+	"00_plan.md": "director", "01_research.md": "researcher",
+	"02_script.md": "writer", "03_captions.srt": "editor",
+	"04_publish.md": "publisher", "05_review.md": "director",
+}
+
 var _cols: Dictionary = {}
 var _active_topic := ""
 var _active_stage := ""
 var _active_role := ""
 var _in_review := false
+# quick filters (Jira avatar-filter pattern) + selected project
+var _filter_text := ""
+var _filter_role := ""
+var _selected_project := ""
+var _search: LineEdit
+var _role_btns: Dictionary = {}
 
 
 func _ready() -> void:
@@ -42,6 +54,38 @@ func _ready() -> void:
 	close.pressed.connect(func() -> void: visible = false)
 	head.add_child(close)
 	root.add_child(head)
+
+	# quick filters: text search + PIC avatar chips (Jira pattern)
+	var filters := HBoxContainer.new()
+	filters.add_theme_constant_override("separation", 8)
+	_search = LineEdit.new()
+	I18n.reg(_search, "placeholder_text", "filter_search")
+	_search.custom_minimum_size = Vector2(260, 0)
+	_search.text_changed.connect(func(t: String) -> void:
+		_filter_text = t.to_lower()
+		_refresh())
+	filters.add_child(_search)
+	var all_btn := Button.new()
+	I18n.reg(all_btn, "text", "filter_all")
+	all_btn.pressed.connect(func() -> void:
+		_filter_role = ""
+		_selected_project = ""
+		_search.text = ""
+		_filter_text = ""
+		_style_role_buttons()
+		_refresh())
+	filters.add_child(all_btn)
+	for role in ROLE_COLOR:
+		var rb := Button.new()
+		rb.text = " ● " + role.left(5) + " "
+		rb.add_theme_color_override("font_color", ROLE_COLOR[role])
+		rb.pressed.connect(func() -> void:
+			_filter_role = "" if _filter_role == role else role
+			_style_role_buttons()
+			_refresh())
+		filters.add_child(rb)
+		_role_btns[role] = rb
+	root.add_child(filters)
 
 	var lanes := HBoxContainer.new()
 	lanes.add_theme_constant_override("separation", 14)
@@ -114,7 +158,7 @@ func _clear(holder: VBoxContainer) -> void:
 
 
 func _card(holder: VBoxContainer, title_text: String, sub: String, accent: Color,
-		open_path: String = "") -> void:
+		open_path: String = "", pic: String = "") -> void:
 	var card := PanelContainer.new()
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = Color(0.13, 0.13, 0.18)
@@ -136,6 +180,7 @@ func _card(holder: VBoxContainer, title_text: String, sub: String, accent: Color
 		s.modulate = Color(0.75, 0.75, 0.8)
 		s.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		vb.add_child(s)
+	_pic_line(vb, pic)
 	if not open_path.is_empty():
 		var b := Button.new()
 		b.text = I18n.t("btn_open_files")
@@ -147,24 +192,55 @@ func _card(holder: VBoxContainer, title_text: String, sub: String, accent: Color
 	holder.add_child(card)
 
 
-## One row in the PROJECTS sidebar: status dot + name, click to open.
-func _project_row(name_text: String, status_col: Color, open_path: String = "") -> void:
+func _style_role_buttons() -> void:
+	for role in _role_btns:
+		var rb: Button = _role_btns[role]
+		rb.text = (" ◉ " if _filter_role == role else " ● ") + role.left(5) + " "
+
+
+## Does a card pass the quick filters?
+func _passes(title_text: String, pic: String) -> bool:
+	if not _filter_text.is_empty() and not title_text.to_lower().contains(_filter_text):
+		return false
+	if not _filter_role.is_empty() and pic != _filter_role:
+		return false
+	return true
+
+
+## The PIC chip line appended to a card (research: assignee on-card).
+func _pic_line(vb: VBoxContainer, pic: String) -> void:
+	if pic.is_empty():
+		return
+	var l := Label.new()
+	l.text = "%s  ● %s" % [I18n.t("pic"), pic]
+	l.add_theme_font_size_override("font_size", 12)
+	l.add_theme_color_override("font_color", ROLE_COLOR.get(pic, Color(0.7, 0.7, 0.75)))
+	vb.add_child(l)
+
+
+## One row in the PROJECTS sidebar: click SELECTS the project — the
+## kanban lanes filter to it (the Asana/Jira link the owner asked for).
+func _project_row(name_text: String, status_col: Color) -> void:
 	var row := Button.new()
-	row.text = "●  " + name_text.left(30)
+	var selected := _selected_project == name_text
+	row.text = ("▸ " if selected else "●  ") + name_text.left(30)
 	row.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	row.add_theme_color_override("font_color", status_col)
+	row.add_theme_color_override("font_color",
+		Color(1, 1, 1) if selected else status_col)
 	row.add_theme_font_size_override("font_size", 13)
-	if not open_path.is_empty():
-		row.pressed.connect(func() -> void:
-			OS.shell_open(ProjectSettings.globalize_path(open_path)))
+	row.pressed.connect(func() -> void:
+		_selected_project = "" if _selected_project == name_text else name_text
+		_refresh())
 	_cols["PROJECTS"].add_child(row)
 
 
+func _project_visible(topic: String) -> bool:
+	return _selected_project.is_empty() or _selected_project == topic
+
+
 func _refresh() -> void:
-	# PROJECTS sidebar: every project, one glance — queued (gray),
-	# active (amber), shipped (green, click to open)
 	_clear(_cols["PROJECTS"])
-	# BACKLOG: pending queue files
+	# BACKLOG: pending queue files (PIC: the Director picks up)
 	var backlog: VBoxContainer = _cols["BACKLOG"]
 	_clear(backlog)
 	var dir := DirAccess.open("res://queue/pending")
@@ -176,26 +252,30 @@ func _refresh() -> void:
 				var topic := f
 				if data is Dictionary:
 					topic = str(data.get("topic", f))
-				_card(backlog, topic.left(70), I18n.t("waiting_director"),
-					Color(0.55, 0.55, 0.6))
 				_project_row(topic, Color(0.62, 0.62, 0.66))
+				if _project_visible(topic) and _passes(topic, "director"):
+					_card(backlog, topic.left(70), I18n.t("waiting_director"),
+						Color(0.55, 0.55, 0.6), "", "director")
 
-	# IN PROGRESS / REVIEW: the active request
+	# IN PROGRESS / REVIEW: the active request (PIC: the live assignee)
 	var prog: VBoxContainer = _cols["IN PROGRESS"]
 	var review: VBoxContainer = _cols["REVIEW"]
 	_clear(prog)
 	_clear(review)
 	if not _active_topic.is_empty():
-		var accent: Color = ROLE_COLOR.get(_active_role, Color.GRAY)
-		if _in_review:
-			_card(review, _active_topic.left(70), I18n.t("review_wait"),
-				Color(0.95, 0.45, 0.33))
-		else:
-			_card(prog, _active_topic.left(70),
-				I18n.t("card_stage") % [_active_stage, _active_role], accent)
 		_project_row(_active_topic, Color(1.0, 0.72, 0.32))
+		if _project_visible(_active_topic) and _passes(_active_topic, _active_role):
+			var accent: Color = ROLE_COLOR.get(_active_role, Color.GRAY)
+			if _in_review:
+				_card(review, _active_topic.left(70), I18n.t("review_wait"),
+					Color(0.95, 0.45, 0.33), "", _active_role)
+			else:
+				_card(prog, _active_topic.left(70),
+					I18n.t("card_stage") % [_active_stage, _active_role],
+					accent, "", _active_role)
 
-	# DONE: shipped packages, newest first
+	# DONE: shipped packages. Selecting a shipped project EXPANDS it
+	# into its stage deliverables, each with its PIC and an open button.
 	var done: VBoxContainer = _cols["DONE"]
 	_clear(done)
 	var out := DirAccess.open("res://output")
@@ -205,10 +285,24 @@ func _refresh() -> void:
 			dirs.append(d)
 		dirs.sort()
 		dirs.reverse()
-		for i in dirs.size():
-			var d: String = dirs[i]
+		var shown := 0
+		for d in dirs:
 			var topic := d.get_slice("_", 1).replace("-", " ")
-			if i < 8:
+			_project_row(topic, Color(0.45, 0.85, 0.5))
+			if not _project_visible(topic):
+				continue
+			if _selected_project == topic:
+				# expanded: one card per stage file, with PIC
+				var pdir := DirAccess.open("res://output/" + d)
+				if pdir:
+					for sf in pdir.get_files():
+						var pic: String = STAGE_PIC.get(sf, "")
+						if pic.is_empty() or not _passes(sf, pic):
+							continue
+						_card(done, I18n.t("stage_file") % [sf, pic], "",
+							ROLE_COLOR.get(pic, Color.GRAY),
+							"res://output/" + d + "/" + sf, pic)
+			elif shown < 8 and _passes(topic, ""):
 				_card(done, topic.left(70), d, Color(0.45, 0.85, 0.5),
-					"res://output/" + d)
-			_project_row(topic, Color(0.45, 0.85, 0.5), "res://output/" + d)
+					"res://output/" + d, "")
+				shown += 1

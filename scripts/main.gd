@@ -155,8 +155,7 @@ func _ready() -> void:
 
 	# presence (Animal Crossing's law): the crew knows you arrived
 	get_tree().create_timer(3.0).timeout.connect(func() -> void:
-		EventBus.agent_say.emit("director",
-			"Morning, %s! Good to have you in the office." % Config.owner_name))
+		EventBus.agent_say.emit("director", I18n.f("say_greet", [Config.owner_name])))
 
 	# ambient bed: HVAC room tone + occasional courtyard birds
 	Sfx.start_room_tone(world, -26.0)
