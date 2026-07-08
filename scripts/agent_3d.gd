@@ -581,6 +581,8 @@ func chat_reply(msg: String) -> void:
 	var sys := ("You are %s at Agent Town, a small Thai short-video studio. " +
 		"Reply to your boss %s IN CHARACTER, one or two short sentences " +
 		"(under 140 characters total), warm and specific. %s%s\n\n" +
+		"LIVE OFFICE STATUS (answer follow-up questions from THIS, truthfully):\n" +
+		TaskQueue.status_text() + "\n\n" +
 		"INTENT RULE: only if the boss is CLEARLY commissioning new content " +
 		"(e.g. 'ทำรีลเรื่อง...', 'อยากได้คลิปเกี่ยวกับ...', 'make a reel about...') " +
 		"add a FINAL line exactly: IDEA: <short topic>. Questions, opinions, " +

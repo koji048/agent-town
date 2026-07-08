@@ -13,6 +13,11 @@ var active: int = 0
 var clip_active: bool = false
 var _timer: Timer
 
+## Live job registry, so anyone (chat, watchdog) can answer "ถึงไหนแล้ว".
+## topic -> {stage, role, since (unix), warned}
+var jobs: Dictionary = {}
+const OVERDUE_SEC := 240.0
+
 
 func _ready() -> void:
 	for sub in ["pending", "processing", "done"]:
@@ -34,6 +39,49 @@ func _ready() -> void:
 	add_child(_timer)
 	_timer.start()
 	EventBus.log_line.emit("Watching queue/pending/ + inbox/ every %.0fs" % _timer.wait_time)
+
+	# live registry + overdue watchdog (the PIC reports slowness
+	# proactively — the human should never have to chase silence)
+	EventBus.stage_started.connect(func(stage: String, role: String, request: Dictionary) -> void:
+		jobs[str(request.get("topic", "untitled"))] = {
+			"stage": stage, "role": role,
+			"since": Time.get_unix_time_from_system(), "warned": false,
+		})
+	EventBus.request_completed.connect(func(request: Dictionary, _o: String) -> void:
+		jobs.erase(str(request.get("topic", "untitled"))))
+	var watchdog := Timer.new()
+	watchdog.wait_time = 30.0
+	watchdog.timeout.connect(_check_overdue)
+	add_child(watchdog)
+	watchdog.start()
+
+
+func _check_overdue() -> void:
+	var now := Time.get_unix_time_from_system()
+	for topic in jobs:
+		var j: Dictionary = jobs[topic]
+		if not bool(j["warned"]) and now - float(j["since"]) > OVERDUE_SEC:
+			j["warned"] = true
+			EventBus.agent_say.emit(str(j["role"]),
+				I18n.f("say_overdue", [str(topic).left(30)]))
+			EventBus.log_line.emit("⚠ '%s' stuck at %s (%s) for %d min" % [
+				str(topic).left(30), j["stage"], j["role"],
+				int((now - float(j["since"])) / 60.0)])
+
+
+## Human-readable live status for chat follow-ups ("ถึงไหนแล้ว").
+func status_text() -> String:
+	if jobs.is_empty():
+		return "No jobs in flight right now."
+	var now := Time.get_unix_time_from_system()
+	var lines: Array[String] = []
+	for topic in jobs:
+		var j: Dictionary = jobs[topic]
+		lines.append("'%s' — stage %s, PIC %s, %d min in%s" % [
+			str(topic).left(36), j["stage"], j["role"],
+			int((now - float(j["since"])) / 60.0),
+			" (RUNNING LATE)" if bool(j["warned"]) else ""])
+	return "\n".join(lines)
 
 
 func _inbox() -> String:
