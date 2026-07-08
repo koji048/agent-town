@@ -24,12 +24,21 @@ func _ready() -> void:
 
 
 ## Record an event into one agent's stream. imp 1..10.
+## Repeats of the same sentence within 15 minutes just refresh the
+## original (no duplicate spam from routine breaks/chats).
 func remember(role: String, text: String, imp: float = 4.0) -> void:
 	if not memories.has(role):
 		return
-	memories[role].append({"t": Time.get_unix_time_from_system(), "text": text, "imp": imp})
-	if memories[role].size() > MAX_PER_AGENT:
-		memories[role] = memories[role].slice(memories[role].size() - MAX_PER_AGENT)
+	var now := Time.get_unix_time_from_system()
+	var stream: Array = memories[role]
+	for i in range(maxi(stream.size() - 6, 0), stream.size()):
+		if str(stream[i]["text"]) == text and now - float(stream[i]["t"]) < 900.0:
+			stream[i]["t"] = now
+			_save()
+			return
+	stream.append({"t": now, "text": text, "imp": imp})
+	if stream.size() > MAX_PER_AGENT:
+		memories[role] = stream.slice(stream.size() - MAX_PER_AGENT)
 	_save()
 
 
@@ -57,8 +66,15 @@ func recall(role: String, query: String, k: int = 5) -> Array:
 		scored.append([recency * 0.45 + float(m["imp"]) / 10.0 * 0.35 + relevance * 0.20, m])
 	scored.sort_custom(func(a, b): return a[0] > b[0])
 	var out: Array = []
-	for i in mini(k, scored.size()):
-		out.append(scored[i][1])
+	var seen: Dictionary = {}
+	for s in scored:
+		var text := str(s[1]["text"])
+		if seen.has(text):
+			continue  # never recall the same sentence twice
+		seen[text] = true
+		out.append(s[1])
+		if out.size() >= k:
+			break
 	return out
 
 
@@ -135,7 +151,17 @@ func _load() -> void:
 		if data is Dictionary:
 			for r in ROLES:
 				if data.has(r) and data[r] is Array:
-					memories[r] = data[r]
+					# one-time cleanup: keep only the latest copy of each
+					# exact sentence (older saves accumulated duplicates)
+					var seen: Dictionary = {}
+					var cleaned: Array = []
+					var arr: Array = data[r]
+					for i in range(arr.size() - 1, -1, -1):
+						var text := str(arr[i]["text"])
+						if not seen.has(text):
+							seen[text] = true
+							cleaned.push_front(arr[i])
+					memories[r] = cleaned
 	if FileAccess.file_exists(REL_PATH):
 		var rel: Variant = JSON.parse_string(FileAccess.get_file_as_string(REL_PATH))
 		if rel is Dictionary:

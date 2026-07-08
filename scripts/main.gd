@@ -517,11 +517,19 @@ func _build_approval_panel() -> void:
 	isb.set_content_margin_all(12)
 	_inspector.add_theme_stylebox_override("panel", isb)
 	_inspector.position = Vector2(12, 200)
+	var ivb := VBoxContainer.new()
+	var close := Button.new()
+	close.text = "✕"
+	close.flat = true
+	close.size_flags_horizontal = Control.SIZE_SHRINK_END
+	close.pressed.connect(func() -> void: _inspector.visible = false)
+	ivb.add_child(close)
 	_inspector_text = Label.new()
 	_inspector_text.add_theme_font_size_override("font_size", 13)
 	_inspector_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_inspector_text.custom_minimum_size = Vector2(360, 0)
-	_inspector.add_child(_inspector_text)
+	ivb.add_child(_inspector_text)
+	_inspector.add_child(ivb)
 	_inspector.visible = false
 	hud.add_child(_inspector)
 	_inspector_timer = Timer.new()
