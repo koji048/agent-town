@@ -286,8 +286,9 @@ func _refresh() -> void:
 		dirs.sort()
 		dirs.reverse()
 		var shown := 0
-		for d in dirs:
-			var topic := d.get_slice("_", 1).replace("-", " ")
+		for dv in dirs:
+			var d: String = str(dv)
+			var topic: String = d.get_slice("_", 1).replace("-", " ")
 			_project_row(topic, Color(0.45, 0.85, 0.5))
 			if not _project_visible(topic):
 				continue
