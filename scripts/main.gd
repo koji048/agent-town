@@ -491,6 +491,16 @@ func _build_costume_panel() -> void:
 	outputs.pressed.connect(func() -> void:
 		OS.shell_open(ProjectSettings.globalize_path("res://output")))
 	hud.add_child(outputs)
+	# the human's PM view (Asana/Jira): the pipeline as a board
+	var board_panel := BoardPanel.new()
+	board_panel.visible = false
+	hud.add_child(board_panel)
+	var board_btn := Button.new()
+	board_btn.text = "  📋 Board  "
+	board_btn.position = Vector2(1370, 16)
+	board_btn.pressed.connect(func() -> void:
+		board_panel.visible = not board_panel.visible)
+	hud.add_child(board_btn)
 	# show the panel in dev screenshots
 	if not OS.get_environment("AGENT_TOWN_SHOT").is_empty():
 		_costume_panel.visible = true
