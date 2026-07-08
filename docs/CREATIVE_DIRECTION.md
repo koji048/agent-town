@@ -87,7 +87,67 @@ it).
 | Drama & pacing | RimWorld storyteller | Pipeline order only; no events, no chronicle | **D** |
 | Audio | Unpacking: 14k foley files | **None** | **F** |
 
+### 6. The human is a character (added after the human-interaction study)
+
+The first five pillars treat the viewer as an operator. The research
+says the deepest attachment comes from being a *participant*:
+
+- **Mixed initiative** (Horvitz lineage): when the system can't resolve
+  ambiguity safely, a short clarifying question beats a confident wrong
+  answer. Initiative must flow BOTH ways — agents should sometimes ask
+  the human, not only wait to be told. Autonomy is a dial, not a switch;
+  interventions must be low-friction and reversible.
+- **Majesty's law**: influence through incentives, never commands. The
+  human pins weighted topic cards; the Director decides — in character.
+- **Black & White's law**: teach through feedback on outcomes (praise /
+  scold after the fact), and the creature *remembers being taught*.
+  Feedback works because it lands on a specific recent action.
+- **Animal Crossing's law**: presence. Villagers know the player exists,
+  greet them, reference them when they're away. The strongest documented
+  player-character relationship type is *nurturing* (~42% of players) —
+  guardian-role attachment to characters whose growth you're
+  responsible for.
+- **Tamagotchi effect**: attachment forms toward named individuals with
+  visible needs whose wellbeing responds to your care.
+
+Agent Town translation: the human (the owner, by name) is a member of
+this studio — greeted on arrival, asked real clarifying questions when
+stages are ambiguous or failing, able to praise or coach any agent
+about the thing they just did (which becomes a memory and shapes
+affinity toward the OWNER, a sixth node in the relationship graph), and
+able to chat in natural language with any agent who answers from their
+actual memories. The keyboard appears exactly where it should: when the
+human has something to say.
+
 ## Commissioned sprints
+
+*Status: Sprints 1-4 shipped (audio/juice/kanban/artifacts; memory/
+needs/gossip/relationships; storyteller/chronicle/event camera;
+approval desk/cost meter/day-night/LLM gossip) plus interactivity and
+UI-legibility passes. Scorecard: no discipline below B−.*
+
+**Sprint 5 — "The human joins the town" (from the interaction study)**
+1. Click-to-chat: click an agent → typed message → in-character reply
+   built from their real memories, needs, and relationships; the
+   exchange is remembered by the agent (both directions of initiative)
+2. Owner presence: the owner is a named sixth character in the
+   relationship graph; agents greet them at boot, reference them in
+   gossip, and remember approvals/rejections as coming from THEM
+3. Praise / coach buttons on the inspector card, targeting the agent's
+   most recent action (Black & White: feedback lands on outcomes) —
+   praise lifts mood + owner affinity; coaching writes a corrective
+   memory that colors the next same-stage prompt
+4. The ideas corkboard: pin topic cards with a priority weight in-world
+   instead of dropping JSON files (Majesty: incentives, not commands);
+   the Director picks up cards in character
+5. Agents ask back: on stage failure or ambiguous briefs the agent
+   walks toward the camera with a "?" and asks ONE clarifying question;
+   the typed answer feeds the retry (mixed initiative, Morae-style
+   proactive pause)
+
+**Sprint 6 — candidates**
+Adaptive music stems · clickable artifact shelves (open the real files)
+· session replay · walkable owner avatar · voice.
 
 **Sprint 1 — "It sounds alive and the work is visible"**
 1. Audio layer: contact foley (typing, chairs, steps per floor material,
