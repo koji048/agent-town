@@ -201,6 +201,8 @@ const SURFACE_SPECS := {
 	"floor_carpet": [1.0, 0.0, 0.25],
 	"partition": [0.92, 0.0, 0.3],       # felt acoustic panel
 	"booth_felt": [0.92, 0.0, 0.3],
+	"chair_mesh": [0.90, 0.0, 0.3],      # breathable mesh back
+	"chair_seat": [0.90, 0.0, 0.3],
 	"bench_cushion": [0.92, 0.0, 0.3],
 	"cushion_": [0.92, 0.0, 0.3],
 	"beanbag_": [0.95, 0.0, 0.3],
@@ -543,10 +545,10 @@ func _zone_director() -> void:
 	_box(Vector3(3.9, 1.5, 0.05), Vector3(10.0, 1.9, 0.21),
 		_mat("mural_art", Color.WHITE, "res://assets/textures/mural_full.png"), self, false)
 	_prop("kaykit/rug_rectangle_A", 10.6, 2.3, 0, 2.6)
-	_prop("kaykit/table_medium_long", 9.5, 1.7, 0, 1.6, 0.0, DESK_H)
+	_modern_desk(9.5, 1.7, 1.8)
 	_prop("computerScreen", 9.2, 1.6, 165, 1.0, DESK_H + 0.18, 0.40)
-	_prop("computerKeyboard", 9.7, 1.95, 165, 0.3, DESK_H)
-	_prop("kaykit/chair_B", 10.0, 2.6, 205, 1.0, 0.0, 0.95)
+	_prop("computerKeyboard", 9.7, 1.95, 165, 0.3, DESK_H + 0.03)
+	_task_chair(10.0, 2.6, 205)
 	_prop("kaykit/cabinet_medium_decorated", 13.8, 1.0, 180, 1.0, 0.0, 1.0)
 	_prop("kaykit/cactus_small_A", 12.9, 0.8, 0, 1.0, 0.0, 0.42)
 	_pendant(Vector3(10.5, 2.4, 2.5))
@@ -587,7 +589,7 @@ func _zone_reception() -> void:
 	_prop("kaykit/cabinet_medium", 20.4, 2.9, 180, 1.0, 0.0, 0.9)
 	_box(Vector3(2.1, 0.06, 0.6), Vector3(19.9, 0.94, 2.9), white, self, false)
 	_prop("laptop", 19.6, 2.8, 10, 0.32, 0.97)
-	_prop("kaykit/chair_B", 19.9, 2.2, 0, 1.0, 0.0, 0.95)
+	_task_chair(19.9, 2.2, 0)
 	# coral doormat at the NE entrance
 	var mat1 := _prop("rugDoormat", 22.4, 2.0, 90, 1.0)
 	_tint_meshes(mat1, CORAL)
@@ -596,9 +598,48 @@ func _zone_reception() -> void:
 	_pendant(Vector3(19.9, 2.4, 2.6))
 
 
+## A modern sit-stand desk (workstation research: minimal white worktop,
+## two precision steel lifting columns on widened feet, hidden cable tray).
+func _modern_desk(x: float, z: float, w: float = 1.7) -> void:
+	var steel := _mat("steel", Color(0.42, 0.42, 0.46))
+	_box(Vector3(w, 0.045, 0.78), Vector3(x, DESK_H, z),
+		_mat("counter_white", Color(0.82, 0.81, 0.78)))
+	for cx in [-w / 2.0 + 0.28, w / 2.0 - 0.28]:
+		_box(Vector3(0.07, DESK_H - 0.06, 0.07),
+			Vector3(x + cx, (DESK_H - 0.06) / 2.0, z), steel)
+		_box(Vector3(0.10, 0.035, 0.58), Vector3(x + cx, 0.018, z), steel, self, false)
+	_box(Vector3(w - 0.55, 0.07, 0.12), Vector3(x, DESK_H - 0.085, z - 0.27),
+		_mat("black_frame", Color(0.13, 0.13, 0.14)), self, false)
+
+
+## A modern ergonomic task chair: mesh back with lumbar, slim arms,
+## gas lift on a five-star base. Front faces +Z (KayKit convention).
+func _task_chair(x: float, z: float, rot_deg: float) -> void:
+	var root := Node3D.new()
+	root.position = Vector3(x, 0, z)
+	root.rotation_degrees = Vector3(0, rot_deg, 0)
+	add_child(root)
+	var steel := _mat("steel", Color(0.42, 0.42, 0.46))
+	var mesh := _mat("chair_mesh", Color(0.20, 0.21, 0.24))
+	var seatm := _mat("chair_seat", Color(0.26, 0.27, 0.30))
+	for i in 5:
+		var ang := i * TAU / 5.0
+		var leg := _box(Vector3(0.27, 0.035, 0.05),
+			Vector3(cos(ang) * 0.13, 0.03, sin(ang) * 0.13), steel, root, false)
+		leg.rotation_degrees = Vector3(0, -rad_to_deg(ang), 0)
+	_box(Vector3(0.05, 0.30, 0.05), Vector3(0, 0.21, 0), steel, root)
+	_box(Vector3(0.46, 0.07, 0.44), Vector3(0, 0.45, 0), seatm, root)
+	var back := _box(Vector3(0.44, 0.56, 0.045), Vector3(0, 0.77, -0.21), mesh, root)
+	back.rotation_degrees = Vector3(6, 0, 0)
+	_box(Vector3(0.38, 0.10, 0.03), Vector3(0, 0.60, -0.185), seatm, root, false)
+	for sx in [-0.25, 0.25]:
+		_box(Vector3(0.04, 0.15, 0.05), Vector3(sx, 0.545, 0.03), steel, root, false)
+		_box(Vector3(0.06, 0.025, 0.24), Vector3(sx, 0.63, 0.0), seatm, root, false)
+
+
 ## A standard agent station: felt partition with coral trim + role chip,
-## desk with dual monitors on arms, keyboard, task lamp, chair, trashcan.
-## Furniture: KayKit Furniture Bits; tech props stay Kenney (KayKit has none).
+## modern sit-stand desk with dual monitors on arms, keyboard, task lamp,
+## mesh task chair, trashcan. Tech props stay Kenney (KayKit has none).
 func _station(role: String, sx: float, sz: float) -> void:
 	var steel := _mat("steel", Color(0.42, 0.42, 0.46))
 	_box(Vector3(1.95, 1.25, 0.07), Vector3(sx, 0.72, sz - 0.55), _mat("partition", Color(0.82, 0.81, 0.78)))
@@ -606,14 +647,14 @@ func _station(role: String, sx: float, sz: float) -> void:
 		_mat("trim_coral", CORAL, "", CORAL * 0.4), self, false)
 	_box(Vector3(0.3, 0.06, 0.11), Vector3(sx, 1.44, sz - 0.55),
 		_mat("chip_" + role, ROLE_ACCENT[role], "", (ROLE_ACCENT[role] as Color) * 0.5), self, false)
-	_prop("kaykit/table_medium_long", sx, sz, 0, 1.6, 0.0, DESK_H)
+	_modern_desk(sx, sz, 1.7)
 	_prop("computerScreen", sx - 0.25, sz - 0.1, 0, 1.0, DESK_H + 0.18, 0.38)
 	_prop("computerScreen", sx + 0.3, sz - 0.1, 5, 1.0, DESK_H + 0.18, 0.38)
 	for arm in [[sx - 0.25, sz - 0.1], [sx + 0.3, sz - 0.1]]:
 		_box(Vector3(0.03, 0.22, 0.03), Vector3(arm[0], DESK_H + 0.11, arm[1]), steel, self, false)
-	_prop("computerKeyboard", sx - 0.2, sz + 0.2, 180, 0.28, DESK_H)
-	_prop("kaykit/lamp_table", sx + 0.6, sz - 0.15, 200, 1.0, DESK_H, 0.30)
-	_prop("kaykit/chair_B", sx, sz + 0.9, 175 + randf_range(-15.0, 15.0), 1.0, 0.0, 0.95)
+	_prop("computerKeyboard", sx - 0.2, sz + 0.2, 180, 0.28, DESK_H + 0.03)
+	_prop("kaykit/lamp_table", sx + 0.6, sz - 0.15, 200, 1.0, DESK_H + 0.02, 0.30)
+	_task_chair(sx, sz + 0.9, 175 + randf_range(-15.0, 15.0))
 	_prop("trashcan", sx - 0.75, sz + 0.85, 0, 1.0, 0.0, 0.35)
 
 
@@ -640,8 +681,8 @@ func _zone_writers() -> void:
 	_box(Vector3(0.03, 0.6, 0.9), Vector3(0.20, 1.9, 11.0),
 		_mat("kanban", Color(0.30, 0.30, 0.36)), self, false)
 	# spare growth desk (Phase-3 hireable role)
-	_prop("kaykit/table_medium_long", 4.8, 10.0, 0, 1.6, 0.0, DESK_H)
-	_prop("kaykit/lamp_table", 5.1, 9.85, 160, 1.0, DESK_H, 0.30)
+	_modern_desk(4.8, 10.0, 1.6)
+	_prop("kaykit/lamp_table", 5.1, 9.85, 160, 1.0, DESK_H + 0.02, 0.30)
 	var hire := Label3D.new()
 	hire.text = "HIRING"
 	hire.font_size = 40
@@ -690,7 +731,7 @@ func _zone_edit_bay() -> void:
 		_box(Vector3(0.5, 0.5, 0.04), Vector3(4.4 + i * 0.8, 0.85, 14.52),
 			_mat("booth_felt", Color(0.45, 0.48, 0.52)), self, false)
 	# the editor's desk: triple monitors, waveform glow
-	_prop("kaykit/table_medium_long", 6.0, 16.0, 0, 1.6, 0.0, DESK_H)
+	_modern_desk(6.0, 16.0, 1.8)
 	var glow_cols := [Color(0.55, 0.47, 1.0), Color(0.35, 0.86, 0.86), Color(1.0, 0.59, 0.7)]
 	for i in 3:
 		var mx := 5.45 + i * 0.55
@@ -698,8 +739,8 @@ func _zone_edit_bay() -> void:
 		_box(Vector3(0.03, 0.22, 0.03), Vector3(mx, DESK_H + 0.11, 15.9), steel, self, false)
 		_box(Vector3(0.26, 0.15, 0.01), Vector3(mx, DESK_H + 0.30, 15.83),
 			_mat("wave_%d" % i, glow_cols[i] * 0.5, "", glow_cols[i] * 0.7), self, false)
-	_prop("computerKeyboard", 5.9, 16.25, 180, 0.28, DESK_H)
-	_prop("kaykit/chair_B", 6.0, 16.9, 178, 1.0, 0.0, 0.95)
+	_prop("computerKeyboard", 5.9, 16.25, 180, 0.28, DESK_H + 0.03)
+	_task_chair(6.0, 16.9, 178)
 	_prop("trashcan", 4.6, 17.5, 0, 1.0, 0.0, 0.35)
 	# dim warm pendant instead of office panels (dark room)
 	_pendant(Vector3(6.0, 2.3, 17.0))
