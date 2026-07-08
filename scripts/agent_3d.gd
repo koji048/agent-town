@@ -73,6 +73,8 @@ const NEED_WEIGHT := {
 	"publisher": {"energy": 1.0, "social": 1.3, "inspiration": 0.9},
 }
 var _break_ad: Dictionary = {}
+## What this agent is doing right now, for the team board.
+var current_task := "available"
 var _plate_state: Label3D
 
 var costume: Dictionary = {}
@@ -236,10 +238,13 @@ func _on_path_done() -> void:
 		_break_ad = {}
 		_say(str(ad["line"]))
 		var need: String = str(ad["need"])
+		current_task = "break (%s)" % need
 		get_tree().create_timer(randf_range(5.0, 8.0)).timeout.connect(func() -> void:
 			needs[need] = clampf(needs[need] + float(ad["amount"]), 0.0, 1.0)
 			if randf() < 0.3:
 				Memory.remember(role, "Took a break (%s). It helped." % need, 2.0)
+			if current_task.begins_with("break"):
+				current_task = "available"
 			_restart_wander())
 	else:
 		_set_state(State.IDLE)
@@ -252,6 +257,7 @@ func _on_stage_started(stage: String, r: String, _request: Dictionary) -> void:
 		return
 	_target_is_work = true
 	_wander_timer.stop()
+	current_task = "%s — '%s'" % [stage, str(_request.get("topic", "")).left(22)]
 	_pop_fx("!", Color(1.0, 0.78, 0.3))
 	_say(str(SAY_START.get(stage, "On it...")))
 	_carry_doc()
@@ -310,6 +316,7 @@ func _on_stage_completed(_stage: String, r: String, _request: Dictionary, result
 	_target_is_work = false
 	_set_state(State.IDLE)
 	_type_timer.stop()
+	current_task = "available"
 	if result.begins_with("(stage"):
 		_pop_fx("x", Color(1.0, 0.42, 0.42))
 		_say("That one failed...")

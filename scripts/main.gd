@@ -136,6 +136,7 @@ func _ready() -> void:
 		_status.text = "IDLE — drop a .json into queue/pending/"
 		_append_log("Package saved: output/%s" % output_dir.get_file())
 		_append_log("The crew gathers in the town hall!")
+		_deliver(output_dir)
 		# the ONE loud moment (reserved juice): chime + confetti + a slow
 		# 4-second push-in on the celebration, then ease back
 		Sfx.play_ui("chime", -6.0)
@@ -483,6 +484,13 @@ func _build_costume_panel() -> void:
 		_open_input("Pin an idea on the board (a reel topic — Thai or English)",
 			_submit_idea))
 	hud.add_child(idea)
+	# the whole point: real deliverables, one click away
+	var outputs := Button.new()
+	outputs.text = "  📦 Deliverables  "
+	outputs.position = Vector2(1480, 16)
+	outputs.pressed.connect(func() -> void:
+		OS.shell_open(ProjectSettings.globalize_path("res://output")))
+	hud.add_child(outputs)
 	# show the panel in dev screenshots
 	if not OS.get_environment("AGENT_TOWN_SHOT").is_empty():
 		_costume_panel.visible = true
@@ -519,6 +527,67 @@ func _submit_idea(topic: String) -> void:
 		f.store_string(JSON.stringify({"topic": topic, "notes": "Pinned on the ideas board by %s." % Config.owner_name}, "  "))
 		EventBus.log_line.emit("📌 Idea pinned: %s" % topic.left(48))
 		Sfx.play_ui("paper", -8.0)
+
+
+## Deliver the finished work into the human's real workflow: a toast
+## with one-click access to the package, and — when exports_dir is set —
+## the SRT copied EP-numbered into the real production folder.
+func _deliver(output_dir: String) -> void:
+	# EP-numbered SRT into the configured production folder
+	if not Config.exports_dir.is_empty():
+		var srt := output_dir.path_join("03_captions.srt")
+		if FileAccess.file_exists(srt):
+			var slug := output_dir.get_file().get_slice("_", 1)
+			var dest := Config.exports_dir.path_join("EP%02d_%s.srt" % [Chronicle.episodes, slug])
+			var data := FileAccess.get_file_as_string(srt)
+			var f := FileAccess.open(dest, FileAccess.WRITE)
+			if f:
+				f.store_string(data)
+				_append_log("📤 SRT exported: %s" % dest.get_file())
+	# toast with one-click open
+	var abs_dir := ProjectSettings.globalize_path(output_dir)
+	_open_toast("📦 '%s' is ready — script, captions.srt, publish plan." % output_dir.get_file(), abs_dir)
+
+
+func _open_toast(text: String, open_path: String) -> void:
+	var hud := CanvasLayer.new()
+	hud.layer = 6
+	add_child(hud)
+	var panel := PanelContainer.new()
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.10, 0.14, 0.11, 0.95)
+	sb.border_color = Color(0.45, 1.0, 0.55)
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(8)
+	sb.set_content_margin_all(12)
+	panel.add_theme_stylebox_override("panel", sb)
+	panel.position = Vector2(620, 90)
+	var vb := VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 8)
+	var l := Label.new()
+	l.text = text
+	l.add_theme_font_size_override("font_size", 15)
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.custom_minimum_size = Vector2(640, 0)
+	vb.add_child(l)
+	var hb := HBoxContainer.new()
+	hb.add_theme_constant_override("separation", 12)
+	var open_btn := Button.new()
+	open_btn.text = "  Open package  "
+	open_btn.pressed.connect(func() -> void:
+		OS.shell_open(open_path)
+		hud.queue_free())
+	hb.add_child(open_btn)
+	var dismiss := Button.new()
+	dismiss.text = "  Later  "
+	dismiss.pressed.connect(hud.queue_free)
+	hb.add_child(dismiss)
+	vb.add_child(hb)
+	panel.add_child(vb)
+	hud.add_child(panel)
+	get_tree().create_timer(30.0).timeout.connect(func() -> void:
+		if is_instance_valid(hud):
+			hud.queue_free())
 
 
 ## The approval-desk HUD panel (hidden until the pipeline waits on you).

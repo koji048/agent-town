@@ -15,6 +15,9 @@ var simulate: bool = false
 var language: String = "Thai primary, with English hooks and hashtags"
 var niche: String = "Education / how-to short videos (Reels, TikTok, Shorts)"
 var owner_name: String = "Boss"        # the human's name in the town
+## Optional: a real production folder — finished SRTs are copied there
+## EP-numbered, ready for the editor (bridges into reels workflows).
+var exports_dir: String = ""
 
 
 func _ready() -> void:
@@ -29,6 +32,7 @@ func _ready() -> void:
 		language = str(cfg.get_value("content", "language", language))
 		niche = str(cfg.get_value("content", "niche", niche))
 		owner_name = str(cfg.get_value("town", "owner_name", owner_name))
+		exports_dir = str(cfg.get_value("town", "exports_dir", exports_dir))
 	if api_key.is_empty():
 		api_key = OS.get_environment("ANTHROPIC_API_KEY")
 	_resolve_provider()

@@ -590,6 +590,10 @@ func _zone_reception() -> void:
 	var board := KanbanBoard.new()
 	board.position = Vector3(19.7, 1.95, 0.22)
 	add_child(board)
+	# TEAM board: what every agent is doing right now
+	var team := TeamBoard.new()
+	team.position = Vector3(15.85, 1.95, 0.22)
+	add_child(team)
 	var sign := Label3D.new()
 	sign.text = "INTAKE"
 	sign.font_size = 64
