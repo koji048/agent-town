@@ -385,16 +385,16 @@ func _show_inspector(agent: TownAgent3D) -> void:
 	_inspected = agent
 	var lines: Array[String] = []
 	lines.append("%s  —  %s" % [agent.role.to_upper(),
-		["IDLE", "WALKING", "WORKING"][agent.state]])
+		I18n.t(["state_idle", "state_walking", "state_working"][agent.state])])
 	lines.append("")
 	for need in ["energy", "social", "inspiration"]:
 		var v: float = agent.needs[need]
 		var bar := "▮".repeat(int(v * 5.0 + 0.5)) + "▯".repeat(5 - int(v * 5.0 + 0.5))
-		lines.append("%-12s %s" % [need.to_upper(), bar])
+		lines.append("%-14s %s" % [I18n.t("need_" + need), bar])
 	var mems := Memory.recall(agent.role, "", 3)
 	if not mems.is_empty():
 		lines.append("")
-		lines.append("Remembers:")
+		lines.append(I18n.t("remembers"))
 		for m in mems:
 			var t := str(m["text"])
 			lines.append("• " + (t if t.length() <= 160 else t.left(157) + "..."))
@@ -472,13 +472,13 @@ func _build_costume_panel() -> void:
 	hud.add_child(_costume_panel)
 	# click-first UX: real buttons (C still works as a shortcut)
 	var btn := Button.new()
-	btn.text = "  Costumes  "
+	I18n.reg(btn, "text", "btn_costumes")
 	btn.position = Vector2(1770, 16)
 	btn.pressed.connect(func() -> void:
 		_costume_panel.visible = not _costume_panel.visible)
 	hud.add_child(btn)
 	var idea := Button.new()
-	idea.text = "  📌 New idea  "
+	I18n.reg(idea, "text", "btn_idea")
 	idea.position = Vector2(1640, 16)
 	idea.pressed.connect(func() -> void:
 		_open_input("Pin an idea on the board (a reel topic — Thai or English)",
@@ -486,7 +486,7 @@ func _build_costume_panel() -> void:
 	hud.add_child(idea)
 	# the whole point: real deliverables, one click away
 	var outputs := Button.new()
-	outputs.text = "  📦 Deliverables  "
+	I18n.reg(outputs, "text", "btn_deliver")
 	outputs.position = Vector2(1480, 16)
 	outputs.pressed.connect(func() -> void:
 		OS.shell_open(ProjectSettings.globalize_path("res://output")))
@@ -496,11 +496,19 @@ func _build_costume_panel() -> void:
 	board_panel.visible = false
 	hud.add_child(board_panel)
 	var board_btn := Button.new()
-	board_btn.text = "  📋 Board  "
+	I18n.reg(board_btn, "text", "btn_board")
 	board_btn.position = Vector2(1370, 16)
 	board_btn.pressed.connect(func() -> void:
 		board_panel.visible = not board_panel.visible)
 	hud.add_child(board_btn)
+	# ไทย/EN toggle — the chrome flips live, content keeps its language
+	var lang_btn := Button.new()
+	lang_btn.text = "  ไทย  " if I18n.lang == "en" else "  EN  "
+	lang_btn.position = Vector2(1295, 16)
+	lang_btn.pressed.connect(func() -> void:
+		I18n.toggle()
+		lang_btn.text = "  ไทย  " if I18n.lang == "en" else "  EN  ")
+	hud.add_child(lang_btn)
 	# show the panel in dev screenshots
 	if not OS.get_environment("AGENT_TOWN_SHOT").is_empty():
 		_costume_panel.visible = true
@@ -583,13 +591,13 @@ func _open_toast(text: String, open_path: String) -> void:
 	var hb := HBoxContainer.new()
 	hb.add_theme_constant_override("separation", 12)
 	var open_btn := Button.new()
-	open_btn.text = "  Open package  "
+	open_btn.text = I18n.t("btn_open_pkg")
 	open_btn.pressed.connect(func() -> void:
 		OS.shell_open(open_path)
 		hud.queue_free())
 	hb.add_child(open_btn)
 	var dismiss := Button.new()
-	dismiss.text = "  Later  "
+	dismiss.text = I18n.t("btn_later")
 	dismiss.pressed.connect(hud.queue_free)
 	hb.add_child(dismiss)
 	vb.add_child(hb)
@@ -625,13 +633,13 @@ func _build_approval_panel() -> void:
 	var hb := HBoxContainer.new()
 	hb.add_theme_constant_override("separation", 12)
 	var ok := Button.new()
-	ok.text = "  Approve [Y]  "
+	I18n.reg(ok, "text", "btn_approve")
 	ok.pressed.connect(func() -> void:
 		EventBus.approval_resolved.emit(true)
 		EventBus.log_line.emit("✔ Approved at the desk."))
 	hb.add_child(ok)
 	var no := Button.new()
-	no.text = "  Request revision [N]  "
+	I18n.reg(no, "text", "btn_revise")
 	no.pressed.connect(func() -> void:
 		EventBus.approval_resolved.emit(false))
 	hb.add_child(no)
@@ -664,14 +672,14 @@ func _build_approval_panel() -> void:
 	var actions := HBoxContainer.new()
 	actions.add_theme_constant_override("separation", 8)
 	var praise := Button.new()
-	praise.text = " ♥ Praise "
+	I18n.reg(praise, "text", "btn_praise")
 	praise.pressed.connect(func() -> void:
 		if _inspected:
 			_inspected.praised()
 			_inspector.visible = false)
 	actions.add_child(praise)
 	var coach := Button.new()
-	coach.text = " ✎ Coach "
+	I18n.reg(coach, "text", "btn_coach")
 	coach.pressed.connect(func() -> void:
 		if _inspected:
 			var who := _inspected
@@ -679,7 +687,7 @@ func _build_approval_panel() -> void:
 				func(text: String) -> void: who.coached(text)))
 	actions.add_child(coach)
 	var chat := Button.new()
-	chat.text = " 💬 Chat "
+	I18n.reg(chat, "text", "btn_chat")
 	chat.pressed.connect(func() -> void:
 		if _inspected:
 			var who := _inspected
@@ -715,11 +723,11 @@ func _build_approval_panel() -> void:
 	var phb := HBoxContainer.new()
 	phb.add_theme_constant_override("separation", 12)
 	var send := Button.new()
-	send.text = "  Send  "
+	I18n.reg(send, "text", "btn_send")
 	send.pressed.connect(_submit_input)
 	phb.add_child(send)
 	var cancel := Button.new()
-	cancel.text = "  Cancel  "
+	I18n.reg(cancel, "text", "btn_cancel")
 	cancel.pressed.connect(func() -> void:
 		_input_panel.visible = false
 		_input_cb = Callable()

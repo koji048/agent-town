@@ -516,10 +516,10 @@ func _wayfinding() -> void:
 	# floor-standing zone signs at each threshold: every room declares
 	# its purpose (posts sit against furniture/partitions, off the paths)
 	var signs := [
-		["RECEPTION", 21.3, 3.7], ["DIRECTOR", 12.7, 4.85], ["MEETING", 5.5, 1.1],
-		["LIBRARY", 3.3, 5.15], ["WRITERS", 3.3, 9.15], ["FOCUS", 1.5, 13.35],
-		["EDIT BAY", 8.45, 14.35], ["STUDIO", 10.15, 15.1], ["PUBLISHING", 16.4, 14.3],
-		["COFFEE", 18.5, 5.3], ["LOUNGE", 21.9, 10.6],
+		["z_reception", 21.3, 3.7], ["z_director", 12.7, 4.85], ["z_meeting", 5.5, 1.1],
+		["z_library", 3.3, 5.15], ["z_writers", 3.3, 9.15], ["z_focus", 1.5, 13.35],
+		["z_editbay", 8.45, 14.35], ["z_studio", 10.15, 15.1], ["z_publishing", 16.4, 14.3],
+		["z_coffee", 18.5, 5.3], ["z_lounge", 21.9, 10.6],
 	]
 	for s in signs:
 		_zone_sign(str(s[0]), Vector3(float(s[1]), 0.0, float(s[2])))
@@ -535,7 +535,8 @@ func _zone_sign(text: String, pos: Vector3) -> void:
 		_mat("sign_plate", Color(0.14, 0.14, 0.17)), self, false)
 	plate.rotation_degrees = Vector3(0, 45, 0)
 	var l := Label3D.new()
-	l.text = text
+	l.font = I18n.ui_font
+	I18n.reg(l, "text", text)
 	l.font_size = 52
 	l.outline_size = 10
 	l.pixel_size = 0.0046

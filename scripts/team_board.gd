@@ -21,7 +21,8 @@ func _ready() -> void:
 	bg.material_override = m
 	add_child(bg)
 	var title := Label3D.new()
-	title.text = "TEAM"
+	title.font = I18n.ui_font
+	I18n.reg(title, "text", "team_title")
 	title.font_size = 34
 	title.outline_size = 7
 	title.pixel_size = 0.0032
@@ -52,6 +53,7 @@ func _ready() -> void:
 		name_l.position = Vector3(-0.84, y, 0.03)
 		add_child(name_l)
 		var task_l := Label3D.new()
+		task_l.font = I18n.ui_font
 		task_l.text = "available"
 		task_l.font_size = 22
 		task_l.outline_size = 4
@@ -88,7 +90,11 @@ func _refresh() -> void:
 		var task_l: Label3D = _rows[agent.role]
 		var text: String = agent.current_task
 		if agent.state == TownAgent3D.State.WALKING and agent._target_is_work:
-			text = "heading to desk"
+			text = I18n.t("task_heading")
+		elif text == "available":
+			text = I18n.t("task_available")
+		elif text.begins_with("break"):
+			text = I18n.t("task_break") + text.trim_prefix("break")
 		task_l.text = text.left(26)
 		var col := Color(0.55, 0.75, 1.0)  # busy blue
 		match agent.state:

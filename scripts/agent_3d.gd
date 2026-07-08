@@ -105,6 +105,7 @@ func _ready() -> void:
 	_bubble.font_size = 58
 	_bubble.outline_size = 16
 	_bubble.pixel_size = 0.0042
+	_bubble.font = I18n.ui_font
 	_bubble.modulate = Color(0.98, 0.97, 0.94)
 	_bubble.outline_modulate = Color(0.13, 0.12, 0.16)
 	# wrapped speech: fits the conversation, floats clear of the name
@@ -573,6 +574,7 @@ func _combined_aabb(node: Node, xf: Transform3D) -> AABB:
 
 func _make_plate(text: String, size: int, color: Color) -> Label3D:
 	var l := Label3D.new()
+	l.font = I18n.ui_font
 	l.text = text
 	l.font_size = size
 	l.outline_size = size / 3
