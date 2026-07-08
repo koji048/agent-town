@@ -20,3 +20,7 @@ signal log_line(text: String)
 signal approval_requested(request: Dictionary, preview: String)
 ## The human decided (or the auto-approve timer did).
 signal approval_resolved(approved: bool)
+## An agent asks the owner ONE clarifying question (mixed initiative).
+signal agent_question(role: String, question: String)
+## The owner's typed guidance for the asking agent ("" = no answer).
+signal guidance_given(text: String)

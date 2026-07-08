@@ -14,6 +14,7 @@ var poll_interval: float = 4.0
 var simulate: bool = false
 var language: String = "Thai primary, with English hooks and hashtags"
 var niche: String = "Education / how-to short videos (Reels, TikTok, Shorts)"
+var owner_name: String = "Boss"        # the human's name in the town
 
 
 func _ready() -> void:
@@ -27,6 +28,7 @@ func _ready() -> void:
 		simulate = bool(cfg.get_value("town", "simulate", false))
 		language = str(cfg.get_value("content", "language", language))
 		niche = str(cfg.get_value("content", "niche", niche))
+		owner_name = str(cfg.get_value("town", "owner_name", owner_name))
 	if api_key.is_empty():
 		api_key = OS.get_environment("ANTHROPIC_API_KEY")
 	_resolve_provider()

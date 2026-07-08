@@ -26,6 +26,12 @@ var _calls_inflight := 0
 var _inspector: PanelContainer
 var _inspector_text: Label
 var _inspector_timer: Timer
+var _inspected: TownAgent3D
+var _input_panel: PanelContainer
+var _input_label: Label
+var _input_edit: LineEdit
+var _input_cb: Callable = Callable()
+var _asking := false
 
 
 func _ready() -> void:
@@ -145,6 +151,11 @@ func _ready() -> void:
 			var spot: Vector2i = Office3D.TOWNHALL_SPOTS[i % Office3D.TOWNHALL_SPOTS.size()]
 			(agents[i] as TownAgent3D).celebrate_at(spot))
 	_append_log("Agent Town office is open.")
+
+	# presence (Animal Crossing's law): the crew knows you arrived
+	get_tree().create_timer(3.0).timeout.connect(func() -> void:
+		EventBus.agent_say.emit("director",
+			"Morning, %s! Good to have you in the office." % Config.owner_name))
 
 	# ambient bed: HVAC room tone + occasional courtyard birds
 	Sfx.start_room_tone(world, -26.0)
@@ -370,6 +381,7 @@ func _pick_agent(screen_pos: Vector2) -> void:
 
 
 func _show_inspector(agent: TownAgent3D) -> void:
+	_inspected = agent
 	var lines: Array[String] = []
 	lines.append("%s  —  %s" % [agent.role.to_upper(),
 		["IDLE", "WALKING", "WORKING"][agent.state]])
@@ -457,16 +469,56 @@ func _build_costume_panel() -> void:
 			if agent.role == role:
 				agent.apply_costume(c))
 	hud.add_child(_costume_panel)
-	# click-first UX: a real button (C still works as a shortcut)
+	# click-first UX: real buttons (C still works as a shortcut)
 	var btn := Button.new()
 	btn.text = "  Costumes  "
 	btn.position = Vector2(1770, 16)
 	btn.pressed.connect(func() -> void:
 		_costume_panel.visible = not _costume_panel.visible)
 	hud.add_child(btn)
+	var idea := Button.new()
+	idea.text = "  📌 New idea  "
+	idea.position = Vector2(1640, 16)
+	idea.pressed.connect(func() -> void:
+		_open_input("Pin an idea on the board (a reel topic — Thai or English)",
+			_submit_idea))
+	hud.add_child(idea)
 	# show the panel in dev screenshots
 	if not OS.get_environment("AGENT_TOWN_SHOT").is_empty():
 		_costume_panel.visible = true
+
+
+func _open_input(prompt_text: String, cb: Callable) -> void:
+	_input_label.text = prompt_text
+	_input_edit.text = ""
+	_input_cb = cb
+	_input_panel.visible = true
+	_input_edit.grab_focus()
+
+
+func _submit_input() -> void:
+	var text := _input_edit.text.strip_edges()
+	_input_panel.visible = false
+	var cb := _input_cb
+	_input_cb = Callable()
+	if text.is_empty():
+		if _asking:
+			_asking = false
+			EventBus.guidance_given.emit("")
+		return
+	if cb.is_valid():
+		cb.call(text)
+
+
+## Majesty's law: pin an idea, don't issue a command. Writes a real
+## request into queue/pending — the Director picks it up in character.
+func _submit_idea(topic: String) -> void:
+	var path := "res://queue/pending/idea_%d.json" % int(Time.get_unix_time_from_system())
+	var f := FileAccess.open(path, FileAccess.WRITE)
+	if f:
+		f.store_string(JSON.stringify({"topic": topic, "notes": "Pinned on the ideas board by %s." % Config.owner_name}, "  "))
+		EventBus.log_line.emit("📌 Idea pinned: %s" % topic.left(48))
+		Sfx.play_ui("paper", -8.0)
 
 
 ## The approval-desk HUD panel (hidden until the pipeline waits on you).
@@ -529,9 +581,86 @@ func _build_approval_panel() -> void:
 	_inspector_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_inspector_text.custom_minimum_size = Vector2(360, 0)
 	ivb.add_child(_inspector_text)
+	# pillar 6: praise / coach / chat — the owner acts on THIS agent
+	var actions := HBoxContainer.new()
+	actions.add_theme_constant_override("separation", 8)
+	var praise := Button.new()
+	praise.text = " ♥ Praise "
+	praise.pressed.connect(func() -> void:
+		if _inspected:
+			_inspected.praised()
+			_inspector.visible = false)
+	actions.add_child(praise)
+	var coach := Button.new()
+	coach.text = " ✎ Coach "
+	coach.pressed.connect(func() -> void:
+		if _inspected:
+			var who := _inspected
+			_open_input("Coach the %s (what should they do differently?)" % who.role,
+				func(text: String) -> void: who.coached(text)))
+	actions.add_child(coach)
+	var chat := Button.new()
+	chat.text = " 💬 Chat "
+	chat.pressed.connect(func() -> void:
+		if _inspected:
+			var who := _inspected
+			_open_input("Say something to the %s" % who.role,
+				func(text: String) -> void: who.chat_reply(text)))
+	actions.add_child(chat)
+	ivb.add_child(actions)
 	_inspector.add_child(ivb)
 	_inspector.visible = false
 	hud.add_child(_inspector)
+
+	# the shared typed-input dialog (the keyboard's ONE job)
+	_input_panel = PanelContainer.new()
+	var psb := StyleBoxFlat.new()
+	psb.bg_color = Color(0.10, 0.10, 0.14, 0.96)
+	psb.border_color = Color(0.55, 0.75, 1.0)
+	psb.set_border_width_all(2)
+	psb.set_corner_radius_all(8)
+	psb.set_content_margin_all(14)
+	_input_panel.add_theme_stylebox_override("panel", psb)
+	_input_panel.position = Vector2(560, 430)
+	var pvb := VBoxContainer.new()
+	pvb.add_theme_constant_override("separation", 8)
+	_input_label = Label.new()
+	_input_label.add_theme_font_size_override("font_size", 15)
+	_input_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_input_label.custom_minimum_size = Vector2(720, 0)
+	pvb.add_child(_input_label)
+	_input_edit = LineEdit.new()
+	_input_edit.custom_minimum_size = Vector2(720, 0)
+	_input_edit.text_submitted.connect(func(_t: String) -> void: _submit_input())
+	pvb.add_child(_input_edit)
+	var phb := HBoxContainer.new()
+	phb.add_theme_constant_override("separation", 12)
+	var send := Button.new()
+	send.text = "  Send  "
+	send.pressed.connect(_submit_input)
+	phb.add_child(send)
+	var cancel := Button.new()
+	cancel.text = "  Cancel  "
+	cancel.pressed.connect(func() -> void:
+		_input_panel.visible = false
+		_input_cb = Callable()
+		if _asking:
+			_asking = false
+			EventBus.guidance_given.emit(""))
+	phb.add_child(cancel)
+	pvb.add_child(phb)
+	_input_panel.add_child(pvb)
+	_input_panel.visible = false
+	hud.add_child(_input_panel)
+
+	# agents asking back (mixed initiative): question -> typed guidance
+	EventBus.agent_question.connect(func(role: String, question: String) -> void:
+		EventBus.agent_say.emit(role, question)
+		_asking = true
+		_open_input("The %s asks: %s" % [role.to_upper(), question],
+			func(text: String) -> void:
+				_asking = false
+				EventBus.guidance_given.emit(text)))
 	_inspector_timer = Timer.new()
 	_inspector_timer.one_shot = true
 	_inspector_timer.timeout.connect(func() -> void: _inspector.visible = false)

@@ -429,6 +429,51 @@ func _gossip_with(o: TownAgent3D) -> void:
 	o.needs["social"] = clampf(o.needs["social"] + 0.35, 0.0, 1.0)
 
 
+# ------------------------------------------------------------ the owner
+# (docs/CREATIVE_DIRECTION.md pillar 6: the human is a character)
+
+## Black & White's law: feedback lands on the most recent action, and
+## being taught is REMEMBERED.
+func praised() -> void:
+	var last := Memory.recall(role, "", 1)
+	var about := "" if last.is_empty() else " — about: %s" % str(last[0]["text"]).left(50)
+	Memory.remember(role, "%s praised my work%s. Felt great." % [Config.owner_name, about], 7.0)
+	Memory.nudge_affinity(role, "owner", 0.06)
+	needs["social"] = clampf(needs["social"] + 0.3, 0.0, 1.0)
+	needs["inspiration"] = clampf(needs["inspiration"] + 0.2, 0.0, 1.0)
+	_pop_fx("♥", Color(1.0, 0.55, 0.6))
+	_say("Thanks, %s!" % Config.owner_name)
+	if state == State.IDLE:
+		_play_once_then_idle("Cheer")
+
+
+func coached(note: String) -> void:
+	Memory.remember(role, "%s coached me: \"%s\" — I'll apply that next time." % [
+		Config.owner_name, note], 8.0)
+	Memory.nudge_affinity(role, "owner", 0.03)
+	_pop_fx("!", Color(1.0, 0.78, 0.3))
+	_say("Noted, %s." % Config.owner_name)
+
+
+## Click-to-chat: an in-character reply built from real memories,
+## remembered on both sides of the conversation.
+func chat_reply(msg: String) -> void:
+	Memory.remember(role, "%s said to me: \"%s\"" % [Config.owner_name, msg.left(90)], 5.0)
+	if Config.provider_resolved == "simulate":
+		_say("Good to see you, %s! Heads-down today, but ask me anything." % Config.owner_name)
+		return
+	_say("...")
+	var sys := ("You are the %s of Agent Town, a small Thai short-video studio. " +
+		"Reply to your boss %s IN CHARACTER, one or two short sentences " +
+		"(under 140 characters total), warm and specific.%s") % [
+		role, Config.owner_name, Memory.context_for(role, msg)]
+	var out: String = await Claude.complete(sys, msg, "chat")
+	if out.is_empty():
+		out = "Sorry %s — lost my train of thought there." % Config.owner_name
+	_say(out.strip_edges().left(170))
+	Memory.remember(role, "I told %s: \"%s\"" % [Config.owner_name, out.left(90)], 4.0)
+
+
 func _restart_wander() -> void:
 	_wander_timer.start(randf_range(4.0, 10.0))
 

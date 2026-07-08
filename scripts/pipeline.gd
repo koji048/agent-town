@@ -96,6 +96,19 @@ func _stage(stage: String, role: String, request: Dictionary, system_prompt: Str
 	var out: String = await Claude.complete(
 		system_prompt + Memory.context_for(role, topic), user_prompt, stage)
 	if out.is_empty():
+		# mixed initiative: the agent asks the owner ONE clarifying
+		# question, and the typed guidance feeds a single retry
+		var guidance := await _ask_owner(role,
+			"My %s stage for '%s' came up empty. Any direction for the retry?" % [stage, topic])
+		var retry_prompt := user_prompt
+		if not guidance.is_empty():
+			retry_prompt += "\n\nGUIDANCE FROM %s: %s" % [Config.owner_name.to_upper(), guidance]
+			Memory.remember(role, "%s helped me through a stuck %s stage: \"%s\"" % [
+				Config.owner_name, stage, guidance.left(60)], 8.0)
+			Memory.nudge_affinity(role, "owner", 0.06)
+		out = await Claude.complete(
+			system_prompt + Memory.context_for(role, topic), retry_prompt, stage)
+	if out.is_empty():
 		out = "(stage '%s' produced no output — check the log)" % stage
 	if out.begins_with("(stage"):
 		Memory.remember(role, "My %s stage failed on '%s'. Frustrating." % [stage, topic], 7.0)
@@ -105,6 +118,22 @@ func _stage(stage: String, role: String, request: Dictionary, system_prompt: Str
 	results[stage] = out
 	EventBus.stage_completed.emit(stage, role, request, out)
 	return out
+
+
+## Pose one clarifying question to the owner; 40 s of silence = "".
+func _ask_owner(role: String, question: String) -> String:
+	var answer := [false, ""]
+	var cb := func(text: String) -> void:
+		answer[0] = true
+		answer[1] = text
+	EventBus.guidance_given.connect(cb)
+	EventBus.agent_question.emit(role, question)
+	var waited := 0.0
+	while not answer[0] and waited < 40.0:
+		await get_tree().create_timer(0.25).timeout
+		waited += 0.25
+	EventBus.guidance_given.disconnect(cb)
+	return str(answer[1])
 
 
 ## Wait at the approval desk: Y approves, N requests one revision,
@@ -123,6 +152,17 @@ func _await_approval(request: Dictionary, preview: String) -> bool:
 	EventBus.approval_resolved.disconnect(cb)
 	if not decided[0]:
 		EventBus.log_line.emit("⏱ Auto-approved (no reviewer at the desk).")
+	elif decided[1]:
+		# presence: the approval is remembered as coming from a PERSON
+		var topic := str(request.get("topic", "")).left(40)
+		Memory.remember("writer", "%s approved my script for '%s' at the desk!" % [
+			Config.owner_name, topic], 7.0)
+		Memory.nudge_affinity("writer", "owner", 0.05)
+	else:
+		var topic2 := str(request.get("topic", "")).left(40)
+		Memory.remember("writer", "%s sent my script for '%s' back for revision." % [
+			Config.owner_name, topic2], 7.0)
+		Memory.nudge_affinity("writer", "owner", -0.02)
 	return decided[1]
 
 
