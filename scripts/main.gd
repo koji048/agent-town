@@ -23,6 +23,9 @@ var _meter_needle: Node3D
 var _meter_label: Label3D
 var _tokens_est := 0
 var _calls_inflight := 0
+var _inspector: PanelContainer
+var _inspector_text: Label
+var _inspector_timer: Timer
 
 
 func _ready() -> void:
@@ -31,6 +34,7 @@ func _ready() -> void:
 	container.stretch = true
 	container.stretch_shrink = 1  # native res — crisp archviz look
 	container.set_anchors_preset(Control.PRESET_FULL_RECT)
+	container.gui_input.connect(_on_view_input)
 	add_child(container)
 	var vp := SubViewport.new()
 	vp.msaa_3d = Viewport.MSAA_4X
@@ -300,19 +304,90 @@ func _process(delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	# physical keycodes: layout-proof (works on Thai keyboards too)
 	if event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode == KEY_C:
+		if event.physical_keycode == KEY_C or event.keycode == KEY_C:
 			_costume_panel.visible = not _costume_panel.visible
-		elif _awaiting_approval and event.keycode == KEY_Y:
+		elif _awaiting_approval and (event.physical_keycode == KEY_Y or event.keycode == KEY_Y):
 			EventBus.approval_resolved.emit(true)
 			EventBus.log_line.emit("✔ Approved at the desk.")
-		elif _awaiting_approval and event.keycode == KEY_N:
+		elif _awaiting_approval and (event.physical_keycode == KEY_N or event.keycode == KEY_N):
 			EventBus.approval_resolved.emit(false)
 	if event is InputEventMouseButton and event.pressed:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
 			_cam.fov = clampf(_cam.fov / 1.08, 12.0, 55.0)
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 			_cam.fov = clampf(_cam.fov * 1.08, 12.0, 55.0)
+
+
+## Mouse events land on the SubViewportContainer — route them here.
+func _on_view_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed:
+		match event.button_index:
+			MOUSE_BUTTON_WHEEL_UP:
+				_cam.fov = clampf(_cam.fov / 1.08, 12.0, 55.0)
+			MOUSE_BUTTON_WHEEL_DOWN:
+				_cam.fov = clampf(_cam.fov * 1.08, 12.0, 55.0)
+			MOUSE_BUTTON_LEFT:
+				_pick_agent(event.position)
+
+
+## No physics needed: ray-vs-agent distance picking. Click an agent to
+## open their inspector card — the "why" panel (needs, memories, mood).
+func _pick_agent(screen_pos: Vector2) -> void:
+	var origin := _cam.project_ray_origin(screen_pos)
+	var dir := _cam.project_ray_normal(screen_pos)
+	var best: TownAgent3D = null
+	var best_d := 0.9
+	for a in get_tree().get_nodes_in_group("agents"):
+		var agent := a as TownAgent3D
+		if agent == null:
+			continue
+		var p: Vector3 = agent.global_position + Vector3(0, 0.7, 0)
+		var t := (p - origin).dot(dir)
+		if t <= 0.0:
+			continue
+		var d := (p - (origin + dir * t)).length()
+		if d < best_d:
+			best_d = d
+			best = agent
+	if best:
+		_show_inspector(best)
+		Sfx.play_ui("paper", -14.0)
+	elif _inspector:
+		_inspector.visible = false
+
+
+func _show_inspector(agent: TownAgent3D) -> void:
+	var lines: Array[String] = []
+	lines.append("%s  —  %s" % [agent.role.to_upper(),
+		["IDLE", "WALKING", "WORKING"][agent.state]])
+	lines.append("")
+	for need in ["energy", "social", "inspiration"]:
+		var v: float = agent.needs[need]
+		var bar := "▮".repeat(int(v * 5.0 + 0.5)) + "▯".repeat(5 - int(v * 5.0 + 0.5))
+		lines.append("%-12s %s" % [need.to_upper(), bar])
+	var mems := Memory.recall(agent.role, "", 3)
+	if not mems.is_empty():
+		lines.append("")
+		lines.append("Remembers:")
+		for m in mems:
+			lines.append("• " + str(m["text"]).left(64))
+	var rels: Array[String] = []
+	for other in Memory.ROLES:
+		if other == agent.role:
+			continue
+		var v := Memory.get_affinity(agent.role, other)
+		if v >= 0.7:
+			rels.append("♥ " + other)
+		elif v <= 0.32:
+			rels.append("⚡ " + other)
+	if not rels.is_empty():
+		lines.append("")
+		lines.append(" ".join(rels))
+	_inspector_text.text = "\n".join(lines)
+	_inspector.visible = true
+	_inspector_timer.start(12.0)
 
 
 func _build_hud() -> void:
@@ -396,13 +471,49 @@ func _build_approval_panel() -> void:
 	_approval_panel.add_theme_stylebox_override("panel", sb)
 	_approval_panel.position = Vector2(560, 320)
 	_approval_panel.custom_minimum_size = Vector2(800, 0)
+	var vb := VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 10)
 	_approval_text = Label.new()
 	_approval_text.add_theme_font_size_override("font_size", 15)
 	_approval_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_approval_text.custom_minimum_size = Vector2(770, 0)
-	_approval_panel.add_child(_approval_text)
+	vb.add_child(_approval_text)
+	var hb := HBoxContainer.new()
+	hb.add_theme_constant_override("separation", 12)
+	var ok := Button.new()
+	ok.text = "  Approve [Y]  "
+	ok.pressed.connect(func() -> void:
+		EventBus.approval_resolved.emit(true)
+		EventBus.log_line.emit("✔ Approved at the desk."))
+	hb.add_child(ok)
+	var no := Button.new()
+	no.text = "  Request revision [N]  "
+	no.pressed.connect(func() -> void:
+		EventBus.approval_resolved.emit(false))
+	hb.add_child(no)
+	vb.add_child(hb)
+	_approval_panel.add_child(vb)
 	_approval_panel.visible = false
 	hud.add_child(_approval_panel)
+
+	# the agent inspector card (opens on click)
+	_inspector = PanelContainer.new()
+	var isb := StyleBoxFlat.new()
+	isb.bg_color = Color(0.08, 0.08, 0.11, 0.92)
+	isb.set_corner_radius_all(8)
+	isb.set_content_margin_all(12)
+	_inspector.add_theme_stylebox_override("panel", isb)
+	_inspector.position = Vector2(12, 200)
+	_inspector_text = Label.new()
+	_inspector_text.add_theme_font_size_override("font_size", 13)
+	_inspector_text.custom_minimum_size = Vector2(330, 0)
+	_inspector.add_child(_inspector_text)
+	_inspector.visible = false
+	hud.add_child(_inspector)
+	_inspector_timer = Timer.new()
+	_inspector_timer.one_shot = true
+	_inspector_timer.timeout.connect(func() -> void: _inspector.visible = false)
+	add_child(_inspector_timer)
 
 
 ## A wall-mounted "electric meter" by the intake wall: the needle spins
