@@ -464,14 +464,32 @@ func _capture_and_quit(path: String) -> void:
 	get_tree().quit()
 
 
-## LEAK GUARD (godot#90017): on macOS a hidden/occluded window leaks
-## memory for every dynamic mesh update until it is shown again — an
-## overnight run behind a fullscreen app once ballooned to 134 GB.
-## Throttling FPS while unfocused shrinks any per-frame churn ~6x.
+## LEAK GUARD v2 (godot#90017 + a Jetsam kill at 134 GB): on macOS a
+## FULLY OCCLUDED window leaks Metal-side memory for every animated
+## mesh frame — invisible to the engine's own counters. FPS caps only
+## slow it. The real fix: after 60 s unfocused, stop the render loop
+## entirely (game logic, queues and CLI calls keep running); the first
+## click/focus wakes the display instantly.
+var _display_sleep: Timer
+
+
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
-		Engine.max_fps = 20  # still ~3x less churn, but never reads as frozen
+		Engine.max_fps = 20
+		if _display_sleep == null:
+			_display_sleep = Timer.new()
+			_display_sleep.one_shot = true
+			_display_sleep.timeout.connect(func() -> void:
+				RenderingServer.render_loop_enabled = false
+				print("[sleep] display off (window backgrounded) — logic keeps running"))
+			add_child(_display_sleep)
+		_display_sleep.start(60.0)
 	elif what == NOTIFICATION_APPLICATION_FOCUS_IN:
+		if _display_sleep:
+			_display_sleep.stop()
+		if not RenderingServer.render_loop_enabled:
+			print("[sleep] display back on")
+		RenderingServer.render_loop_enabled = true
 		Engine.max_fps = 0
 
 
