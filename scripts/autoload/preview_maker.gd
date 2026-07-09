@@ -7,7 +7,7 @@ extends Node
 
 signal _job_done(out: String, code: int)
 
-const FRAME_FPS := 2.0
+const FRAME_FPS := 8.0  # CapCut-feel scrubbing (2 fps read as broken)
 
 ## Matches the reels-pipeline ASS recipe; PrimaryColour/OutlineColour
 ## become parameters so the studio's colour picker is honoured.

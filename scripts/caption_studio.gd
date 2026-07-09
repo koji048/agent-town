@@ -7,10 +7,13 @@
 class_name CaptionStudio
 extends PanelContainer
 
+## [ASS family name, preview ttf] — the ASS Fontname MUST be the font
+## FAMILY (libass matches family, not file/full names; "Kanit SemiBold"
+## silently fell back to a default font — the owner's "font ยังไม่ได้").
 const FONTS := [
 	["Anuphan", "res://assets/fonts/Anuphan.ttf"],
-	["Kanit SemiBold", "res://assets/fonts/Kanit-SemiBold.ttf"],
-	["Sarabun Bold", "res://assets/fonts/Sarabun-Bold.ttf"],
+	["Kanit", "res://assets/fonts/Kanit-SemiBold.ttf"],
+	["Sarabun", "res://assets/fonts/Sarabun-Bold.ttf"],
 ]
 const SIZES := [["S", 58], ["M", 72], ["L", 86]]
 ## [label, ASS primary (BGR), ASS outline, preview colour, preview outline]
@@ -33,6 +36,7 @@ var _playing := false
 var _sel := -1
 var _auto_left := AUTO_SEC
 var _tex_cache: Dictionary = {}
+var _scale_idx := 0
 
 var _audio: AudioStreamPlayer
 var _wave: PackedFloat32Array
@@ -67,11 +71,31 @@ func _ready() -> void:
 
 	var root := VBoxContainer.new()
 	root.add_theme_constant_override("separation", 10)
+	var head := HBoxContainer.new()
+	head.add_theme_constant_override("separation", 8)
 	var title := Label.new()
 	I18n.reg(title, "text", "studio_title")
 	title.add_theme_font_size_override("font_size", 20)
 	title.modulate = Color(1.0, 0.85, 0.4)
-	root.add_child(title)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title.mouse_filter = Control.MOUSE_FILTER_STOP
+	# drag the whole studio by its title bar
+	title.gui_input.connect(func(ev: InputEvent) -> void:
+		if ev is InputEventMouseMotion and (ev as InputEventMouseMotion).button_mask & MOUSE_BUTTON_MASK_LEFT:
+			position += (ev as InputEventMouseMotion).relative)
+	head.add_child(title)
+	# resize: cycle scale steps (the owner: "มันควรปรับขนาดได้")
+	var size_btn := Button.new()
+	size_btn.text = " ⤢ 100% "
+	size_btn.pressed.connect(func() -> void:
+		var steps := [1.0, 1.2, 1.4, 0.8]
+		_scale_idx = (_scale_idx + 1) % steps.size()
+		var s: float = steps[_scale_idx]
+		pivot_offset = size / 2.0
+		scale = Vector2(s, s)
+		size_btn.text = " ⤢ %d%% " % int(s * 100))
+	head.add_child(size_btn)
+	root.add_child(head)
 
 	var mid := HBoxContainer.new()
 	mid.add_theme_constant_override("separation", 14)
@@ -180,17 +204,16 @@ func _ready() -> void:
 	I18n.reg(save, "text", "btn_save_cue")
 	save.pressed.connect(_save_cue)
 	right.add_child(save)
+	# ONE burn button: what the preview shows is exactly what burns
+	# (two buttons made the font choice look ignored)
 	var actions := HBoxContainer.new()
 	actions.add_theme_constant_override("separation", 10)
-	var burn_def := Button.new()
-	I18n.reg(burn_def, "text", "btn_burn_default")
-	burn_def.pressed.connect(func() -> void: _resolve("default"))
-	actions.add_child(burn_def)
-	var burn_custom := Button.new()
-	I18n.reg(burn_custom, "text", "btn_burn_custom")
-	burn_custom.add_theme_color_override("font_color", Color(1.0, 0.78, 0.32))
-	burn_custom.pressed.connect(func() -> void: _resolve("custom"))
-	actions.add_child(burn_custom)
+	var burn_btn := Button.new()
+	I18n.reg(burn_btn, "text", "btn_burn_custom")
+	burn_btn.add_theme_font_size_override("font_size", 17)
+	burn_btn.add_theme_color_override("font_color", Color(1.0, 0.78, 0.32))
+	burn_btn.pressed.connect(func() -> void: _resolve("custom"))
+	actions.add_child(burn_btn)
 	right.add_child(actions)
 	_auto_label = Label.new()
 	_auto_label.add_theme_font_size_override("font_size", 12)
@@ -244,10 +267,11 @@ func _process(delta: float) -> void:
 			_audio.stop()
 			_play_btn.text = "▶"
 		_show_time()
-	# walk-away default: ambient mode must survive an unattended clip
+	# walk-away: ambient mode survives — burns the CURRENT selections
+	# (untouched = Anuphan/M/white, the skill-standard look)
 	_auto_left -= delta
 	if _auto_left <= 0.0:
-		_resolve("default")
+		_resolve("custom")
 		return
 	_auto_label.text = I18n.f("studio_auto", [int(_auto_left)])
 
