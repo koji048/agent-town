@@ -1294,14 +1294,11 @@ func _zone_courtyard() -> void:
 		_mat("screen_glow", Color(0.35, 0.42, 0.55) * 0.8, "", Color(0.45, 0.55, 0.75)), self, false)
 	_box(Vector3(2.4, 0.28, 0.05), Vector3(12.5, 2.6, 7.14),
 		_mat("trim_coral", CORAL, "", CORAL * 0.4), self, false)
-	var hall_title := Label3D.new()
-	hall_title.text = "ALL-HANDS"
-	hall_title.font_size = 96
-	hall_title.outline_size = 20
-	hall_title.pixel_size = 0.004
-	hall_title.modulate = Color(0.95, 0.94, 0.9)
-	hall_title.position = Vector3(12.5, 1.55, 7.22)
-	add_child(hall_title)
+	# the big screen is LIVE: a broadcast of the edit bay while a clip
+	# cooks (EP, stage, %, reel.sh log), ALL-HANDS when idle
+	var tv := TownTV.new()
+	tv.position = Vector3(12.5, 1.55, 7.17)
+	add_child(tv)
 	# speakers flanking the stage
 	_box(Vector3(0.35, 0.95, 0.35), Vector3(10.6, 0.47, 7.4), _mat("speaker_box", Color(0.2, 0.2, 0.23)))
 	_box(Vector3(0.35, 0.95, 0.35), Vector3(14.4, 0.47, 7.4), _mat("speaker_box", Color(0.2, 0.2, 0.23)))
