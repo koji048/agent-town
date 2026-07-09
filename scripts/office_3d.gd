@@ -134,6 +134,7 @@ func _ready() -> void:
 				astar.set_point_solid(Vector2i(gx, gy), true)
 			_build_floor_cell(gx, gy)
 			_build_wall_cell(c, gx, gy, row)
+	_build_glass_runs()
 
 	for bname in buildings:
 		var b: Dictionary = buildings[bname]
@@ -450,25 +451,54 @@ func _build_wall_cell(c: String, gx: int, gy: int, row: String) -> void:
 		"c":
 			_wall_segment("w", Vector3(w.x, 0, WALL_T / 2.0), true, gx, row)
 			_wall_segment("v", Vector3(WALL_T / 2.0, 0, w.z), false, gx, row)
-		"G":
-			_glass_partition(Vector3(w.x, 0, w.z), true)
-		"H":
-			_glass_partition(Vector3(w.x, 0, w.z), false)
+		"G", "H":
+			pass  # rendered as merged long panes by _build_glass_runs()
 
 
-## Interior glass partition (director's-office recipe, map-driven so
-## A* routes agents through the door gaps): full-height float glass,
-## slim steel mullions at the cell edges, and a steel top rail.
-func _glass_partition(pos: Vector3, ne: bool) -> void:
+## Interior glass partitions from the map (G = pane along X, H = pane
+## along Z). Consecutive cells merge into ONE long pane — mullion posts
+## only at run ends and door jambs, exactly how the director's suite
+## reads (per the owner: per-cell panes looked like a fence).
+func _build_glass_runs() -> void:
 	var glass := _mat("podglass", Color(0.75, 0.86, 0.94, 0.25), "", Color.BLACK, true)
 	var steel := _mat("steel", Color(0.42, 0.42, 0.46))
-	var size := Vector3(CELL, 2.0, 0.07) if ne else Vector3(0.07, 2.0, CELL)
-	_box(size, pos + Vector3(0, 1.0, 0), glass, self, false)
-	var off := Vector3(CELL / 2.0, 0, 0) if ne else Vector3(0, 0, CELL / 2.0)
-	for side in [-1.0, 1.0]:
-		_box(Vector3(0.08, 2.04, 0.08), pos + Vector3(0, 1.02, 0) + off * side, steel)
-	var rail := Vector3(CELL, 0.05, 0.06) if ne else Vector3(0.06, 0.05, CELL)
-	_box(rail, pos + Vector3(0, 2.02, 0), steel, self, false)
+	var posts: Dictionary = {}
+	for gy in rows:
+		var row := str(map_rows[gy])
+		var gx := 0
+		while gx < cols:
+			if row[gx] != "G":
+				gx += 1
+				continue
+			var x0 := gx
+			while gx < cols and row[gx] == "G":
+				gx += 1
+			var length := float(gx - x0) * CELL
+			var cx := (x0 + gx) * 0.5 * CELL
+			var cz := (gy + 0.5) * CELL
+			_box(Vector3(length, 2.0, 0.07), Vector3(cx, 1.0, cz), glass, self, false)
+			_box(Vector3(length + 0.06, 0.05, 0.06), Vector3(cx, 2.02, cz), steel, self, false)
+			posts["%.1f_%.1f" % [x0 * CELL, cz]] = Vector3(x0 * CELL, 0, cz)
+			posts["%.1f_%.1f" % [gx * CELL, cz]] = Vector3(gx * CELL, 0, cz)
+	for gx in cols:
+		var gy := 0
+		while gy < rows:
+			if str(map_rows[gy])[gx] != "H":
+				gy += 1
+				continue
+			var y0 := gy
+			while gy < rows and str(map_rows[gy])[gx] == "H":
+				gy += 1
+			var length := float(gy - y0) * CELL
+			var cx := (gx + 0.5) * CELL
+			var cz := (y0 + gy) * 0.5 * CELL
+			_box(Vector3(0.07, 2.0, length), Vector3(cx, 1.0, cz), glass, self, false)
+			_box(Vector3(0.06, 0.05, length + 0.06), Vector3(cx, 2.02, cz), steel, self, false)
+			posts["%.1f_%.1f" % [cx, y0 * CELL]] = Vector3(cx, 0, y0 * CELL)
+			posts["%.1f_%.1f" % [cx, gy * CELL]] = Vector3(cx, 0, gy * CELL)
+	for key in posts:
+		var p: Vector3 = posts[key]
+		_box(Vector3(0.09, 2.04, 0.09), Vector3(p.x, 1.02, p.z), steel)
 
 
 func _wall_segment(kind: String, pos: Vector3, ne: bool, gx: int, row: String) -> void:
