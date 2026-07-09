@@ -663,55 +663,102 @@ func _build_costume_panel() -> void:
 			if agent.role == role:
 				agent.apply_costume(c))
 	hud.add_child(_costume_panel)
-	# click-first UX: real buttons (C still works as a shortcut)
-	var btn := Button.new()
-	I18n.reg(btn, "text", "btn_costumes")
-	btn.position = Vector2(1770, 16)
-	btn.pressed.connect(func() -> void:
-		_costume_panel.visible = not _costume_panel.visible)
-	hud.add_child(btn)
-	var idea := Button.new()
-	I18n.reg(idea, "text", "btn_idea")
-	idea.position = Vector2(1640, 16)
-	idea.pressed.connect(func() -> void:
-		_open_input("Pin an idea on the board (a reel topic — Thai or English)",
-			_submit_idea))
-	hud.add_child(idea)
-	# the whole point: real deliverables, one click away
-	var outputs := Button.new()
-	I18n.reg(outputs, "text", "btn_deliver")
-	outputs.position = Vector2(1480, 16)
-	outputs.pressed.connect(func() -> void:
-		OS.shell_open(ProjectSettings.globalize_path("res://output")))
-	hud.add_child(outputs)
-	# the human's PM view (Asana/Jira): the pipeline as a board
+	# ---- COMMAND DOCK — sim-game convention (Two Point / Skylines
+	# research): ONE bottom-center bar, three groups with separators —
+	# COMMAND (coral, the star) | VIEW panels | SETTINGS. Buttons show
+	# an active state while their panel is open. No more corner sprawl.
 	var board_panel := BoardPanel.new()
 	board_panel.visible = false
 	hud.add_child(board_panel)
-	var board_btn := Button.new()
-	I18n.reg(board_btn, "text", "btn_board")
-	board_btn.position = Vector2(1370, 16)
-	board_btn.pressed.connect(func() -> void:
-		board_panel.visible = not board_panel.visible)
-	hud.add_child(board_btn)
-	# the office group chat feed (watch the crew talk to each other)
 	var feed := ChatFeed.new()
 	feed.visible = false
 	hud.add_child(feed)
-	var feed_btn := Button.new()
-	I18n.reg(feed_btn, "text", "btn_chat_feed")
-	feed_btn.position = Vector2(1190, 16)
+
+	var dock_holder := MarginContainer.new()
+	dock_holder.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	dock_holder.offset_top = -110
+	dock_holder.add_theme_constant_override("margin_bottom", 14)
+	dock_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var dock_center := CenterContainer.new()
+	dock_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	dock_holder.add_child(dock_center)
+	var dock := PanelContainer.new()
+	var dsb := StyleBoxFlat.new()
+	dsb.bg_color = Color(0.08, 0.08, 0.12, 0.94)
+	dsb.border_color = Color(0.32, 0.32, 0.40)
+	dsb.set_border_width_all(1)
+	dsb.set_corner_radius_all(14)
+	dsb.set_content_margin_all(8)
+	dock.add_theme_stylebox_override("panel", dsb)
+	var dock_row := HBoxContainer.new()
+	dock_row.add_theme_constant_override("separation", 6)
+	dock.add_child(dock_row)
+	dock_center.add_child(dock)
+	hud.add_child(dock_holder)
+
+	var coral := Color(0.95, 0.45, 0.33)
+	var mk := func(key: String, tip: String) -> Button:
+		var b := Button.new()
+		I18n.reg(b, "text", key)
+		b.custom_minimum_size = Vector2(0, 46)
+		b.add_theme_font_size_override("font_size", 15)
+		b.tooltip_text = tip
+		dock_row.add_child(b)
+		return b
+	var sep := func() -> void:
+		var s := VSeparator.new()
+		s.modulate = Color(1, 1, 1, 0.25)
+		dock_row.add_child(s)
+
+	# 1) COMMAND — the one-click brief (was 3 clicks through the inspector)
+	var cmd: Button = mk.call("dock_command", "Enter")
+	cmd.add_theme_color_override("font_color", Color(1.0, 0.72, 0.55))
+	cmd.pressed.connect(func() -> void:
+		_open_input(I18n.t("prompt_command"), func(text: String) -> void:
+			EventBus.chat_line.emit(Config.owner_name, text)
+			EventBus.agent_say.emit("director", I18n.t("ack_thinking"))
+			for a in get_tree().get_nodes_in_group("agents"):
+				if a.role == "director":
+					a.chat_reply(text)
+					break))
+	var idea: Button = mk.call("btn_idea", "")
+	idea.pressed.connect(func() -> void:
+		_open_input("Pin an idea on the board (a reel topic — Thai or English)",
+			_submit_idea))
+	sep.call()
+
+	# 2) VIEW — panels, with a lit state while open
+	var mark := func(b: Button, on: bool) -> void:
+		if on:
+			b.add_theme_color_override("font_color", coral)
+		else:
+			b.remove_theme_color_override("font_color")
+	var board_btn: Button = mk.call("btn_board", "B")
+	board_btn.pressed.connect(func() -> void:
+		board_panel.visible = not board_panel.visible
+		mark.call(board_btn, board_panel.visible))
+	var feed_btn: Button = mk.call("btn_chat_feed", "")
 	feed_btn.pressed.connect(func() -> void:
-		feed.visible = not feed.visible)
-	hud.add_child(feed_btn)
-	# ไทย/EN toggle — the chrome flips live, content keeps its language
+		feed.visible = not feed.visible
+		mark.call(feed_btn, feed.visible))
+	var outputs: Button = mk.call("btn_deliver", "")
+	outputs.pressed.connect(func() -> void:
+		OS.shell_open(ProjectSettings.globalize_path("res://output")))
+	sep.call()
+
+	# 3) SETTINGS
+	var btn: Button = mk.call("btn_costumes", "C")
+	btn.pressed.connect(func() -> void:
+		_costume_panel.visible = not _costume_panel.visible
+		mark.call(btn, _costume_panel.visible))
 	var lang_btn := Button.new()
-	lang_btn.text = "  ไทย  " if I18n.lang == "en" else "  EN  "
-	lang_btn.position = Vector2(1295, 16)
+	lang_btn.text = "🌐 ไทย" if I18n.lang == "en" else "🌐 EN"
+	lang_btn.custom_minimum_size = Vector2(0, 46)
+	lang_btn.add_theme_font_size_override("font_size", 15)
 	lang_btn.pressed.connect(func() -> void:
 		I18n.toggle()
-		lang_btn.text = "  ไทย  " if I18n.lang == "en" else "  EN  ")
-	hud.add_child(lang_btn)
+		lang_btn.text = "🌐 ไทย" if I18n.lang == "en" else "🌐 EN")
+	dock_row.add_child(lang_btn)
 	# first-run coach marks (UX audit P5): three ways to command, shown
 	# once, dismissed forever (UI-fade doctrine)
 	if not FileAccess.file_exists("user://seen_hints.txt"):
@@ -723,7 +770,7 @@ func _build_costume_panel() -> void:
 		hsb.set_corner_radius_all(10)
 		hsb.set_content_margin_all(16)
 		hint.add_theme_stylebox_override("panel", hsb)
-		hint.position = Vector2(660, 700)
+		hint.position = Vector2(660, 540)  # clear of the command dock
 		hint.custom_minimum_size = Vector2(600, 0)
 		var hvb := VBoxContainer.new()
 		hvb.add_theme_constant_override("separation", 8)
