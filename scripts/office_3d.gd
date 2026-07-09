@@ -450,25 +450,6 @@ func _build_wall_cell(c: String, gx: int, gy: int, row: String) -> void:
 		"c":
 			_wall_segment("w", Vector3(w.x, 0, WALL_T / 2.0), true, gx, row)
 			_wall_segment("v", Vector3(WALL_T / 2.0, 0, w.z), false, gx, row)
-		"G":
-			_glass_partition(Vector3(w.x, 0, w.z), true)
-		"H":
-			_glass_partition(Vector3(w.x, 0, w.z), false)
-
-
-## Interior glass partition (director's-office recipe, map-driven so
-## A* routes agents through the door gaps): full-height float glass,
-## slim steel mullions at the cell edges, and a steel top rail.
-func _glass_partition(pos: Vector3, ne: bool) -> void:
-	var glass := _mat("podglass", Color(0.75, 0.86, 0.94, 0.25), "", Color.BLACK, true)
-	var steel := _mat("steel", Color(0.42, 0.42, 0.46))
-	var size := Vector3(CELL, 2.0, 0.07) if ne else Vector3(0.07, 2.0, CELL)
-	_box(size, pos + Vector3(0, 1.0, 0), glass, self, false)
-	var off := Vector3(CELL / 2.0, 0, 0) if ne else Vector3(0, 0, CELL / 2.0)
-	for side in [-1.0, 1.0]:
-		_box(Vector3(0.08, 2.04, 0.08), pos + Vector3(0, 1.02, 0) + off * side, steel)
-	var rail := Vector3(CELL, 0.05, 0.06) if ne else Vector3(0.06, 0.05, CELL)
-	_box(rail, pos + Vector3(0, 2.02, 0), steel, self, false)
 
 
 func _wall_segment(kind: String, pos: Vector3, ne: bool, gx: int, row: String) -> void:
@@ -568,8 +549,16 @@ func _zone_sign(text: String, pos: Vector3) -> void:
 # ============ 2. DIRECTOR'S GLASS OFFICE (north-center, mural backdrop,
 # sight line over the loop and the courtyard) ============
 func _zone_director() -> void:
-	# glass front + east wall now come from the map (G/H cells), so the
-	# partition is real to pathfinding — door gap at (11,4)
+	var glass := _mat("podglass", Color(0.75, 0.86, 0.94, 0.25), "", Color.BLACK, true)
+	var steel := _mat("steel", Color(0.42, 0.42, 0.46))
+	# glass front (south) with the door gap at x11..12
+	for seg in [[8.0, 11.0], [12.0, 14.5]]:
+		var wdt: float = seg[1] - seg[0]
+		_box(Vector3(wdt, 2.0, 0.07), Vector3((seg[0] + seg[1]) / 2.0, 1.0, 4.5), glass, self, false)
+	# glass east wall
+	_box(Vector3(0.07, 2.0, 4.35), Vector3(14.5, 1.0, 2.3), glass, self, false)
+	for post in [[8.0, 4.5], [11.0, 4.5], [12.0, 4.5], [14.5, 4.5], [14.5, 0.25]]:
+		_box(Vector3(0.09, 2.05, 0.09), Vector3(post[0], 1.02, post[1]), steel)
 	# mural artwork on the north wall
 	_box(Vector3(3.9, 1.5, 0.05), Vector3(10.0, 1.9, 0.21),
 		_mat("mural_art", Color.WHITE, "res://assets/textures/mural_full.png"), self, false)
@@ -585,8 +574,21 @@ func _zone_director() -> void:
 
 # ============ MEETING NOOK (kickoff table beside the director) ============
 func _zone_meeting_nook() -> void:
-	# glass walls come from the map (G row z5.5, H col x7.5) with doors
-	# at (4,5) and the open (7,4) corner — real to pathfinding
+	# suspended glass canopy: a float-glass ring hung from the ceiling
+	# defines the room WITHOUT blocking any approach — agents (1.35 m)
+	# walk under the 1.6 m clearance from every direction
+	var glass := _mat("podglass", Color(0.75, 0.86, 0.94, 0.25), "", Color.BLACK, true)
+	var steel := _mat("steel", Color(0.42, 0.42, 0.46))
+	for seg in [
+		[Vector3(4.6, 0.5, 0.04), Vector3(3.5, 1.85, 0.6)],
+		[Vector3(4.6, 0.5, 0.04), Vector3(3.5, 1.85, 3.6)],
+		[Vector3(0.04, 0.5, 3.04), Vector3(1.2, 1.85, 2.1)],
+		[Vector3(0.04, 0.5, 3.04), Vector3(5.8, 1.85, 2.1)],
+	]:
+		_box(seg[0] as Vector3, seg[1] as Vector3, glass, self, false)
+	for p in [[1.2, 0.6], [5.8, 0.6], [1.2, 3.6], [5.8, 3.6]]:
+		_box(Vector3(0.05, 0.55, 0.05), Vector3(p[0], 1.85, p[1]), steel, self, false)
+		_box(Vector3(0.025, 0.5, 0.025), Vector3(p[0], 2.35, p[1]), steel, self, false)
 	_round_table(3.5, 2.0)
 	_shell_chair(3.5, 1.1, 0, Color(0.88, 0.87, 0.84))
 	_shell_chair(2.6, 2.7, 135, CORAL)
@@ -974,12 +976,22 @@ func _zone_focus_booths() -> void:
 # production-studio research) ============
 func _zone_edit_bay() -> void:
 	var steel := _mat("steel", Color(0.42, 0.42, 0.46))
-	# glass front now comes from the map (G row z14.5, door at x8) —
-	# uniform with the director's office; coral trim marks the room
-	_box(Vector3(4.0, 0.06, 0.12), Vector3(6.0, 2.08, 14.5),
+	# modern edit-suite front: solid acoustic base + float-glass upper
+	# band (soda-lime recipe, same family as the director's pod) so the
+	# dark room reads enclosed but the editor stays visible
+	var glass := _mat("podglass", Color(0.75, 0.86, 0.94, 0.25), "", Color.BLACK, true)
+	_box(Vector3(4.0, 0.95, 0.09), Vector3(6.0, 0.475, 14.45), _mat("partition", Color(0.82, 0.81, 0.78)))
+	_box(Vector3(4.0, 1.05, 0.06), Vector3(6.0, 1.475, 14.45), glass, self, false)
+	for px in [4.05, 6.0, 7.95]:
+		_box(Vector3(0.07, 2.0, 0.09), Vector3(px, 1.0, 14.45), steel)
+	_box(Vector3(4.0, 0.06, 0.12), Vector3(6.0, 2.03, 14.45),
 		_mat("trim_coral", CORAL, "", CORAL * 0.4), self, false)
-	_box(Vector3(0.3, 0.06, 0.13), Vector3(6.0, 2.15, 14.5),
+	_box(Vector3(0.3, 0.06, 0.13), Vector3(6.0, 2.10, 14.45),
 		_mat("chip_editor", ROLE_ACCENT["editor"], "", (ROLE_ACCENT["editor"] as Color) * 0.5), self, false)
+	# acoustic foam tiles on the solid base's south face
+	for i in 5:
+		_box(Vector3(0.5, 0.4, 0.04), Vector3(4.4 + i * 0.8, 0.52, 14.52),
+			_mat("booth_felt", Color(0.45, 0.48, 0.52)), self, false)
 	# the editor's desk: triple monitors, waveform glow
 	_modern_desk(6.0, 16.0, 1.8)
 	var glow_cols := [Color(0.55, 0.47, 1.0), Color(0.35, 0.86, 0.86), Color(1.0, 0.59, 0.7)]
@@ -1004,17 +1016,16 @@ func _zone_studio() -> void:
 	# matte charcoal stage floor zones the studio off the concrete
 	_box(Vector3(5.0, 0.015, 4.9), Vector3(12.0, 0.008, 16.5),
 		_mat("studio_floor", Color(0.24, 0.24, 0.27)), self, false)
-	# green-screen backdrop with floor spill (sits just south of the
-	# map glass at z14.5 so the panes never z-fight the chroma)
-	_box(Vector3(4.0, 2.2, 0.09), Vector3(12.0, 1.1, 14.62), chroma)
-	_box(Vector3(4.0, 0.02, 1.3), Vector3(12.0, 0.022, 15.28), chroma, self, false)
+	# green-screen backdrop with floor spill
+	_box(Vector3(4.0, 2.2, 0.09), Vector3(12.0, 1.1, 14.45), chroma)
+	_box(Vector3(4.0, 0.02, 1.3), Vector3(12.0, 0.022, 15.15), chroma, self, false)
 	var onair := Label3D.new()
 	onair.text = "ON AIR"
 	onair.font_size = 52
 	onair.outline_size = 12
 	onair.pixel_size = 0.004
 	onair.modulate = CORAL
-	onair.position = Vector3(12.0, 2.42, 14.70)
+	onair.position = Vector3(12.0, 2.42, 14.52)
 	add_child(onair)
 	# ring light + vertical phone rig
 	var ring := MeshInstance3D.new()
