@@ -1034,14 +1034,20 @@ func _equip_item(item: String, ba: BoneAttachment3D) -> void:
 	var path := "res://assets/models/items/%s.gltf" % item
 	if not FileAccess.file_exists(path):
 		return
+	# cache the GENERATED scene and hand out duplicates — calling
+	# generate_scene twice on a cached GLTFState can hang the engine in
+	# a native allocation loop (today's 98%-CPU freeze while cycling
+	# hand items in the costume panel)
 	if not _item_cache.has(item):
 		var doc := GLTFDocument.new()
 		var st := GLTFState.new()
 		if doc.append_from_file(path, st) != OK:
 			return
-		_item_cache[item] = [doc, st]
-	var pair: Array = _item_cache[item]
-	var node := pair[0].generate_scene(pair[1]) as Node3D
+		var master := doc.generate_scene(st) as Node3D
+		if master == null:
+			return
+		_item_cache[item] = master
+	var node := (_item_cache[item] as Node3D).duplicate() as Node3D
 	ba.add_child(node)
 
 
