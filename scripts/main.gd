@@ -183,6 +183,12 @@ func _ready() -> void:
 	# ...and AirDrops are noticed automatically (Downloads watcher asks once)
 	_start_downloads_watch()
 
+	# leak guard v2 must also cover boots that never receive focus
+	# (nohup/background launches — the exact overnight-Jetsam scenario)
+	get_tree().create_timer(2.0).timeout.connect(func() -> void:
+		if not DisplayServer.window_is_focused():
+			_arm_display_sleep())
+
 	# the approval desk gate + the diegetic cost meter
 	_build_approval_panel()
 	EventBus.approval_requested.connect(func(request: Dictionary, preview: String) -> void:
@@ -473,17 +479,21 @@ func _capture_and_quit(path: String) -> void:
 var _display_sleep: Timer
 
 
+func _arm_display_sleep() -> void:
+	Engine.max_fps = 20
+	if _display_sleep == null:
+		_display_sleep = Timer.new()
+		_display_sleep.one_shot = true
+		_display_sleep.timeout.connect(func() -> void:
+			RenderingServer.render_loop_enabled = false
+			print("[sleep] display off (window backgrounded) — logic keeps running"))
+		add_child(_display_sleep)
+	_display_sleep.start(60.0)
+
+
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
-		Engine.max_fps = 20
-		if _display_sleep == null:
-			_display_sleep = Timer.new()
-			_display_sleep.one_shot = true
-			_display_sleep.timeout.connect(func() -> void:
-				RenderingServer.render_loop_enabled = false
-				print("[sleep] display off (window backgrounded) — logic keeps running"))
-			add_child(_display_sleep)
-		_display_sleep.start(60.0)
+		_arm_display_sleep()
 	elif what == NOTIFICATION_APPLICATION_FOCUS_IN:
 		if _display_sleep:
 			_display_sleep.stop()
