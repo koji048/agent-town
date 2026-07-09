@@ -8,7 +8,7 @@ signal costume_changed(role: String, costume: Dictionary)
 
 const ROLES := ["director", "researcher", "writer", "editor", "publisher"]
 const SLOTS := [
-	["class", "Class", Costumes.CLASSES],
+	["class", "Look", []],  # options come from the ACTIVE character set
 	["headgear", "Headgear", Costumes.HEADGEAR],
 	["right", "Right hand", Costumes.RIGHT_HAND],
 	["left", "Left hand", Costumes.LEFT_HAND],
@@ -18,6 +18,7 @@ var costumes: Dictionary = {}
 var current_role := "director"
 
 var _role_buttons: Dictionary = {}
+var _set_buttons: Dictionary = {}
 var _value_labels: Dictionary = {}
 var _bracers_check: CheckBox
 var _cape_check: CheckBox
@@ -27,7 +28,7 @@ func _ready() -> void:
 	costumes = Costumes.load_all()
 	for r in ROLES:
 		if not costumes.has(r):
-			costumes[r] = Costumes.OFFICE_PRESET[r].duplicate(true)
+			costumes[r] = (Costumes.set_preset(Costumes.current_set())[r] as Dictionary).duplicate(true)
 
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = Color(0.08, 0.08, 0.11, 0.92)
@@ -40,9 +41,27 @@ func _ready() -> void:
 	add_child(vb)
 
 	var title := Label.new()
-	title.text = "COSTUMES  —  press C to close"
+	title.text = "CHARACTERS  —  press C to close"
 	title.add_theme_font_size_override("font_size", 15)
 	vb.add_child(title)
+
+	# THE SET: the whole cast flips theme together; per-character looks
+	# are then picked WITHIN the active set (the owner's rule)
+	var set_row := HBoxContainer.new()
+	set_row.add_theme_constant_override("separation", 6)
+	vb.add_child(set_row)
+	var set_label := Label.new()
+	set_label.text = "Set:"
+	set_label.add_theme_font_size_override("font_size", 12)
+	set_row.add_child(set_label)
+	for s in Costumes.SETS:
+		var sb2 := Button.new()
+		sb2.text = " " + str(Costumes.SETS[s]["label"]) + " "
+		sb2.toggle_mode = true
+		sb2.pressed.connect(_on_set_selected.bind(str(s)))
+		set_row.add_child(sb2)
+		_set_buttons[str(s)] = sb2
+	_style_set_buttons()
 
 	var role_row := HBoxContainer.new()
 	role_row.add_theme_constant_override("separation", 4)
@@ -96,16 +115,25 @@ func _ready() -> void:
 	var presets := HBoxContainer.new()
 	presets.add_theme_constant_override("separation", 8)
 	vb.add_child(presets)
-	var office_btn := Button.new()
-	office_btn.text = "Office preset (all)"
-	office_btn.pressed.connect(_apply_preset.bind(Costumes.OFFICE_PRESET))
-	presets.add_child(office_btn)
-	var adv_btn := Button.new()
-	adv_btn.text = "Adventure preset (all)"
-	adv_btn.pressed.connect(_apply_preset.bind(Costumes.ADVENTURE_PRESET))
-	presets.add_child(adv_btn)
+	var reset_btn := Button.new()
+	reset_btn.text = "Reset set look (all)"
+	reset_btn.pressed.connect(func() -> void:
+		_apply_preset(Costumes.set_preset(Costumes.current_set())))
+	presets.add_child(reset_btn)
 
 	_on_role_selected(current_role)
+
+
+func _on_set_selected(s: String) -> void:
+	Costumes.save_set(s)
+	_style_set_buttons()
+	_apply_preset(Costumes.set_preset(s))
+
+
+func _style_set_buttons() -> void:
+	var cur := Costumes.current_set()
+	for s in _set_buttons:
+		(_set_buttons[s] as Button).button_pressed = s == cur
 
 
 func _on_role_selected(r: String) -> void:
@@ -126,10 +154,13 @@ func _refresh() -> void:
 
 func _cycle(key: String, dir: int) -> void:
 	var options: Array = []
-	for slot in SLOTS:
-		if slot[0] == key:
-			options = slot[2]
-			break
+	if key == "class":
+		options = Costumes.set_classes(Costumes.current_set())
+	else:
+		for slot in SLOTS:
+			if slot[0] == key:
+				options = slot[2]
+				break
 	var c: Dictionary = costumes[current_role]
 	var idx := options.find(str(c.get(key, options[0])))
 	idx = (idx + dir + options.size()) % options.size()

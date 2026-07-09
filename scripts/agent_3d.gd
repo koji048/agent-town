@@ -12,6 +12,8 @@ enum State { IDLE, WALKING, WORKING }
 ## must be adult-height against them; 1.35 read fine on chibi KayKit
 ## bodies but reads as a child on realistic ones.
 const CHAR_H := 1.70
+## Live height for the ACTIVE character set (office 1.70, dungeon 1.35).
+var _char_h := CHAR_H
 const SPEED := 1.7
 const TURN_SPEED := 10.0
 
@@ -162,10 +164,13 @@ static var _item_cache: Dictionary = {}
 
 func _ready() -> void:
 	add_to_group("agents")
-	costume = Costumes.load_all().get(role, Costumes.OFFICE_PRESET.get(role, {})).duplicate(true)
-	# office-people era: the base model is fixed per role (saved costumes
-	# from the adventurer days would otherwise resurrect knights)
-	costume["class"] = str(JOB_MODEL.get(role, "BusinessMan"))
+	# character SETS: the cast follows the active theme (office/dungeon);
+	# a saved per-character choice sticks only if it belongs to the set
+	var cset := Costumes.current_set()
+	costume = Costumes.load_all().get(role, {}).duplicate(true)
+	if costume.is_empty() or not Costumes.set_classes(cset).has(str(costume.get("class", ""))):
+		costume = (Costumes.set_preset(cset)[role] as Dictionary).duplicate(true)
+	_char_h = float(Costumes.SETS[cset].get("char_h", CHAR_H))
 	_model = _load_character(str(costume["class"]))
 	add_child(_model)
 	_setup_attachments()
@@ -184,7 +189,7 @@ func _ready() -> void:
 	# wrapped speech above the head (name/state live at the feet now)
 	_bubble.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_bubble.width = 420.0
-	_bubble.position = Vector3(0, CHAR_H + 0.55, 0)
+	_bubble.position = Vector3(0, _char_h + 0.55, 0)
 	_bubble.visible = false
 	add_child(_bubble)
 
@@ -201,10 +206,10 @@ func _ready() -> void:
 	# overhead progress: big HP-style bar + stage/% text ON the bar
 	# (per owner: the old text chip was too small to read at play zoom)
 	_status_bar = _make_status_bar()
-	_status_bar.position = Vector3(0, CHAR_H + 0.30, 0)
+	_status_bar.position = Vector3(0, _char_h + 0.30, 0)
 	_status_bar.visible = false
 	_status_chip = _make_plate("", 46, Color(1.0, 0.97, 0.90))
-	_status_chip.position = Vector3(0, CHAR_H + 0.30, 0)
+	_status_chip.position = Vector3(0, _char_h + 0.30, 0)
 	_status_chip.render_priority = 12
 	_status_chip.outline_render_priority = 11
 	_status_chip.visible = false
@@ -789,10 +794,10 @@ func _load_character(model_name: String) -> Node3D:
 		push_warning("failed to parse " + path)
 		return root
 	var node := doc.generate_scene(state_g) as Node3D
-	# normalize height to CHAR_H, feet at y=0
+	# normalize height to the active set's char height, feet at y=0
 	var aabb := _combined_aabb(node, Transform3D.IDENTITY)
 	if aabb.size.y > 0.001:
-		var s := CHAR_H / aabb.size.y
+		var s := _char_h / aabb.size.y
 		node.scale = Vector3.ONE * s
 		node.position = Vector3(
 			-(aabb.position.x + aabb.size.x / 2.0) * s,
@@ -885,7 +890,7 @@ func _pop_fx(symbol: String, color: Color) -> void:
 	l.no_depth_test = true
 	l.modulate = color
 	l.outline_modulate = Color(0.1, 0.1, 0.13)
-	l.position = Vector3(0, CHAR_H + 0.9, 0)
+	l.position = Vector3(0, _char_h + 0.9, 0)
 	add_child(l)
 	var tw := create_tween()
 	tw.tween_property(l, "position:y", l.position.y + 0.6, 1.1)
@@ -899,6 +904,8 @@ func apply_costume(c: Dictionary) -> void:
 	var need_reload := str(c.get("class", "")) != str(costume.get("class", ""))
 	costume = c.duplicate(true)
 	if need_reload:
+		# the set (and with it the correct height) may have flipped
+		_char_h = float(Costumes.SETS[Costumes.current_set()].get("char_h", CHAR_H))
 		if _model:
 			_model.queue_free()
 		_anim = null
@@ -906,6 +913,9 @@ func apply_costume(c: Dictionary) -> void:
 		add_child(_model)
 		_setup_attachments()
 		_play("Idle")
+		_bubble.position = Vector3(0, _char_h + 0.55, 0)
+		_status_bar.position = Vector3(0, _char_h + 0.30, 0)
+		_status_chip.position = Vector3(0, _char_h + 0.30, 0)
 	_apply_costume_parts()
 
 
@@ -920,21 +930,24 @@ func _setup_attachments() -> void:
 	if sk.is_empty():
 		return
 	_skeleton = sk[0]
-	_attach_head = _bone_attach("head")
-	_attach_r = _bone_attach("handslot.r")
-	_attach_l = _bone_attach("handslot.l")
-	_attach_arm_l = _bone_attach("lowerarm.l")
-	_attach_arm_r = _bone_attach("lowerarm.r")
+	# bone names differ per pack (KayKit "handslot.r" vs Quaternius
+	# "Hand.R" etc.) — try candidates, no-op when a rig lacks the slot
+	_attach_head = _bone_attach(["head", "Head"])
+	_attach_r = _bone_attach(["handslot.r", "Hand.R", "HandR", "Hand_R", "hand.R"])
+	_attach_l = _bone_attach(["handslot.l", "Hand.L", "HandL", "Hand_L", "hand.L"])
+	_attach_arm_l = _bone_attach(["lowerarm.l", "LowerArm.L", "LowerArmL"])
+	_attach_arm_r = _bone_attach(["lowerarm.r", "LowerArm.R", "LowerArmR"])
 
 
-func _bone_attach(bone: String) -> BoneAttachment3D:
-	var idx := _skeleton.find_bone(bone)
-	if idx < 0:
-		return null
-	var ba := BoneAttachment3D.new()
-	_skeleton.add_child(ba)
-	ba.bone_idx = idx
-	return ba
+func _bone_attach(candidates: Array) -> BoneAttachment3D:
+	for bone in candidates:
+		var idx := _skeleton.find_bone(str(bone))
+		if idx >= 0:
+			var ba := BoneAttachment3D.new()
+			_skeleton.add_child(ba)
+			ba.bone_idx = idx
+			return ba
+	return null
 
 
 func _apply_costume_parts() -> void:
