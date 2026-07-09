@@ -794,10 +794,16 @@ func _load_character(model_name: String) -> Node3D:
 		push_warning("failed to parse " + path)
 		return root
 	var node := doc.generate_scene(state_g) as Node3D
-	# normalize height to the active set's char height, feet at y=0
+	# normalize height to the active set's char height, feet at y=0.
+	# GUARD: a freshly generated skinned mesh can report a bogus tiny
+	# AABB on live reloads (costume switching) — the scale then explodes
+	# into a building-sized giant. Trust only sane scale factors.
 	var aabb := _combined_aabb(node, Transform3D.IDENTITY)
-	if aabb.size.y > 0.001:
-		var s := _char_h / aabb.size.y
+	var s := _char_h / aabb.size.y if aabb.size.y > 0.001 else 0.0
+	if s < 0.2 or s > 5.0:
+		push_warning("suspicious scale %.2f for %s — using fallback height" % [s, model_name])
+		node.scale = Vector3.ONE * (_char_h / 1.8)
+	else:
 		node.scale = Vector3.ONE * s
 		node.position = Vector3(
 			-(aabb.position.x + aabb.size.x / 2.0) * s,
