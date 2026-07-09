@@ -7,7 +7,11 @@ extends Node3D
 
 enum State { IDLE, WALKING, WORKING }
 
-const CHAR_H := 1.35
+## Proportion study (docs/PROPORTION_STUDY.md): the world is metric —
+## desks 0.72, chair seats 0.45, counters ~1.0, glass 2.0 m. A person
+## must be adult-height against them; 1.35 read fine on chibi KayKit
+## bodies but reads as a child on realistic ones.
+const CHAR_H := 1.70
 const SPEED := 1.7
 const TURN_SPEED := 10.0
 
@@ -413,7 +417,7 @@ func _on_stage_started(stage: String, r: String, _request: Dictionary) -> void:
 func _carry_doc() -> void:
 	_drop_doc()
 	_doc = Node3D.new()
-	_doc.position = Vector3(0.0, 0.78, 0.22)
+	_doc.position = Vector3(0.0, 1.05, 0.24)  # chest height on a 1.70 body
 	add_child(_doc)
 	var page := MeshInstance3D.new()
 	var pm := BoxMesh.new()
