@@ -442,6 +442,17 @@ func _capture_and_quit(path: String) -> void:
 	get_tree().quit()
 
 
+## LEAK GUARD (godot#90017): on macOS a hidden/occluded window leaks
+## memory for every dynamic mesh update until it is shown again — an
+## overnight run behind a fullscreen app once ballooned to 134 GB.
+## Throttling FPS while unfocused shrinks any per-frame churn ~6x.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		Engine.max_fps = 10
+	elif what == NOTIFICATION_APPLICATION_FOCUS_IN:
+		Engine.max_fps = 0
+
+
 func _process(delta: float) -> void:
 	# day/night: a 10-minute loop shifting ONLY the exterior (interior
 	# luminaires stay constant — interior-safe per the craft research,

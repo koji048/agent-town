@@ -246,7 +246,7 @@ func _process(delta: float) -> void:
 		if _chip_accum >= 0.5:
 			_chip_accum = 0.0
 			_update_status_chip("")
-	if _status_bar.visible:
+	if _status_bar.visible and absf(_bar_fill - _bar_target) > 0.002:
 		_bar_fill = lerpf(_bar_fill, _bar_target, minf(delta * 3.5, 1.0))
 		_bar_mat.set_shader_parameter("fill", _bar_fill)
 	# smooth turning toward the travel direction
@@ -285,7 +285,9 @@ func _update_status_chip(stage_hint: String) -> void:
 	var pct := int(j.get("pct", 0))
 	var key := "stg_" + stage
 	var label := I18n.t(key) if I18n.S.has(key) else stage
-	_status_chip.text = "%s %d%%" % [label, pct] if pct > 0 else label
+	var new_text := "%s %d%%" % [label, pct] if pct > 0 else label
+	if _status_chip.text != new_text:  # leak guard: no redundant mesh regen
+		_status_chip.text = new_text
 	_bar_target = clampf(pct / 100.0, 0.0, 1.0)
 
 

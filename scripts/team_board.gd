@@ -75,14 +75,25 @@ func _ready() -> void:
 		dot.position = Vector3(0.9, y, 0.035)
 		add_child(dot)
 		_dots[role] = dot
-	var t := Timer.new()
-	t.wait_time = 1.0
-	t.timeout.connect(_refresh)
-	add_child(t)
-	t.start()
+	_timer = Timer.new()
+	_timer.wait_time = 1.0
+	_timer.timeout.connect(_refresh)
+	add_child(_timer)
+	_timer.start()
 
 
+var _timer: Timer
+
+
+## LEAK GUARD (godot#90017): while the window is hidden/occluded on
+## macOS, every dynamic mesh update (Label3D.text set) leaks until the
+## window is shown again. So: never write unchanged values, and slow
+## the cadence right down whenever the app is not the focused window.
 func _refresh() -> void:
+	var focused := DisplayServer.window_is_focused()
+	var want := 1.0 if focused else 10.0
+	if not is_equal_approx(_timer.wait_time, want):
+		_timer.wait_time = want
 	for a in get_tree().get_nodes_in_group("agents"):
 		var agent := a as TownAgent3D
 		if agent == null or not _rows.has(agent.role):
@@ -95,16 +106,22 @@ func _refresh() -> void:
 			text = I18n.t("task_available")
 		elif text.begins_with("break"):
 			text = I18n.t("task_break") + text.trim_prefix("break")
-		task_l.text = text.left(26)
+		text = text.left(26)
+		if task_l.text != text:
+			task_l.text = text
 		var col := Color(0.55, 0.75, 1.0)  # busy blue
 		match agent.state:
 			TownAgent3D.State.WORKING:
 				col = Color(1.0, 0.72, 0.32)
 			TownAgent3D.State.IDLE:
-				col = Color(0.45, 0.85, 0.5) if text == "available" else Color(0.8, 0.75, 0.5)
+				col = Color(0.45, 0.85, 0.5) if text == I18n.t("task_available") \
+					else Color(0.8, 0.75, 0.5)
 		var dot: MeshInstance3D = _dots[agent.role]
 		var dmat := dot.material_override as StandardMaterial3D
-		dmat.albedo_color = col
-		dmat.emission = col * 0.6
-		task_l.modulate = Color(0.92, 0.91, 0.87) if agent.state != TownAgent3D.State.IDLE \
+		if not dmat.albedo_color.is_equal_approx(col):
+			dmat.albedo_color = col
+			dmat.emission = col * 0.6
+		var mod := Color(0.92, 0.91, 0.87) if agent.state != TownAgent3D.State.IDLE \
 			else Color(0.72, 0.76, 0.72)
+		if not task_l.modulate.is_equal_approx(mod):
+			task_l.modulate = mod
