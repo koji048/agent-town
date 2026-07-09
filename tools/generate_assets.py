@@ -120,52 +120,34 @@ def _build_map_rows() -> list:
             r.append(c)
         rows.append("".join(r))
 
-    # ---- interior glass partitions (owner: "ทุกห้องมี partition กระจก
-    # เหมือนห้องผู้กำกับ"). G = pane along X, H = pane along Z; both are
-    # A*-blocked, so agents route through the door gaps instead of
-    # clipping through glass. Rendered by office_3d._glass_partition.
+    # ---- interior glass partitions. Design rule (critique v2): enclose
+    # ONLY the rooms whose function demands it — acoustics or light
+    # control. Everything else stays open plan; floors + furniture zone
+    # the space. G = pane along X, H = pane along Z; both A*-blocked,
+    # so agents route through the door gaps. Rendered as merged long
+    # panes by office_3d._build_glass_runs().
     grid = [list(rw) for rw in rows]
 
     def gset(x: int, y: int, ch: str) -> None:
         grid[y][x] = ch
 
-    for x in range(8, 15):               # director front (door x11)
+    for x in range(8, 15):               # director suite front (door x11)
         if x != 11:
             gset(x, 4, "G")
-    for y in range(1, 4):                # director east side
+    for y in range(1, 4):                # director suite east side
         gset(14, y, "H")
-    for x in range(1, 7):                # meeting nook south (door x4)
-        if x != 4:
-            gset(x, 5, "G")
-    for y in range(1, 4):                # meeting nook east (door y... none;
-        gset(7, y, "H")                  # enters via open (7,4) corner)
-    for y in range(5, 13):               # quiet band vs loop: library door
-        if y not in (6, 10):             # y6, writers door y10
-            gset(7, y, "H")
-    for x in range(1, 7):                # library / writers divider (door x5)
-        if x != 5:
-            gset(x, 9, "G")
-    for y in range(13, 18):              # focus alcove east col (open north)
+    for y in range(13, 18):              # focus pods east col (open north)
         gset(3, y, "H")
-    for x in range(4, 8):                # edit bay front (door x8)
-        gset(x, 14, "G")
+    for x in range(4, 8):                # edit bay front — dark + acoustic
+        gset(x, 14, "G")                 # (door x8)
     for y in range(15, 19):              # edit / studio divider (door y17)
         if y != 17:
             gset(9, y, "H")
     for x in range(9, 16):               # studio north (backs the chroma)
         gset(x, 14, "G")
-    for y in range(15, 19):              # studio / publishing (door y16)
-        if y != 16:
+    for y in range(15, 19):              # studio east — light control
+        if y != 16:                      # (door y16)
             gset(15, y, "H")
-    for x in range(16, 21):              # publishing north (door x18)
-        if x != 18:
-            gset(x, 14, "G")
-    for x in range(17, 23):              # reception vs social band (door x20)
-        if x != 20:
-            gset(x, 4, "G")
-    for y in range(5, 14):               # social band vs loop: coffee door
-        if y not in (6, 11):             # y6, lounge door y11
-            gset(17, y, "H")
     return ["".join(rw) for rw in grid]
 
 

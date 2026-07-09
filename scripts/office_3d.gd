@@ -562,31 +562,34 @@ func _wayfinding() -> void:
 	_box(Vector3(7.2, 0.05, 0.18), Vector3(12.5, 0.028, 12.95), edge, self, false)
 	_box(Vector3(0.18, 0.05, 6.1), Vector3(9.05, 0.028, 10.0), edge, self, false)
 	_box(Vector3(0.18, 0.05, 6.1), Vector3(15.95, 0.028, 10.0), edge, self, false)
-	# door-header signs: one plate spanning each room's glass doorway,
-	# mounted between the jamb posts (declutter pass: the 11 floor
-	# stanchions read as a forest of poles — signage now lives IN the
-	# architecture, zero freestanding verticals)
+	# signage, two mounts, zero poles: glass rooms get a door-header
+	# plate between the jamb posts; open zones get the same plate hung
+	# from the ceiling grid on two thin wires (standard office signage)
 	var signs := [
-		["z_reception", 20.5, 4.5, 0.0], ["z_director", 11.5, 4.5, 0.0],
-		["z_meeting", 4.5, 5.5, 0.0], ["z_library", 7.5, 6.5, 90.0],
-		["z_writers", 7.5, 10.5, 90.0], ["z_focus", 3.5, 14.0, 90.0],
-		["z_editbay", 8.5, 14.5, 0.0], ["z_studio", 9.5, 14.5, 0.0],
-		["z_publishing", 18.5, 14.5, 0.0], ["z_coffee", 17.5, 6.5, 90.0],
-		["z_lounge", 17.5, 11.5, 90.0],
+		["z_director", 11.5, 4.5, 0.0, false], ["z_focus", 3.5, 14.0, 90.0, false],
+		["z_editbay", 8.5, 14.5, 0.0, false], ["z_studio", 15.5, 16.5, 90.0, false],
+		["z_reception", 20.5, 4.4, 0.0, true], ["z_meeting", 4.5, 4.9, 0.0, true],
+		["z_library", 7.0, 6.5, 90.0, true], ["z_writers", 7.0, 10.5, 90.0, true],
+		["z_publishing", 18.5, 14.4, 0.0, true], ["z_coffee", 17.4, 6.5, 90.0, true],
+		["z_lounge", 17.4, 11.5, 90.0, true],
 	]
 	for s in signs:
-		_zone_sign(str(s[0]), Vector3(float(s[1]), 0.0, float(s[2])), float(s[3]))
+		_zone_sign(str(s[0]), Vector3(float(s[1]), 0.0, float(s[2])), float(s[3]), bool(s[4]))
 
 
-## A door-header sign: charcoal plate bridging the doorway at the glass
-## top rail, label facing the camera side. No base, no post.
-func _zone_sign(text: String, pos: Vector3, yrot: float = 0.0) -> void:
+## A room sign plate: bridges a glass doorway, or hangs from the
+## ceiling grid on two thin wires. No base, no post.
+func _zone_sign(text: String, pos: Vector3, yrot: float = 0.0, hung: bool = false) -> void:
 	var root := Node3D.new()
 	root.position = pos
 	root.rotation_degrees = Vector3(0, yrot, 0)
 	add_child(root)
 	_box(Vector3(0.98, 0.28, 0.05), Vector3(0, 2.18, 0),
 		_mat("sign_plate", Color(0.14, 0.14, 0.17)), root, false)
+	if hung:
+		var steel := _mat("steel", Color(0.42, 0.42, 0.46))
+		for wx in [-0.36, 0.36]:
+			_box(Vector3(0.014, 0.60, 0.014), Vector3(wx, 2.62, 0), steel, root, false)
 	var l := Label3D.new()
 	l.font = I18n.ui_font
 	I18n.reg(l, "text", text)
