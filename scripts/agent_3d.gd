@@ -14,6 +14,8 @@ enum State { IDLE, WALKING, WORKING }
 const CHAR_H := 1.70
 ## Live height for the ACTIVE character set (office 1.70, dungeon 1.35).
 var _char_h := CHAR_H
+## The normalize factor applied to the loaded model (for attachment fit).
+var _model_scale := 1.0
 const SPEED := 1.7
 const TURN_SPEED := 10.0
 
@@ -802,13 +804,15 @@ func _load_character(model_name: String) -> Node3D:
 	var s := _char_h / aabb.size.y if aabb.size.y > 0.001 else 0.0
 	if s < 0.2 or s > 5.0:
 		push_warning("suspicious scale %.2f for %s — using fallback height" % [s, model_name])
-		node.scale = Vector3.ONE * (_char_h / 1.8)
+		s = _char_h / 1.8
+		node.scale = Vector3.ONE * s
 	else:
 		node.scale = Vector3.ONE * s
 		node.position = Vector3(
 			-(aabb.position.x + aabb.size.x / 2.0) * s,
 			-aabb.position.y * s,
 			-(aabb.position.z + aabb.size.z / 2.0) * s)
+	_model_scale = s
 	root.add_child(node)
 	_anim = node.find_children("*", "AnimationPlayer", true, false)[0] if not node.find_children("*", "AnimationPlayer", true, false).is_empty() else null
 	return root
@@ -993,6 +997,23 @@ func _apply_costume_parts() -> void:
 				b.material_override = bm
 				b.position = Vector3(0, 0.12, 0)
 				arm.add_child(b)
+	# 5. COUNTER-SCALE everything attached to bones: the Quaternius rig
+	# carries a x100 armature scale, so a mug on the hand bone became a
+	# building-sized giant. Normalize each attachment back to world size
+	# (KayKit rigs have armature scale 1 — factor becomes 1, unchanged).
+	for ba in [_attach_head, _attach_r, _attach_l, _attach_arm_l, _attach_arm_r]:
+		if ba == null:
+			continue
+		var gs := (ba as BoneAttachment3D).global_transform.basis.get_scale().x
+		if gs < 0.0001:
+			continue
+		var f := _model_scale / gs
+		if absf(f - 1.0) < 0.01:
+			continue
+		for child in ba.get_children():
+			if child is Node3D:
+				(child as Node3D).scale *= f
+				(child as Node3D).position *= f
 
 
 func _clear_attach(ba: BoneAttachment3D) -> void:
