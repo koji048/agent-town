@@ -25,6 +25,8 @@ func _ready() -> void:
 	_panel()
 	EventBus.stage_started.connect(_on_stage_started)
 	EventBus.request_completed.connect(_on_request_completed)
+	EventBus.request_cancelled.connect(func(request: Dictionary) -> void:
+		_on_request_completed(request, ""))
 	_poll = Timer.new()
 	_poll.wait_time = 3.0
 	_poll.timeout.connect(_refresh_pending)

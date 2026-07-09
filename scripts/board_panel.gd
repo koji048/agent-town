@@ -19,6 +19,13 @@ const STAGE_PIC := {
 	"04_publish.md": "publisher", "05_review.md": "director",
 }
 
+## The delegation flow, in order (UX audit P1): who the baton passes to.
+const STAGE_ORDER := ["plan", "research", "script", "edit", "publish", "review"]
+const STAGE_ROLE := {
+	"plan": "director", "research": "researcher", "script": "writer",
+	"edit": "editor", "publish": "publisher", "review": "director",
+}
+
 var _cols: Dictionary = {}
 # parallel jobs: topic -> {"stage": String, "role": String, "review": bool}
 var _active: Dictionary = {}
@@ -137,6 +144,10 @@ func _ready() -> void:
 		_active.erase(str(request.get("topic", "untitled")))
 		if visible:
 			_refresh())
+	EventBus.request_cancelled.connect(func(request: Dictionary) -> void:
+		_active.erase(str(request.get("topic", "untitled")))
+		if visible:
+			_refresh())
 	var t := Timer.new()
 	t.wait_time = 4.0
 	t.timeout.connect(func() -> void:
@@ -155,7 +166,8 @@ func _clear(holder: VBoxContainer) -> void:
 
 
 func _card(holder: VBoxContainer, title_text: String, sub: String, accent: Color,
-		open_path: String = "", pic: String = "", pct: int = -1) -> void:
+		open_path: String = "", pic: String = "", pct: int = -1,
+		stage: String = "", cancel_topic: String = "") -> void:
 	var card := PanelContainer.new()
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = Color(0.13, 0.13, 0.18)
@@ -177,6 +189,8 @@ func _card(holder: VBoxContainer, title_text: String, sub: String, accent: Color
 		s.modulate = Color(0.75, 0.75, 0.8)
 		s.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		vb.add_child(s)
+	if not stage.is_empty():
+		_flow_strip(vb, stage)
 	_pic_line(vb, pic)
 	if pct >= 0:
 		var bar := ProgressBar.new()
@@ -186,15 +200,59 @@ func _card(holder: VBoxContainer, title_text: String, sub: String, accent: Color
 		bar.show_percentage = true
 		bar.custom_minimum_size = Vector2(0, 16)
 		vb.add_child(bar)
+	var btn_row := HBoxContainer.new()
+	btn_row.add_theme_constant_override("separation", 8)
 	if not open_path.is_empty():
 		var b := Button.new()
 		b.text = I18n.t("btn_open_files")
-		b.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 		b.pressed.connect(func() -> void:
 			OS.shell_open(ProjectSettings.globalize_path(open_path)))
-		vb.add_child(b)
+		btn_row.add_child(b)
+	if not cancel_topic.is_empty():
+		var cb := Button.new()
+		cb.text = I18n.t("btn_cancel_job")
+		cb.add_theme_color_override("font_color", Color(0.95, 0.55, 0.5))
+		cb.pressed.connect(func() -> void:
+			TaskQueue.cancel(cancel_topic)
+			cb.disabled = true
+			cb.text = "⏳")
+		btn_row.add_child(cb)
+	if btn_row.get_child_count() > 0:
+		vb.add_child(btn_row)
 	card.add_child(vb)
 	holder.add_child(card)
+
+
+## The delegation-flow strip (UX audit P1): six nodes in pipeline order,
+## done ✓ in role color, the ACTIVE stage named and bright, the rest dim
+## — RimWorld's rule that assigned work reads as an inspectable chain.
+func _flow_strip(vb: VBoxContainer, stage: String) -> void:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 2)
+	var cur := STAGE_ORDER.find(stage)
+	for i in STAGE_ORDER.size():
+		var s: String = STAGE_ORDER[i]
+		var role: String = STAGE_ROLE[s]
+		var n := Label.new()
+		if i < cur:
+			n.text = "✓"
+			n.add_theme_color_override("font_color",
+				ROLE_COLOR.get(role, Color.GRAY).darkened(0.15))
+		elif i == cur:
+			n.text = "▶" + I18n.t("stg_" + s)
+			n.add_theme_color_override("font_color", ROLE_COLOR.get(role, Color.WHITE))
+		else:
+			n.text = "○"
+			n.add_theme_color_override("font_color", Color(0.45, 0.45, 0.52))
+		n.add_theme_font_size_override("font_size", 12)
+		row.add_child(n)
+		if i < STAGE_ORDER.size() - 1:
+			var arrow := Label.new()
+			arrow.text = "–"
+			arrow.add_theme_font_size_override("font_size", 12)
+			arrow.add_theme_color_override("font_color", Color(0.4, 0.4, 0.46))
+			row.add_child(arrow)
+	vb.add_child(row)
 
 
 func _style_role_buttons() -> void:
@@ -276,11 +334,12 @@ func _refresh() -> void:
 			var pct := int(TaskQueue.jobs.get(topic, {}).get("pct", 50))
 			if bool(info["review"]):
 				_card(review, str(topic).left(70), I18n.t("review_wait"),
-					Color(0.95, 0.45, 0.33), "", a_role, 75)
+					Color(0.95, 0.45, 0.33), "", a_role, 75,
+					str(info["stage"]), str(topic))
 			else:
 				_card(prog, str(topic).left(70),
 					I18n.t("card_stage") % [str(info["stage"]), a_role],
-					accent, "", a_role, pct)
+					accent, "", a_role, pct, str(info["stage"]), str(topic))
 
 	# DONE: shipped packages. Selecting a shipped project EXPANDS it
 	# into its stage deliverables, each with its PIC and an open button.

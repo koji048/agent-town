@@ -60,6 +60,8 @@ func _ready() -> void:
 			jobs[topic]["pct"] = 75)
 	EventBus.request_completed.connect(func(request: Dictionary, _o: String) -> void:
 		jobs.erase(str(request.get("topic", "untitled"))))
+	EventBus.request_cancelled.connect(func(request: Dictionary) -> void:
+		jobs.erase(str(request.get("topic", "untitled"))))
 	var watchdog := Timer.new()
 	watchdog.wait_time = 30.0
 	watchdog.timeout.connect(_check_overdue)
@@ -93,6 +95,25 @@ func status_text() -> String:
 			int((now - float(j["since"])) / 60.0),
 			" (RUNNING LATE)" if bool(j["warned"]) else ""])
 	return "\n".join(lines)
+
+
+## Order revocation (strategy-game table stakes: every order must be
+## cancellable). The pipeline polls between stages — the in-flight CLI
+## call finishes, then the job folds gracefully.
+var _cancel_req: Dictionary = {}
+
+
+func cancel(topic: String) -> void:
+	_cancel_req[topic] = true
+	EventBus.log_line.emit("✕ Cancel requested: %s" % topic.left(48))
+
+
+func take_cancel(request: Dictionary) -> bool:
+	var topic := str(request.get("topic", ""))
+	if bool(_cancel_req.get(topic, false)):
+		_cancel_req.erase(topic)
+		return true
+	return false
 
 
 func _inbox() -> String:

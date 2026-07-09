@@ -36,18 +36,30 @@ func _run(request: Dictionary) -> void:
 	var plan := await _stage("plan", "director", request,
 		Prompts.director_plan(lang, niche),
 		"Content request:\n%s" % brief, results)
+	if TaskQueue.take_cancel(request):
+		_cancel_job(request)
+		return
 
 	var research := await _stage("research", "researcher", request,
 		Prompts.researcher(lang, niche),
 		"Request:\n%s\n\nDirector's brief:\n%s" % [brief, plan], results)
+	if TaskQueue.take_cancel(request):
+		_cancel_job(request)
+		return
 
 	var script := await _stage("script", "writer", request,
 		Prompts.scriptwriter(lang, niche),
 		"Request:\n%s\n\nDirector's brief:\n%s\n\nResearch notes:\n%s" % [brief, plan, research], results)
+	if TaskQueue.take_cancel(request):
+		_cancel_job(request)
+		return
 
 	var captions := await _stage("edit", "editor", request,
 		Prompts.editor(lang, niche),
 		"Script:\n%s" % script, results)
+	if TaskQueue.take_cancel(request):
+		_cancel_job(request)
+		return
 
 	# ---- the approval desk: work WAITS for the human at a designed
 	# checkpoint (Devin's lesson: the cheapest intervention is a gate,
@@ -66,6 +78,9 @@ func _run(request: Dictionary) -> void:
 	var publish := await _stage("publish", "publisher", request,
 		Prompts.publisher(lang, niche),
 		"Script:\n%s\n\nResearch notes:\n%s" % [script, research], results)
+	if TaskQueue.take_cancel(request):
+		_cancel_job(request)
+		return
 
 	await _stage("review", "director", request,
 		Prompts.director_review(lang, niche),
@@ -281,6 +296,12 @@ func _walk_stage(stage: String, role: String, request: Dictionary) -> void:
 
 func _stage(stage: String, role: String, request: Dictionary, system_prompt: String,
 		user_prompt: String, results: Dictionary) -> String:
+	# delegation made VISIBLE (UX audit P1): every change of hands is a
+	# real event the HUD, chat feed and world can show
+	var prev_role := str(request.get("_last_role", ""))
+	if not prev_role.is_empty() and prev_role != role:
+		EventBus.handoff.emit(prev_role, role, stage, request)
+	request["_last_role"] = role
 	# the owner's rule: nobody waits for anyone else — a person only
 	# queues behind THEIR OWN previous task
 	await RoleLocks.acquire(role)
@@ -312,6 +333,16 @@ func _stage(stage: String, role: String, request: Dictionary, system_prompt: Str
 	EventBus.stage_completed.emit(stage, role, request, out)
 	RoleLocks.release(role)
 	return out
+
+
+## Fold a cancelled job gracefully: queue bookkeeping, one calm line
+## from the Director, and every board clears its card.
+func _cancel_job(request: Dictionary) -> void:
+	var topic := str(request.get("topic", "untitled"))
+	TaskQueue.finish(request)
+	EventBus.request_cancelled.emit(request)
+	EventBus.agent_say.emit("director", I18n.f("job_cancelled", [topic.left(30)]))
+	EventBus.log_line.emit("✕ Cancelled: %s" % topic.left(48))
 
 
 ## Pose one clarifying question to the owner; 40 s of silence = "".

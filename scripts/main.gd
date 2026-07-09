@@ -130,15 +130,23 @@ func _ready() -> void:
 	_build_hud()
 	_build_costume_panel()
 	EventBus.log_line.connect(_append_log)
-	EventBus.stage_started.connect(func(stage: String, role: String, request: Dictionary) -> void:
-		_status.text = "NOW: %s -> %s  (%s)" % [role, stage, str(request.get("topic", "")).left(40)])
+	EventBus.stage_started.connect(func(_stage: String, _role: String, _request: Dictionary) -> void:
+		_update_now())
 	EventBus.stage_completed.connect(func(stage: String, role: String, _request: Dictionary, _result: String) -> void:
 		_append_log("%s finished %s" % [role, stage]))
+	# delegation flow, narrated + shown (UX audit P1): a chat-feed line
+	# and a document flying from the giver to the receiver
+	EventBus.handoff.connect(func(from_role: String, to_role: String, stage: String, request: Dictionary) -> void:
+		EventBus.chat_line.emit(from_role, I18n.f("handoff_line", [
+			str(request.get("topic", "")).left(24),
+			I18n.t("role_" + to_role), I18n.t("stg_" + stage)])
+		)
+		_fly_doc(from_role, to_role))
+	EventBus.request_cancelled.connect(func(request: Dictionary) -> void:
+		_append_log("✕ Cancelled: %s" % str(request.get("topic", "")).left(40))
+		_update_now())
 	EventBus.request_completed.connect(func(request: Dictionary, output_dir: String) -> void:
-		if TaskQueue.active <= 0:
-			_status.text = I18n.t("status_idle")
-		else:
-			_status.text = "%d jobs running" % TaskQueue.active
+		_update_now()
 		_append_log("Package saved: output/%s" % output_dir.get_file())
 		_append_log("The crew gathers in the town hall!")
 		_deliver(output_dir)
@@ -609,7 +617,7 @@ func _build_hud() -> void:
 	mode.modulate = Color(1, 0.85, 0.5) if Config.provider_resolved == "simulate" else Color(0.6, 1, 0.7)
 	vb.add_child(mode)
 	_status = Label.new()
-	_status.text = "IDLE — drop a .json into queue/pending/"
+	I18n.reg(_status, "text", "status_idle")
 	_status.add_theme_font_size_override("font_size", 12)
 	vb.add_child(_status)
 	top.add_child(vb)
@@ -690,9 +698,88 @@ func _build_costume_panel() -> void:
 		I18n.toggle()
 		lang_btn.text = "  ไทย  " if I18n.lang == "en" else "  EN  ")
 	hud.add_child(lang_btn)
+	# first-run coach marks (UX audit P5): three ways to command, shown
+	# once, dismissed forever (UI-fade doctrine)
+	if not FileAccess.file_exists("user://seen_hints.txt"):
+		var hint := PanelContainer.new()
+		var hsb := StyleBoxFlat.new()
+		hsb.bg_color = Color(0.09, 0.09, 0.13, 0.96)
+		hsb.border_color = Color(1.0, 0.78, 0.32)
+		hsb.set_border_width_all(2)
+		hsb.set_corner_radius_all(10)
+		hsb.set_content_margin_all(16)
+		hint.add_theme_stylebox_override("panel", hsb)
+		hint.position = Vector2(660, 700)
+		hint.custom_minimum_size = Vector2(600, 0)
+		var hvb := VBoxContainer.new()
+		hvb.add_theme_constant_override("separation", 8)
+		var ht := Label.new()
+		I18n.reg(ht, "text", "hint_title")
+		ht.add_theme_font_size_override("font_size", 18)
+		ht.modulate = Color(1.0, 0.85, 0.4)
+		hvb.add_child(ht)
+		var hb := Label.new()
+		I18n.reg(hb, "text", "hint_body")
+		hb.add_theme_font_size_override("font_size", 14)
+		hvb.add_child(hb)
+		var ok := Button.new()
+		I18n.reg(ok, "text", "btn_got_it")
+		ok.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		ok.pressed.connect(func() -> void:
+			var hf := FileAccess.open("user://seen_hints.txt", FileAccess.WRITE)
+			if hf:
+				hf.store_string("1")
+			hint.queue_free())
+		hvb.add_child(ok)
+		hint.add_child(hvb)
+		hud.add_child(hint)
 	# show the panel in dev screenshots
 	if not OS.get_environment("AGENT_TOWN_SHOT").is_empty():
 		_costume_panel.visible = true
+
+
+## The HUD NOW line: one chip per running job (UX audit P3) — never a
+## single line hiding two of three parallel jobs.
+func _update_now() -> void:
+	if TaskQueue.jobs.is_empty():
+		_status.text = I18n.t("status_idle")
+		return
+	var lines: Array[String] = []
+	for topic in TaskQueue.jobs:
+		var j: Dictionary = TaskQueue.jobs[topic]
+		lines.append("⚙ %s %d%% · %s" % [
+			I18n.t("stg_" + str(j.get("stage", ""))) if I18n.S.has("stg_" + str(j.get("stage", ""))) else str(j.get("stage", "")),
+			int(j.get("pct", 0)), str(topic).left(34)])
+	_status.text = "\n".join(lines)
+
+
+## A work document flies from the giver to the receiver — the handoff
+## the human can SEE (the org chart becomes something you watch).
+func _fly_doc(from_role: String, to_role: String) -> void:
+	var from_a: Node3D = null
+	var to_a: Node3D = null
+	for a in get_tree().get_nodes_in_group("agents"):
+		if a.role == from_role:
+			from_a = a
+		elif a.role == to_role:
+			to_a = a
+	if from_a == null or to_a == null:
+		return
+	var doc := Label3D.new()
+	doc.text = "📄"
+	doc.font_size = 96
+	doc.pixel_size = 0.005
+	doc.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	doc.no_depth_test = true
+	office.add_child(doc)
+	doc.global_position = from_a.global_position + Vector3(0, 1.5, 0)
+	var tw := create_tween()
+	tw.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	tw.tween_property(doc, "global_position",
+		to_a.global_position + Vector3(0, 1.5, 0), 1.1)
+	tw.parallel().tween_property(doc, "modulate:a", 0.9, 1.1)
+	tw.tween_property(doc, "modulate:a", 0.0, 0.3)
+	tw.tween_callback(doc.queue_free)
 
 
 func _open_input(prompt_text: String, cb: Callable) -> void:
@@ -726,6 +813,8 @@ func _submit_idea(topic: String) -> void:
 		f.store_string(JSON.stringify({"topic": topic, "notes": "Pinned on the ideas board by %s." % Config.owner_name}, "  "))
 		EventBus.log_line.emit("📌 Idea pinned: %s" % topic.left(48))
 		Sfx.play_ui("paper", -8.0)
+		# instant ack (UX audit P4): heard, before the queue even polls
+		EventBus.agent_say.emit("director", I18n.t("ack_idea"))
 
 
 ## Deliver the finished work into the human's real workflow: a toast
@@ -875,6 +964,9 @@ func _build_approval_panel() -> void:
 			_open_input("Say something to the %s" % who.role,
 				func(text: String) -> void:
 					EventBus.chat_line.emit(Config.owner_name, text)
+					# instant ack (UX audit P4): the agent responds
+					# within a beat, before the real reply arrives
+					EventBus.agent_say.emit(who.role, I18n.t("ack_thinking"))
 					who.chat_reply(text)))
 	actions.add_child(chat)
 	ivb.add_child(actions)

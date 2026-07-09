@@ -28,3 +28,7 @@ signal guidance_given(text: String)
 signal meeting_called(request: Dictionary)
 ## Anything anyone actually said out loud (for the office chat feed).
 signal chat_line(speaker: String, text: String)
+## A stage handoff: FROM passes the work to TO (delegation-flow visuals).
+signal handoff(from_role: String, to_role: String, stage: String, request: Dictionary)
+## The owner cancelled a running project from the board.
+signal request_cancelled(request: Dictionary)
