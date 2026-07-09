@@ -420,6 +420,15 @@ func _combined_aabb(node: Node, xform: Transform3D) -> AABB:
 
 func _build_floor_cell(gx: int, gy: int) -> void:
 	var c := str(map_rows[gy])[gx]
+	# glass-wall tiles belong to their room (Sims rule): the floor runs
+	# unbroken to the pane, so inherit the neighboring room's material
+	if c == "G" or c == "H":
+		c = "."
+		for nb in [Vector2i(0, -1), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(1, 0)]:
+			var nc := _cell_char(gx + nb.x, gy + nb.y)
+			if ROOM_CHARS.contains(nc):
+				c = nc
+				break
 	var tex := "concrete"
 	match c:
 		",":
@@ -462,24 +471,60 @@ func _cell_char(gx: int, gy: int) -> String:
 
 
 const PERIMETER := "cwWMvV"
+const ROOM_CHARS := "rP#"
+
+
+## The Sims rule (owner's reference): walls live ON TILE EDGES, never
+## through tile centers. The room ABSORBS the wall tile — its floor
+## runs all the way to the pane, which sits on the tile's far edge.
+## These two functions pick that edge per grid row/column of glass by
+## voting on which side the room floor is.
+func _row_gpane_z(gy: int) -> float:
+	var north := 0
+	var south := 0
+	for gx in cols:
+		if _cell_char(gx, gy) != "G":
+			continue
+		if ROOM_CHARS.contains(_cell_char(gx, gy - 1)):
+			north += 1
+		if ROOM_CHARS.contains(_cell_char(gx, gy + 1)):
+			south += 1
+	# room north -> tile joins it -> pane on the SOUTH edge (and vice versa)
+	return (gy + 1.0) * CELL if north >= south else gy * CELL
+
+
+func _col_hpane_x(gx: int) -> float:
+	var west := 0
+	var east := 0
+	for gy in rows:
+		if _cell_char(gx, gy) != "H":
+			continue
+		if ROOM_CHARS.contains(_cell_char(gx - 1, gy)):
+			west += 1
+		if ROOM_CHARS.contains(_cell_char(gx + 1, gy)):
+			east += 1
+	return (gx + 1.0) * CELL if west >= east else gx * CELL
 
 
 ## Interior glass partitions from the map (G = pane along X, H = pane
-## along Z). Consecutive cells merge into ONE long pane — mullion posts
-## only at run ends and door jambs. Pane ends EXTEND to meet whatever
-## they run into (a crossing pane's centerline, or the perimeter wall
-## face), the way real corners close — no diagonal daylight gaps.
+## along Z). Consecutive cells merge into ONE long pane on the tile
+## EDGE (Sims convention, same as the perimeter walls); ends extend to
+## the ACTUAL plane of whatever they meet — a crossing pane or the
+## perimeter wall face — so corners butt clean, with a post at each
+## true junction. No overlaps, no through-pane crossings.
 func _build_glass_runs() -> void:
 	var glass := _mat("podglass", Color(0.75, 0.86, 0.94, 0.25), "", Color.BLACK, true)
 	var steel := _mat("steel", Color(0.42, 0.42, 0.46))
 	var posts: Dictionary = {}
 	for gy in rows:
 		var row := str(map_rows[gy])
+		var pane_z := 0.0
 		var gx := 0
 		while gx < cols:
 			if row[gx] != "G":
 				gx += 1
 				continue
+			pane_z = _row_gpane_z(gy)
 			var x0 := gx
 			while gx < cols and row[gx] == "G":
 				gx += 1
@@ -488,24 +533,25 @@ func _build_glass_runs() -> void:
 			var w_ch := _cell_char(x0 - 1, gy)
 			var e_ch := _cell_char(gx, gy)
 			if w_ch == "H":
-				xa -= 0.5 * CELL
+				xa = _col_hpane_x(x0 - 1)
 			elif PERIMETER.contains(w_ch):
 				xa -= CELL - WALL_T
 			if e_ch == "H":
-				xb += 0.5 * CELL
+				xb = _col_hpane_x(gx)
 			elif PERIMETER.contains(e_ch):
 				xb += CELL - WALL_T
-			var cz := (gy + 0.5) * CELL
-			_box(Vector3(xb - xa, 2.0, 0.07), Vector3((xa + xb) / 2.0, 1.0, cz), glass, self, false)
-			_box(Vector3(xb - xa + 0.06, 0.05, 0.06), Vector3((xa + xb) / 2.0, 2.02, cz), steel, self, false)
-			posts["%.1f_%.1f" % [xa, cz]] = Vector3(xa, 0, cz)
-			posts["%.1f_%.1f" % [xb, cz]] = Vector3(xb, 0, cz)
+			_box(Vector3(xb - xa, 2.0, 0.07), Vector3((xa + xb) / 2.0, 1.0, pane_z), glass, self, false)
+			_box(Vector3(xb - xa + 0.06, 0.05, 0.06), Vector3((xa + xb) / 2.0, 2.02, pane_z), steel, self, false)
+			posts["%.1f_%.1f" % [xa, pane_z]] = Vector3(xa, 0, pane_z)
+			posts["%.1f_%.1f" % [xb, pane_z]] = Vector3(xb, 0, pane_z)
 	for gx in cols:
+		var pane_x := 0.0
 		var gy := 0
 		while gy < rows:
 			if str(map_rows[gy])[gx] != "H":
 				gy += 1
 				continue
+			pane_x = _col_hpane_x(gx)
 			var y0 := gy
 			while gy < rows and str(map_rows[gy])[gx] == "H":
 				gy += 1
@@ -514,18 +560,17 @@ func _build_glass_runs() -> void:
 			var n_ch := _cell_char(gx, y0 - 1)
 			var s_ch := _cell_char(gx, gy)
 			if n_ch == "G":
-				za -= 0.5 * CELL
+				za = _row_gpane_z(y0 - 1)
 			elif PERIMETER.contains(n_ch):
 				za -= CELL - WALL_T
 			if s_ch == "G":
-				zb += 0.5 * CELL
+				zb = _row_gpane_z(gy)
 			elif PERIMETER.contains(s_ch):
 				zb += CELL - WALL_T
-			var cx := (gx + 0.5) * CELL
-			_box(Vector3(0.07, 2.0, zb - za), Vector3(cx, 1.0, (za + zb) / 2.0), glass, self, false)
-			_box(Vector3(0.06, 0.05, zb - za + 0.06), Vector3(cx, 2.02, (za + zb) / 2.0), steel, self, false)
-			posts["%.1f_%.1f" % [cx, za]] = Vector3(cx, 0, za)
-			posts["%.1f_%.1f" % [cx, zb]] = Vector3(cx, 0, zb)
+			_box(Vector3(0.07, 2.0, zb - za), Vector3(pane_x, 1.0, (za + zb) / 2.0), glass, self, false)
+			_box(Vector3(0.06, 0.05, zb - za + 0.06), Vector3(pane_x, 2.02, (za + zb) / 2.0), steel, self, false)
+			posts["%.1f_%.1f" % [pane_x, za]] = Vector3(pane_x, 0, za)
+			posts["%.1f_%.1f" % [pane_x, zb]] = Vector3(pane_x, 0, zb)
 	for key in posts:
 		var p: Vector3 = posts[key]
 		_box(Vector3(0.09, 2.04, 0.09), Vector3(p.x, 1.02, p.z), steel)
@@ -596,8 +641,8 @@ func _wayfinding() -> void:
 	# plate between the jamb posts; open zones get the same plate hung
 	# from the ceiling grid on two thin wires (standard office signage)
 	var signs := [
-		["z_director", 11.5, 4.5, 0.0, false], ["z_focus", 3.5, 14.0, 90.0, false],
-		["z_editbay", 8.5, 14.5, 0.0, false], ["z_studio", 15.5, 16.5, 90.0, false],
+		["z_director", 11.5, 5.0, 0.0, false], ["z_focus", 4.0, 13.5, 90.0, false],
+		["z_editbay", 8.5, 14.0, 0.0, false], ["z_studio", 15.0, 16.5, 90.0, false],
 		["z_reception", 20.5, 4.4, 0.0, true], ["z_meeting", 4.5, 4.9, 0.0, true],
 		["z_library", 7.0, 6.5, 90.0, true], ["z_writers", 7.0, 10.5, 90.0, true],
 		["z_publishing", 18.5, 14.4, 0.0, true], ["z_coffee", 17.4, 6.5, 90.0, true],
@@ -1040,11 +1085,11 @@ func _zone_focus_booths() -> void:
 # production-studio research) ============
 func _zone_edit_bay() -> void:
 	var steel := _mat("steel", Color(0.42, 0.42, 0.46))
-	# glass front now comes from the map (G row z14.5, door at x8) —
-	# uniform with the director's office; coral trim marks the room
-	_box(Vector3(4.0, 0.06, 0.12), Vector3(6.0, 2.08, 14.5),
+	# glass front now comes from the map (G row on the z14.0 tile edge,
+	# door at x8) — coral trim marks the room above the pane
+	_box(Vector3(4.0, 0.06, 0.12), Vector3(6.0, 2.08, 14.0),
 		_mat("trim_coral", CORAL, "", CORAL * 0.4), self, false)
-	_box(Vector3(0.3, 0.06, 0.13), Vector3(6.0, 2.15, 14.5),
+	_box(Vector3(0.3, 0.06, 0.13), Vector3(6.0, 2.15, 14.0),
 		_mat("chip_editor", ROLE_ACCENT["editor"], "", (ROLE_ACCENT["editor"] as Color) * 0.5), self, false)
 	# the editor's desk: triple monitors, waveform glow
 	_modern_desk(6.0, 16.0, 1.8)
@@ -1068,19 +1113,20 @@ func _zone_studio() -> void:
 	var steel := _mat("steel", Color(0.42, 0.42, 0.46))
 	var chroma := _mat("chroma", Color(0.28, 0.78, 0.31))
 	# matte charcoal stage floor zones the studio off the concrete
-	_box(Vector3(5.0, 0.015, 4.9), Vector3(12.0, 0.008, 16.5),
+	# (west edge at x10.0 — the edit-bay divider pane's plane)
+	_box(Vector3(4.5, 0.015, 4.9), Vector3(12.25, 0.008, 16.5),
 		_mat("studio_floor", Color(0.24, 0.24, 0.27)), self, false)
-	# green-screen backdrop with floor spill (sits just south of the
-	# map glass at z14.5 so the panes never z-fight the chroma)
-	_box(Vector3(4.0, 2.2, 0.09), Vector3(12.0, 1.1, 14.62), chroma)
-	_box(Vector3(4.0, 0.02, 1.3), Vector3(12.0, 0.022, 15.28), chroma, self, false)
+	# green-screen backdrop with floor spill, backed against the map
+	# glass on the z14.0 tile edge (never coplanar with the pane)
+	_box(Vector3(4.0, 2.2, 0.09), Vector3(12.0, 1.1, 14.12), chroma)
+	_box(Vector3(4.0, 0.02, 1.3), Vector3(12.0, 0.022, 14.82), chroma, self, false)
 	var onair := Label3D.new()
 	onair.text = "ON AIR"
 	onair.font_size = 52
 	onair.outline_size = 12
 	onair.pixel_size = 0.004
 	onair.modulate = CORAL
-	onair.position = Vector3(12.0, 2.42, 14.70)
+	onair.position = Vector3(12.0, 2.42, 14.20)
 	add_child(onair)
 	# ring light + vertical phone rig
 	var ring := MeshInstance3D.new()
