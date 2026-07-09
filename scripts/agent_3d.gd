@@ -11,22 +11,27 @@ const CHAR_H := 1.35
 const SPEED := 1.7
 const TURN_SPEED := 10.0
 
-## Ragnarok-style job mapping per role.
+## Everyday office people (Quaternius Ultimate Modular Men, CC0) —
+## per the owner: "แบบ office ทั่วไป ไม่ใช่ adventure".
 const JOB_MODEL := {
-	"director": "Knight",
-	"researcher": "Mage",
-	"writer": "Rogue_Hooded",
-	"editor": "Rogue",
-	"publisher": "Barbarian",
+	"director": "BusinessMan",
+	"researcher": "Casual",
+	"writer": "Hoodie",
+	"editor": "Punk",
+	"publisher": "Worker",
 }
 
 const WORK_ANIM := {
 	"director": "Interact",
-	"researcher": "Spellcasting",
-	"writer": "Use_Item",
-	"editor": "1H_Melee_Attack_Slice_Horizontal",
-	"publisher": "Use_Item",
+	"researcher": "Interact",
+	"writer": "Interact",
+	"editor": "Interact",
+	"publisher": "Interact",
 }
+
+## Old KayKit anim names -> Quaternius names; the resolver also tries
+## the exporter's "CharacterArmature|" prefix, so either pack plays.
+const ANIM_ALIAS := {"Walking_A": "Walk", "Cheer": "Wave"}
 
 ## Short character sketches: constraint is what makes dialogue read as
 ## a PERSON (Inworld's lesson). Used in gossip + click-chat prompts.
@@ -154,8 +159,9 @@ static var _item_cache: Dictionary = {}
 func _ready() -> void:
 	add_to_group("agents")
 	costume = Costumes.load_all().get(role, Costumes.OFFICE_PRESET.get(role, {})).duplicate(true)
-	if not costume.has("class"):
-		costume["class"] = str(JOB_MODEL.get(role, "Knight"))
+	# office-people era: the base model is fixed per role (saved costumes
+	# from the adventurer days would otherwise resurrect knights)
+	costume["class"] = str(JOB_MODEL.get(role, "BusinessMan"))
 	_model = _load_character(str(costume["class"]))
 	add_child(_model)
 	_setup_attachments()
@@ -793,25 +799,39 @@ func _load_character(model_name: String) -> Node3D:
 	return root
 
 
+## Find the clip whatever the pack calls it (alias + armature prefix).
+func _resolve_anim(n: String) -> String:
+	if _anim == null:
+		return n
+	var alias := str(ANIM_ALIAS.get(n, n))
+	for cand in [n, alias, "CharacterArmature|" + alias, "CharacterArmature|" + n]:
+		if _anim.has_animation(cand):
+			return cand
+	return n
+
+
 func _play(anim_name: String) -> void:
-	if _anim == null or not _anim.has_animation(anim_name):
+	var resolved := _resolve_anim(anim_name)
+	if _anim == null or not _anim.has_animation(resolved):
 		return
 	# ensure sustained states loop
-	if anim_name == "Idle" or anim_name.begins_with("Walking") or WORK_ANIM.values().has(anim_name):
-		var a := _anim.get_animation(anim_name)
+	if resolved.contains("Idle") or resolved.contains("Walk") \
+			or WORK_ANIM.values().has(anim_name):
+		var a := _anim.get_animation(resolved)
 		a.loop_mode = Animation.LOOP_LINEAR
-	_anim.play(anim_name, 0.25)
+	_anim.play(resolved, 0.25)
 
 
 func _play_once_then_idle(anim_name: String) -> void:
-	if _anim == null or not _anim.has_animation(anim_name):
+	var resolved := _resolve_anim(anim_name)
+	if _anim == null or not _anim.has_animation(resolved):
 		_play("Idle")
 		return
-	var a := _anim.get_animation(anim_name)
+	var a := _anim.get_animation(resolved)
 	a.loop_mode = Animation.LOOP_NONE
-	_anim.play(anim_name, 0.25)
+	_anim.play(resolved, 0.25)
 	var cb := func(finished: StringName) -> void:
-		if finished == StringName(anim_name) and state != State.WORKING:
+		if finished == StringName(resolved) and state != State.WORKING:
 			_play("Idle")
 	_anim.animation_finished.connect(cb, CONNECT_ONE_SHOT)
 

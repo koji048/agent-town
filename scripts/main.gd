@@ -752,12 +752,12 @@ func _build_costume_panel() -> void:
 		_costume_panel.visible = not _costume_panel.visible
 		mark.call(btn, _costume_panel.visible))
 	var lang_btn := Button.new()
-	lang_btn.text = "🌐 ไทย" if I18n.lang == "en" else "🌐 EN"
+	lang_btn.text = "  ไทย  " if I18n.lang == "en" else "  EN  "
 	lang_btn.custom_minimum_size = Vector2(0, 46)
 	lang_btn.add_theme_font_size_override("font_size", 15)
 	lang_btn.pressed.connect(func() -> void:
 		I18n.toggle()
-		lang_btn.text = "🌐 ไทย" if I18n.lang == "en" else "🌐 EN")
+		lang_btn.text = "  ไทย  " if I18n.lang == "en" else "  EN  ")
 	dock_row.add_child(lang_btn)
 	# first-run coach marks (UX audit P5): three ways to command, shown
 	# once, dismissed forever (UI-fade doctrine)
