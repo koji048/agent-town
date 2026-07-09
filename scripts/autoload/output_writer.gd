@@ -33,9 +33,10 @@ func write_package(request: Dictionary, results: Dictionary) -> String:
 
 
 func _slug(topic: String) -> String:
+	# keep Thai characters — folder names should read like the job did
 	var s := topic.to_lower().strip_edges().replace(" ", "-")
 	var re := RegEx.new()
-	re.compile("[^a-z0-9\\-]")
+	re.compile("[^a-z0-9ก-๙\\-]")
 	s = re.sub(s, "", true).left(40)
 	while s.contains("--"):
 		s = s.replace("--", "-")

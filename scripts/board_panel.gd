@@ -341,8 +341,9 @@ func _refresh() -> void:
 					I18n.t("card_stage") % [str(info["stage"]), a_role],
 					accent, "", a_role, pct, str(info["stage"]), str(topic))
 
-	# DONE: shipped packages. Selecting a shipped project EXPANDS it
-	# into its stage deliverables, each with its PIC and an open button.
+	# DONE: shipped packages, titled by their REAL topic (request.json)
+	# with a readable date — not the timestamp digits (owner's note).
+	# Selecting a shipped project EXPANDS it into its stage deliverables.
 	var done: VBoxContainer = _cols["DONE"]
 	_clear(done)
 	var out := DirAccess.open("res://output")
@@ -355,7 +356,8 @@ func _refresh() -> void:
 		var shown := 0
 		for dv in dirs:
 			var d: String = str(dv)
-			var topic: String = d.get_slice("_", 1).replace("-", " ")
+			var info := _package_title(d)
+			var topic: String = info[0]
 			_project_row(topic, Color(0.45, 0.85, 0.5))
 			if not _project_visible(topic):
 				continue
@@ -371,6 +373,26 @@ func _refresh() -> void:
 							ROLE_COLOR.get(pic, Color.GRAY),
 							"res://output/" + d + "/" + sf, pic)
 			elif shown < 8 and _passes(topic, ""):
-				_card(done, topic.left(70), d, Color(0.45, 0.85, 0.5),
+				_card(done, topic.left(70), str(info[1]), Color(0.45, 0.85, 0.5),
 					"res://output/" + d, "")
 				shown += 1
+
+
+## Human title + date for a package folder: the real topic lives in
+## request.json ("YYYYMMDD_HHMMSS_slug" digits told the owner nothing).
+func _package_title(d: String) -> Array:
+	var topic := ""
+	var meta: Variant = JSON.parse_string(
+		FileAccess.get_file_as_string("res://output/" + d + "/request.json"))
+	if meta is Dictionary:
+		topic = str((meta as Dictionary).get("topic", "")).strip_edges()
+	if topic.is_empty():
+		topic = d.get_slice("_", 2).replace("-", " ")
+	if topic.strip_edges().is_empty():
+		topic = d
+	var date_str := ""
+	var p: PackedStringArray = d.split("_")
+	if p.size() >= 2 and p[0].length() == 8 and p[1].length() >= 4:
+		date_str = "%s/%s · %s:%s" % [p[0].substr(6, 2), p[0].substr(4, 2),
+			p[1].substr(0, 2), p[1].substr(2, 2)]
+	return [topic, date_str]
