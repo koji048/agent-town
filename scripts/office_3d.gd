@@ -455,10 +455,20 @@ func _build_wall_cell(c: String, gx: int, gy: int, row: String) -> void:
 			pass  # rendered as merged long panes by _build_glass_runs()
 
 
+func _cell_char(gx: int, gy: int) -> String:
+	if gx < 0 or gy < 0 or gy >= rows or gx >= cols:
+		return " "
+	return str(map_rows[gy])[gx]
+
+
+const PERIMETER := "cwWMvV"
+
+
 ## Interior glass partitions from the map (G = pane along X, H = pane
 ## along Z). Consecutive cells merge into ONE long pane — mullion posts
-## only at run ends and door jambs, exactly how the director's suite
-## reads (per the owner: per-cell panes looked like a fence).
+## only at run ends and door jambs. Pane ends EXTEND to meet whatever
+## they run into (a crossing pane's centerline, or the perimeter wall
+## face), the way real corners close — no diagonal daylight gaps.
 func _build_glass_runs() -> void:
 	var glass := _mat("podglass", Color(0.75, 0.86, 0.94, 0.25), "", Color.BLACK, true)
 	var steel := _mat("steel", Color(0.42, 0.42, 0.46))
@@ -473,13 +483,23 @@ func _build_glass_runs() -> void:
 			var x0 := gx
 			while gx < cols and row[gx] == "G":
 				gx += 1
-			var length := float(gx - x0) * CELL
-			var cx := (x0 + gx) * 0.5 * CELL
+			var xa := x0 * CELL
+			var xb := gx * CELL
+			var w_ch := _cell_char(x0 - 1, gy)
+			var e_ch := _cell_char(gx, gy)
+			if w_ch == "H":
+				xa -= 0.5 * CELL
+			elif PERIMETER.contains(w_ch):
+				xa -= CELL - WALL_T
+			if e_ch == "H":
+				xb += 0.5 * CELL
+			elif PERIMETER.contains(e_ch):
+				xb += CELL - WALL_T
 			var cz := (gy + 0.5) * CELL
-			_box(Vector3(length, 2.0, 0.07), Vector3(cx, 1.0, cz), glass, self, false)
-			_box(Vector3(length + 0.06, 0.05, 0.06), Vector3(cx, 2.02, cz), steel, self, false)
-			posts["%.1f_%.1f" % [x0 * CELL, cz]] = Vector3(x0 * CELL, 0, cz)
-			posts["%.1f_%.1f" % [gx * CELL, cz]] = Vector3(gx * CELL, 0, cz)
+			_box(Vector3(xb - xa, 2.0, 0.07), Vector3((xa + xb) / 2.0, 1.0, cz), glass, self, false)
+			_box(Vector3(xb - xa + 0.06, 0.05, 0.06), Vector3((xa + xb) / 2.0, 2.02, cz), steel, self, false)
+			posts["%.1f_%.1f" % [xa, cz]] = Vector3(xa, 0, cz)
+			posts["%.1f_%.1f" % [xb, cz]] = Vector3(xb, 0, cz)
 	for gx in cols:
 		var gy := 0
 		while gy < rows:
@@ -489,13 +509,23 @@ func _build_glass_runs() -> void:
 			var y0 := gy
 			while gy < rows and str(map_rows[gy])[gx] == "H":
 				gy += 1
-			var length := float(gy - y0) * CELL
+			var za := y0 * CELL
+			var zb := gy * CELL
+			var n_ch := _cell_char(gx, y0 - 1)
+			var s_ch := _cell_char(gx, gy)
+			if n_ch == "G":
+				za -= 0.5 * CELL
+			elif PERIMETER.contains(n_ch):
+				za -= CELL - WALL_T
+			if s_ch == "G":
+				zb += 0.5 * CELL
+			elif PERIMETER.contains(s_ch):
+				zb += CELL - WALL_T
 			var cx := (gx + 0.5) * CELL
-			var cz := (y0 + gy) * 0.5 * CELL
-			_box(Vector3(0.07, 2.0, length), Vector3(cx, 1.0, cz), glass, self, false)
-			_box(Vector3(0.06, 0.05, length + 0.06), Vector3(cx, 2.02, cz), steel, self, false)
-			posts["%.1f_%.1f" % [cx, y0 * CELL]] = Vector3(cx, 0, y0 * CELL)
-			posts["%.1f_%.1f" % [cx, gy * CELL]] = Vector3(cx, 0, gy * CELL)
+			_box(Vector3(0.07, 2.0, zb - za), Vector3(cx, 1.0, (za + zb) / 2.0), glass, self, false)
+			_box(Vector3(0.06, 0.05, zb - za + 0.06), Vector3(cx, 2.02, (za + zb) / 2.0), steel, self, false)
+			posts["%.1f_%.1f" % [cx, za]] = Vector3(cx, 0, za)
+			posts["%.1f_%.1f" % [cx, zb]] = Vector3(cx, 0, zb)
 	for key in posts:
 		var p: Vector3 = posts[key]
 		_box(Vector3(0.09, 2.04, 0.09), Vector3(p.x, 1.02, p.z), steel)
@@ -1261,6 +1291,21 @@ func _zone_courtyard() -> void:
 	_tree(Vector3(15.5, 0.0, 7.4), 0.85)
 	_tree(Vector3(9.5, 0.0, 12.5), 1.05)
 	_tree(Vector3(15.5, 0.0, 12.5), 0.9)
+	# garden bollards beside the corner trees (already-blocked cells):
+	# four warm points keep the courtyard the warmest, brightest spot
+	# after dark — the hero of the plan at every hour
+	for bp in [[9.8, 7.8], [15.2, 7.7], [9.8, 12.2], [15.2, 12.2]]:
+		_box(Vector3(0.07, 0.42, 0.07), Vector3(bp[0], 0.21, bp[1]),
+			_mat("steel", Color(0.42, 0.42, 0.46)), self, false)
+		_box(Vector3(0.11, 0.10, 0.11), Vector3(bp[0], 0.47, bp[1]),
+			_mat("bollard_glow", Color(1.0, 0.88, 0.6) * 0.85, "", Color(1.0, 0.85, 0.55)), self, false)
+		var bl := OmniLight3D.new()
+		bl.position = Vector3(bp[0], 0.75, bp[1])
+		bl.light_color = Color(1.0, 0.88, 0.62)
+		bl.omni_range = 2.6
+		bl.light_energy = 0.65
+		bl.shadow_enabled = false
+		add_child(bl)
 	_bush(Vector3(9.6, 0.0, 9.6))
 	_bush(Vector3(13.9, 0.0, 10.3))
 	# stepping stones from the west and east entries toward the center
@@ -1278,6 +1323,8 @@ func _ceiling_grid() -> void:
 				continue
 			if lx > 3.9 and lx < 8.6 and lz > 13.9:
 				continue  # edit bay keeps its own dim pendant
+			if lx > 16.5 and lz > 4.5 and lz < 13.5:
+				continue  # social band: warm pendant pools, no office panels
 			_ceiling_panel(Vector3(lx, 2.92, lz))
 
 
@@ -1403,7 +1450,9 @@ func _leaf_ball(pos: Vector3, r: float, key: String, col: Color) -> void:
 func _ceiling_panel(pos: Vector3) -> void:
 	var l := OmniLight3D.new()
 	l.position = pos + Vector3(0, -0.2, 0)
-	l.light_color = Color(1.0, 0.97, 0.9)
+	# cool-neutral task light: reads "work zone" against the warm
+	# pendant pools over coffee/lounge (lighting-layers pass)
+	l.light_color = Color(0.96, 0.98, 1.0)
 	l.omni_range = 4.2
 	l.light_energy = 0.55
 	l.shadow_enabled = false
