@@ -574,6 +574,21 @@ func _zone_director() -> void:
 
 # ============ MEETING NOOK (kickoff table beside the director) ============
 func _zone_meeting_nook() -> void:
+	# suspended glass canopy: a float-glass ring hung from the ceiling
+	# defines the room WITHOUT blocking any approach — agents (1.35 m)
+	# walk under the 1.6 m clearance from every direction
+	var glass := _mat("podglass", Color(0.75, 0.86, 0.94, 0.25), "", Color.BLACK, true)
+	var steel := _mat("steel", Color(0.42, 0.42, 0.46))
+	for seg in [
+		[Vector3(4.6, 0.5, 0.04), Vector3(3.5, 1.85, 0.6)],
+		[Vector3(4.6, 0.5, 0.04), Vector3(3.5, 1.85, 3.6)],
+		[Vector3(0.04, 0.5, 3.04), Vector3(1.2, 1.85, 2.1)],
+		[Vector3(0.04, 0.5, 3.04), Vector3(5.8, 1.85, 2.1)],
+	]:
+		_box(seg[0] as Vector3, seg[1] as Vector3, glass, self, false)
+	for p in [[1.2, 0.6], [5.8, 0.6], [1.2, 3.6], [5.8, 3.6]]:
+		_box(Vector3(0.05, 0.55, 0.05), Vector3(p[0], 1.85, p[1]), steel, self, false)
+		_box(Vector3(0.025, 0.5, 0.025), Vector3(p[0], 2.35, p[1]), steel, self, false)
 	_round_table(3.5, 2.0)
 	_shell_chair(3.5, 1.1, 0, Color(0.88, 0.87, 0.84))
 	_shell_chair(2.6, 2.7, 135, CORAL)
@@ -928,10 +943,21 @@ func _zone_writers() -> void:
 # interview) ============
 func _zone_focus_booths() -> void:
 	var felt := _mat("booth_felt", Color(0.45, 0.48, 0.52))
+	var glass := _mat("podglass", Color(0.75, 0.86, 0.94, 0.25), "", Color.BLACK, true)
+	var steel := _mat("steel", Color(0.42, 0.42, 0.46))
 	for bz in [14.6, 16.2]:
 		_box(Vector3(0.07, 1.5, 1.15), Vector3(1.0, 0.75, bz), felt)
 		_box(Vector3(1.1, 1.5, 0.07), Vector3(1.55, 0.75, bz - 0.57), felt)
 		_box(Vector3(1.1, 1.5, 0.07), Vector3(1.55, 0.75, bz + 0.57), felt)
+		# glass upper band all around (modern phone-booth pod): felt
+		# handles acoustics below, glass keeps light + sight lines above
+		_box(Vector3(0.05, 0.55, 1.15), Vector3(1.0, 1.78, bz), glass, self, false)
+		_box(Vector3(1.1, 0.55, 0.05), Vector3(1.55, 1.78, bz - 0.57), glass, self, false)
+		_box(Vector3(1.1, 0.55, 0.05), Vector3(1.55, 1.78, bz + 0.57), glass, self, false)
+		_box(Vector3(0.05, 0.55, 1.15), Vector3(2.1, 1.78, bz), glass, self, false)
+		for cx in [1.0, 2.1]:
+			for cz in [bz - 0.57, bz + 0.57]:
+				_box(Vector3(0.06, 0.62, 0.06), Vector3(cx, 1.76, cz), steel)
 		_box(Vector3(0.9, 0.42, 0.5), Vector3(1.5, 0.21, bz + 0.22), _mat("oak", Color.WHITE, "res://assets/textures/deck.png"))
 		_box(Vector3(0.9, 0.08, 0.5), Vector3(1.5, 0.46, bz + 0.22),
 			_mat("bench_cushion", Color(0.88, 0.86, 0.82)), self, false)
@@ -950,15 +976,21 @@ func _zone_focus_booths() -> void:
 # production-studio research) ============
 func _zone_edit_bay() -> void:
 	var steel := _mat("steel", Color(0.42, 0.42, 0.46))
-	# acoustic partition along the north edge (entrance at x8)
-	_box(Vector3(4.0, 1.6, 0.09), Vector3(6.0, 0.8, 14.45), _mat("partition", Color(0.82, 0.81, 0.78)))
-	_box(Vector3(4.0, 0.06, 0.12), Vector3(6.0, 1.63, 14.45),
+	# modern edit-suite front: solid acoustic base + float-glass upper
+	# band (soda-lime recipe, same family as the director's pod) so the
+	# dark room reads enclosed but the editor stays visible
+	var glass := _mat("podglass", Color(0.75, 0.86, 0.94, 0.25), "", Color.BLACK, true)
+	_box(Vector3(4.0, 0.95, 0.09), Vector3(6.0, 0.475, 14.45), _mat("partition", Color(0.82, 0.81, 0.78)))
+	_box(Vector3(4.0, 1.05, 0.06), Vector3(6.0, 1.475, 14.45), glass, self, false)
+	for px in [4.05, 6.0, 7.95]:
+		_box(Vector3(0.07, 2.0, 0.09), Vector3(px, 1.0, 14.45), steel)
+	_box(Vector3(4.0, 0.06, 0.12), Vector3(6.0, 2.03, 14.45),
 		_mat("trim_coral", CORAL, "", CORAL * 0.4), self, false)
-	_box(Vector3(0.3, 0.06, 0.13), Vector3(6.0, 1.70, 14.45),
+	_box(Vector3(0.3, 0.06, 0.13), Vector3(6.0, 2.10, 14.45),
 		_mat("chip_editor", ROLE_ACCENT["editor"], "", (ROLE_ACCENT["editor"] as Color) * 0.5), self, false)
-	# acoustic foam tiles on the partition's south face
+	# acoustic foam tiles on the solid base's south face
 	for i in 5:
-		_box(Vector3(0.5, 0.5, 0.04), Vector3(4.4 + i * 0.8, 0.85, 14.52),
+		_box(Vector3(0.5, 0.4, 0.04), Vector3(4.4 + i * 0.8, 0.52, 14.52),
 			_mat("booth_felt", Color(0.45, 0.48, 0.52)), self, false)
 	# the editor's desk: triple monitors, waveform glow
 	_modern_desk(6.0, 16.0, 1.8)
