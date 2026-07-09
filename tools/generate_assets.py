@@ -140,14 +140,15 @@ def _build_map_rows() -> list:
         gset(3, y, "H")
     for x in range(4, 8):                # edit bay front — dark + acoustic
         gset(x, 14, "G")                 # (door x8)
-    for y in range(15, 19):              # edit / studio divider (door y17)
-        if y != 17:
-            gset(9, y, "H")
+    # dividers whose far end already meets open space run CONTINUOUS —
+    # a door gap beside a free wall end reads as a broken stub (owner's
+    # note); rooms are entered around the open south end instead
+    for y in range(15, 19):              # edit / studio divider
+        gset(9, y, "H")
     for x in range(9, 16):               # studio north (backs the chroma)
         gset(x, 14, "G")
     for y in range(15, 19):              # studio east — light control
-        if y != 16:                      # (door y16)
-            gset(15, y, "H")
+        gset(15, y, "H")
     return ["".join(rw) for rw in grid]
 
 
