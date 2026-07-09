@@ -562,27 +562,31 @@ func _wayfinding() -> void:
 	_box(Vector3(7.2, 0.05, 0.18), Vector3(12.5, 0.028, 12.95), edge, self, false)
 	_box(Vector3(0.18, 0.05, 6.1), Vector3(9.05, 0.028, 10.0), edge, self, false)
 	_box(Vector3(0.18, 0.05, 6.1), Vector3(15.95, 0.028, 10.0), edge, self, false)
-	# floor-standing zone signs at each threshold: every room declares
-	# its purpose (posts sit against furniture/partitions, off the paths)
+	# door-header signs: one plate spanning each room's glass doorway,
+	# mounted between the jamb posts (declutter pass: the 11 floor
+	# stanchions read as a forest of poles — signage now lives IN the
+	# architecture, zero freestanding verticals)
 	var signs := [
-		["z_reception", 21.3, 3.7], ["z_director", 12.7, 4.85], ["z_meeting", 5.5, 1.1],
-		["z_library", 3.3, 5.15], ["z_writers", 3.3, 9.15], ["z_focus", 1.5, 13.35],
-		["z_editbay", 8.45, 14.35], ["z_studio", 10.15, 15.1], ["z_publishing", 16.4, 14.3],
-		["z_coffee", 18.5, 5.3], ["z_lounge", 21.9, 10.6],
+		["z_reception", 20.5, 4.5, 0.0], ["z_director", 11.5, 4.5, 0.0],
+		["z_meeting", 4.5, 5.5, 0.0], ["z_library", 7.5, 6.5, 90.0],
+		["z_writers", 7.5, 10.5, 90.0], ["z_focus", 3.5, 14.0, 90.0],
+		["z_editbay", 8.5, 14.5, 0.0], ["z_studio", 9.5, 14.5, 0.0],
+		["z_publishing", 18.5, 14.5, 0.0], ["z_coffee", 17.5, 6.5, 90.0],
+		["z_lounge", 17.5, 11.5, 90.0],
 	]
 	for s in signs:
-		_zone_sign(str(s[0]), Vector3(float(s[1]), 0.0, float(s[2])))
+		_zone_sign(str(s[0]), Vector3(float(s[1]), 0.0, float(s[2])), float(s[3]))
 
 
-## A floor-standing signage stanchion: steel base + post, charcoal plate
-## angled toward the camera, label on top.
-func _zone_sign(text: String, pos: Vector3) -> void:
-	var steel := _mat("steel", Color(0.42, 0.42, 0.46))
-	_box(Vector3(0.16, 0.03, 0.16), pos + Vector3(0, 0.015, 0), steel, self, false)
-	_box(Vector3(0.025, 1.42, 0.025), pos + Vector3(0, 0.73, 0), steel, self, false)
-	var plate := _box(Vector3(0.98, 0.28, 0.03), pos + Vector3(0, 1.56, 0),
-		_mat("sign_plate", Color(0.14, 0.14, 0.17)), self, false)
-	plate.rotation_degrees = Vector3(0, 45, 0)
+## A door-header sign: charcoal plate bridging the doorway at the glass
+## top rail, label facing the camera side. No base, no post.
+func _zone_sign(text: String, pos: Vector3, yrot: float = 0.0) -> void:
+	var root := Node3D.new()
+	root.position = pos
+	root.rotation_degrees = Vector3(0, yrot, 0)
+	add_child(root)
+	_box(Vector3(0.98, 0.28, 0.05), Vector3(0, 2.18, 0),
+		_mat("sign_plate", Color(0.14, 0.14, 0.17)), root, false)
 	var l := Label3D.new()
 	l.font = I18n.ui_font
 	I18n.reg(l, "text", text)
@@ -590,9 +594,8 @@ func _zone_sign(text: String, pos: Vector3) -> void:
 	l.outline_size = 10
 	l.pixel_size = 0.0046
 	l.modulate = Color(0.97, 0.96, 0.92)
-	l.position = pos + Vector3(0.016, 1.56, 0.016)
-	l.rotation_degrees = Vector3(0, 45, 0)
-	add_child(l)
+	l.position = Vector3(0, 2.18, 0.032)
+	root.add_child(l)
 
 
 # ============ 2. DIRECTOR'S GLASS OFFICE (north-center, mural backdrop,
@@ -1223,8 +1226,10 @@ func _zone_courtyard() -> void:
 	# speakers flanking the stage
 	_box(Vector3(0.35, 0.95, 0.35), Vector3(10.6, 0.47, 7.4), _mat("speaker_box", Color(0.2, 0.2, 0.23)))
 	_box(Vector3(0.35, 0.95, 0.35), Vector3(14.4, 0.47, 7.4), _mat("speaker_box", Color(0.2, 0.2, 0.23)))
-	# two amphitheater tiers facing the stage, Google-color cushions
-	var cushion_cols := [Color(0.26, 0.52, 0.96), Color(0.92, 0.26, 0.21), Color(0.98, 0.74, 0.02), Color(0.20, 0.66, 0.33)]
+	# two amphitheater tiers facing the stage — cushions in TWO muted
+	# tones (declutter pass: four saturated hues fought the coral
+	# wayfinding line, the chroma wall and the stage screen at once)
+	var cushion_cols := [Color(0.80, 0.51, 0.40), Color(0.62, 0.67, 0.57)]
 	for tier in 2:
 		var tz := 11.5 + tier
 		var th := 0.24 * (2 - tier)
@@ -1233,7 +1238,7 @@ func _zone_courtyard() -> void:
 			_mat("tier_top", Color(0.83, 0.68, 0.5)), self, false)
 		for ci in 4:
 			_box(Vector3(0.6, 0.07, 0.55), Vector3(10.7 + ci * 1.25, th + 0.07, tz),
-				_mat("cushion_%d" % ((ci + tier) % 4), cushion_cols[(ci + tier) % 4]), self, false)
+				_mat("cushion_%d" % ((ci + tier) % 2), cushion_cols[(ci + tier) % 2]), self, false)
 	# pond on the east side + stones
 	var pond := MeshInstance3D.new()
 	var pcyl := CylinderMesh.new()
