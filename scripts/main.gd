@@ -470,7 +470,7 @@ func _capture_and_quit(path: String) -> void:
 ## Throttling FPS while unfocused shrinks any per-frame churn ~6x.
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
-		Engine.max_fps = 10
+		Engine.max_fps = 20  # still ~3x less churn, but never reads as frozen
 	elif what == NOTIFICATION_APPLICATION_FOCUS_IN:
 		Engine.max_fps = 0
 
