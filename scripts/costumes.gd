@@ -22,6 +22,20 @@ const SETS := {
 			"publisher":  {"class": "Worker",      "headgear": "cap",     "right": "mug_full", "left": "none", "bracers": false, "cape": false},
 		},
 	},
+	"mini": {
+		"label": "MINI",
+		"char_h": 1.30,  # Kenney chibi: big heads, tiny bodies
+		"classes": ["MiniMaleA", "MiniMaleB", "MiniMaleC", "MiniMaleD",
+			"MiniMaleE", "MiniMaleF", "MiniFemaleA", "MiniFemaleB",
+			"MiniFemaleC", "MiniFemaleD", "MiniFemaleE", "MiniFemaleF"],
+		"preset": {
+			"director":   {"class": "MiniMaleB",   "headgear": "none", "right": "none", "left": "none", "bracers": false, "cape": false},
+			"researcher": {"class": "MiniFemaleA", "headgear": "none", "right": "none", "left": "none", "bracers": false, "cape": false},
+			"writer":     {"class": "MiniMaleD",   "headgear": "none", "right": "none", "left": "none", "bracers": false, "cape": false},
+			"editor":     {"class": "MiniFemaleC", "headgear": "none", "right": "none", "left": "none", "bracers": false, "cape": false},
+			"publisher":  {"class": "MiniMaleF",   "headgear": "none", "right": "none", "left": "none", "bracers": false, "cape": false},
+		},
+	},
 	"dungeon": {
 		"label": "DUNGEON",
 		"char_h": 1.35,  # chibi bodies read right a head shorter

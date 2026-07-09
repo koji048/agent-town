@@ -37,9 +37,15 @@ const WORK_ANIM := {
 	"publisher": "Interact",
 }
 
-## Old KayKit anim names -> Quaternius names; the resolver also tries
-## the exporter's "CharacterArmature|" prefix, so either pack plays.
-const ANIM_ALIAS := {"Walking_A": "Walk", "Cheer": "Wave"}
+## Per-intent animation candidates across ALL packs (KayKit adventurers,
+## Quaternius modular men, Kenney mini) — the resolver picks the first
+## clip the loaded rig actually has.
+const ANIM_CANDIDATES := {
+	"Idle": ["Idle", "CharacterArmature|Idle", "idle"],
+	"Walking_A": ["Walking_A", "CharacterArmature|Walk", "Walk", "walk"],
+	"Cheer": ["Cheer", "CharacterArmature|Wave", "Wave", "emote-yes", "jump"],
+	"Interact": ["Interact", "CharacterArmature|Interact", "interact-right"],
+}
 
 ## Short character sketches: constraint is what makes dialogue read as
 ## a PERSON (Inworld's lesson). Used in gossip + click-chat prompts.
@@ -818,14 +824,13 @@ func _load_character(model_name: String) -> Node3D:
 	return root
 
 
-## Find the clip whatever the pack calls it (alias + armature prefix).
+## Find the clip whatever the pack calls it.
 func _resolve_anim(n: String) -> String:
 	if _anim == null:
 		return n
-	var alias := str(ANIM_ALIAS.get(n, n))
-	for cand in [n, alias, "CharacterArmature|" + alias, "CharacterArmature|" + n]:
-		if _anim.has_animation(cand):
-			return cand
+	for cand in ANIM_CANDIDATES.get(n, [n, "CharacterArmature|" + n, n.to_lower()]):
+		if _anim.has_animation(str(cand)):
+			return str(cand)
 	return n
 
 
@@ -834,7 +839,7 @@ func _play(anim_name: String) -> void:
 	if _anim == null or not _anim.has_animation(resolved):
 		return
 	# ensure sustained states loop
-	if resolved.contains("Idle") or resolved.contains("Walk") \
+	if resolved.to_lower().contains("idle") or resolved.to_lower().contains("walk") \
 			or WORK_ANIM.values().has(anim_name):
 		var a := _anim.get_animation(resolved)
 		a.loop_mode = Animation.LOOP_LINEAR
