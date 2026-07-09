@@ -32,3 +32,7 @@ signal chat_line(speaker: String, text: String)
 signal handoff(from_role: String, to_role: String, stage: String, request: Dictionary)
 ## The owner cancelled a running project from the board.
 signal request_cancelled(request: Dictionary)
+## A clip is ready for the Caption Review Studio (pre-burn gate).
+signal clip_review_requested(request: Dictionary, srt_path: String, preview_dir: String)
+## The studio's verdict: "default" or "custom" (with a style dict).
+signal clip_review_resolved(action: String, style: Dictionary)

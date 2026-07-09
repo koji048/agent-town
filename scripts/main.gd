@@ -15,6 +15,7 @@ var _log_lines: PackedStringArray = []
 var _costume_panel: CostumePanel
 var _approval_panel: PanelContainer
 var _approval_text: Label
+var _studio: CaptionStudio
 var _awaiting_approval := false
 var _sun: DirectionalLight3D
 var _env: Environment
@@ -194,6 +195,19 @@ func _ready() -> void:
 	EventBus.approval_resolved.connect(func(_a: bool) -> void:
 		_awaiting_approval = false
 		_approval_panel.visible = false)
+	# the Caption Review Studio: pre-burn gate for clips (CapCut moment)
+	var studio_layer := CanvasLayer.new()
+	studio_layer.layer = 7
+	add_child(studio_layer)
+	_studio = CaptionStudio.new()
+	studio_layer.add_child(_studio)
+	EventBus.clip_review_requested.connect(func(_req: Dictionary, srt: String, prev: String) -> void:
+		_studio.open_clip(srt, prev))
+	# dev hook: AGENT_TOWN_STUDIO="<srt>|<preview_dir>" opens it on boot
+	var dev_studio := OS.get_environment("AGENT_TOWN_STUDIO")
+	if not dev_studio.is_empty() and dev_studio.contains("|"):
+		get_tree().create_timer(2.0).timeout.connect(func() -> void:
+			_studio.open_clip(dev_studio.get_slice("|", 0), dev_studio.get_slice("|", 1)))
 	_build_cost_meter()
 	EventBus.stage_started.connect(func(_s, _r, _q) -> void:
 		_calls_inflight += 1)

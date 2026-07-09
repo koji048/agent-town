@@ -28,6 +28,7 @@ ReelRunner="*res://scripts/autoload/reel_runner.gd"
 RoleLocks="*res://scripts/autoload/role_locks.gd"
 I18n="*res://scripts/autoload/i18n.gd"
 LeakMon="*res://scripts/autoload/leak_mon.gd"
+PreviewMaker="*res://scripts/autoload/preview_maker.gd"
 
 [gui]
 
