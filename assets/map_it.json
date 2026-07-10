@@ -3,85 +3,87 @@
  "tile_h": 16,
  "rows": [
   "cwwWWwwwMMMMwwwWwwWWwWww",
-  "vrrrrrr,PPPPPPPP,rrrrrrr",
-  "vrrrrrr,PPPPPPPP,rrrrrrr",
-  "vrrrrrr,PPPPPPPP,rrrrrrr",
-  "vrrrrrr,,,,,,,,,,rrrrrrr",
-  "vrrrrrr,,,,,,,,,,rrrrrrr",
+  "vrrrrHrrrrrrHPPPPPP,rrrr",
+  "vrrrrHrrrrrrHPPPPPP,rrrr",
+  "vrrrrHrrrrrrHPPPPPP,rrrr",
+  "vrrrrHrrrrrrHPPPPPP,rrrr",
+  "vGG,GGrrrrrrHPPPPPP,rrrr",
+  "v,,,,,GGG,GGG,,,,,,,,,,,",
   "v,,,,,,,,,,,,,,,,,,,,,,,",
   "v,,,,,,,,,,,,,,,,,,,,,,,",
-  "v,,,,,,,GGGGGGGG,GGG,GGG",
-  "v,,,,,,,HrrrrrrH,Hrrrrrr",
-  "v,,,,,,,HrrrrrrH,Hrrrrrr",
-  "vGGGGGG,HrrrrrrH,Hrrrrrr",
-  "vrrrrrH,HrrrrrrH,Hrrrrrr",
-  "vrrrrrH,HrrrrrrH,Hrrrrrr",
-  "vrrrrrH,GGG,GGGG,,,,,,,,",
-  "vrrrrrH,,,,,,,,,,,######",
-  "vrrrrrH,,,,,,,,,,,######",
-  "v,,,,,,,,,,,,,,,,,######",
-  "v,,,,,,,,,,,,,,,,,,,,,,,"
+  "vGGGGG,GGGGGG,,,,,,,,,,,",
+  "gggggggggggggHrrrrrHrrrr",
+  "gggggggggggggHrrrrrHrrrr",
+  "gggggggggggggHrrrrrHrrrr",
+  "gggggggggggggHrrrrrHrrrr",
+  "g###########g,,,,,,GG,GG",
+  "gggggggggggggHrrrrr,rrrr",
+  "gggggggggggggHrrrrr,rrrr",
+  "gggggggggggggHrrrrr,rrrr",
+  "gggggggggggggHrrrrr,rrrr",
+  "gggggggggggggHrrrrr,rrrr",
+  "gggggggggggggGGGGG,GGGGG"
  ],
  "blocked_chars": "~tdlcwWMvVGH",
  "buildings": {
-  "war_room": {
+  "soc": {
    "anchor": [
-    17,
-    8
+    1,
+    1
    ],
-   "role": "director",
-   "name": "ERP War Room",
+   "role": "editor",
+   "name": "Security Ops",
    "workstation": [
-    20,
-    11
+    2,
+    3
    ]
   },
   "noc": {
    "anchor": [
-    8,
+    13,
     1
    ],
    "role": "researcher",
    "name": "NOC",
    "workstation": [
-    11,
-    2
+    15,
+    3
    ]
   },
   "infra": {
    "anchor": [
-    1,
+    20,
     1
    ],
    "role": "writer",
-   "name": "IT Infrastructure",
+   "name": "IT Support",
    "workstation": [
-    3,
-    3
-   ]
-  },
-  "soc": {
-   "anchor": [
-    1,
-    12
-   ],
-   "role": "editor",
-   "name": "Security Ops",
-   "workstation": [
-    3,
-    13
+    16,
+    16
    ]
   },
   "data_lab": {
    "anchor": [
-    17,
-    1
+    14,
+    10
    ],
    "role": "publisher",
    "name": "Data & AI Lab",
    "workstation": [
+    16,
+    12
+   ]
+  },
+  "war_room": {
+   "anchor": [
     20,
-    3
+    10
+   ],
+   "role": "director",
+   "name": "ERP War Room",
+   "workstation": [
+    21,
+    12
    ]
   }
  }

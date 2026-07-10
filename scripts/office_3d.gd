@@ -349,11 +349,12 @@ func _movable(n: Node3D) -> void:
 var _wrap_seq := 0
 
 
-func _movable_call(x: float, z: float, fn: Callable) -> Node3D:
+func _movable_call(x: float, z: float, fn: Callable, rot: float = 0.0) -> Node3D:
 	var before := get_child_count()
 	fn.call()
 	var root := Node3D.new()
 	root.position = Vector3(x, 0, z)
+	root.rotation_degrees = Vector3(0, rot, 0)
 	add_child(root)
 	root.add_to_group("furniture")
 	root.set_meta("piece_id", "w%03d" % _wrap_seq)
@@ -725,9 +726,10 @@ func _furnish() -> void:
 ## face a live video wall; IT Infrastructure west; SOC dark room SW;
 ## glass-walled Server Room center-south (cold aisle, LED racks);
 ## Data & AI Lab NE (GPU cluster); ERP War Room east; pantry deck SE.
-func _rack(x: float, z: float) -> void:
+func _rack(x: float, z: float, rot: float = 0.0) -> void:
 	var root := Node3D.new()
 	root.position = Vector3(x, 0, z)
+	root.rotation_degrees = Vector3(0, rot, 0)
 	add_child(root)
 	_movable(root)
 	_box(Vector3(0.62, 1.9, 0.8), Vector3(0, 0.95, 0), _mat("rack_body", Color(0.10, 0.10, 0.12)), root)
@@ -761,112 +763,156 @@ func _big_screen(x: float, z: float, w: float, glow: Color, yrot: float = 0.0) -
 		_mat("noc_glow_%02x" % int(glow.g * 99), glow * 0.75, "", glow), root, false)
 
 
+func _face(from_p: Vector2, to_p: Vector2) -> float:
+	# chair/desk facing helper: yaw so +Z looks from -> to (0 = +z/south)
+	return rad_to_deg(atan2(to_p.x - from_p.x, to_p.y - from_p.y))
+
+
 func _furnish_itdata() -> void:
-	# --- signage
-	_zone_sign("SERVICE DESK", Vector3(4.0, 0, 6.5))
-	_zone_sign("NOC", Vector3(12.0, 0, 4.2))
-	_zone_sign("IT INFRA", Vector3(3.5, 0, 0.9))
-	_zone_sign("SECURITY OPS", Vector3(3.2, 0, 11.6))
-	_zone_sign("SERVER ROOM", Vector3(11.6, 0, 8.6))
-	_zone_sign("DATA & AI LAB", Vector3(20.0, 0, 0.9))
-	_zone_sign("ERP WAR ROOM", Vector3(20.0, 0, 8.6))
-	# --- NOC: video wall vs console rows (research: rows face the wall)
-	_big_screen(9.7, 0.45, 2.6, Color(0.30, 0.75, 0.55))
-	_big_screen(12.3, 0.45, 2.4, Color(0.35, 0.55, 0.95))
-	_big_screen(14.7, 0.45, 2.2, Color(0.95, 0.55, 0.30))
+	# L-SHAPED FLOOR (space-planning research: acoustic gradient — the
+	# loud/secure machine band lives in the north wing, people spaces in
+	# the east wing, an outdoor terrace fills the L's crook; the ops
+	# corridor rows 7-8 is the circulation spine; Service Desk sits at
+	# the elbow as ITIL's single point of contact).
+	_zone_sign("SECURITY OPS", Vector3(2.6, 0, 0.9))
+	_zone_sign("SERVER ROOM", Vector3(9.0, 0, 0.9))
+	_zone_sign("NOC", Vector3(16.0, 0, 5.7))
+	_zone_sign("IT SUPPORT", Vector3(21.8, 0, 0.9))
+	_zone_sign("SERVICE DESK", Vector3(15.0, 0, 8.5))
+	_zone_sign("DATA & AI LAB", Vector3(16.2, 0, 10.5))
+	_zone_sign("ERP WAR ROOM", Vector3(21.6, 0, 10.5))
+	_zone_sign("DEV BENCH", Vector3(16.2, 0, 15.2))
+	_zone_sign("PANTRY", Vector3(21.6, 0, 15.2))
+
+	# --- NOC: video wall on the north facade, console rows FACING it
+	_big_screen(13.9, 0.48, 1.9, Color(0.30, 0.75, 0.55))
+	_big_screen(17.7, 0.48, 1.9, Color(0.95, 0.55, 0.30))
 	var tv := TownTV.new()
-	tv.position = Vector3(12.0, 1.5, 0.52)
+	tv.position = Vector3(15.8, 1.5, 0.55)
 	add_child(tv)
-	for cz in [2.5, 3.6]:
-		for cx in [9.5, 13.8]:
-			_movable_call(cx, cz, func() -> void: _modern_desk(0.0, 0.0, 1.6))
-			_task_chair(cx, cz + 0.6, 0)
-			_prop("computerScreen", cx - 0.25, cz - 0.15, 180, 1.0, DESK_H + 0.18, 0.38)
-			_prop("computerKeyboard", cx + 0.2, cz + 0.15, 0, 0.28, DESK_H + 0.03)
-	_station("researcher", 11.5, 2.5)
-	# --- Service Desk: the ITIL single point of contact, facing the floor
-	_box(Vector3(2.6, 1.05, 0.55), Vector3(4.0, 0.53, 7.0), _mat("counter_white", Color(0.82, 0.81, 0.78)))
-	_box(Vector3(2.7, 0.06, 0.62), Vector3(4.0, 1.09, 7.0), _mat("sp_oakit", Color(0.72, 0.60, 0.45)))
-	_prop("laptop", 3.6, 7.1, 350, 0.3, 1.12)
-	_task_chair(4.0, 7.6, 180)
-	# --- IT Infrastructure (west): fixes, spares, patching
-	_station("writer", 3.5, 3.5)
-	_movable_call(5.5, 2.0, func() -> void: _modern_desk(0.0, 0.0, 1.6))
-	_task_chair(5.5, 2.6, 0)
-	_shelving(1.4, 1.6, 90)
-	_prop("cardboardBoxOpen", 1.5, 4.6, 20, 0.5)
-	_prop("cardboardBoxClosed", 2.1, 4.8, 340, 0.55)
-	_rack(6.4, 1.1)
-	_prop("kaykit/cactus_medium_A", 1.3, 5.6, 0, 1.0, 0.0, 0.6)
-	# --- SOC (SW, dark): monitors + red accent, editor holds the fort
-	for gy in range(12, 17):
-		for gx in range(1, 6):
+	for cpos in [Vector2(14.3, 2.4), Vector2(17.2, 2.4), Vector2(14.3, 3.7), Vector2(17.2, 3.7)]:
+		_movable_call(cpos.x, cpos.y, func() -> void: _modern_desk(0.0, 0.0, 1.6))
+		_task_chair(cpos.x, cpos.y + 0.62, _face(Vector2(cpos.x, cpos.y + 0.62), cpos))
+		_prop("computerScreen", cpos.x - 0.3, cpos.y - 0.12, 0, 1.0, DESK_H + 0.18, 0.38)
+		_prop("computerScreen", cpos.x + 0.25, cpos.y - 0.12, 5, 1.0, DESK_H + 0.18, 0.38)
+		_prop("computerKeyboard", cpos.x, cpos.y + 0.18, 0, 0.28, DESK_H + 0.03)
+	_station("researcher", 15.8, 2.4)
+
+	# --- SERVER ROOM (glass, beside NOC with a shared viewing pane):
+	for gy in range(1, 6):
+		for gx in range(6, 13):
 			if floor_tiles.has(Vector2i(gx, gy)):
 				(floor_tiles[Vector2i(gx, gy)] as MeshInstance3D).material_override = \
-					_mat("soc_floor", Color(0.16, 0.17, 0.20))
-	_station("editor", 3.5, 13.5)
-	_big_screen(0.55, 14.5, 2.2, Color(0.85, 0.30, 0.30), 90.0)
-	_big_screen(3.0, 16.6, 1.8, Color(0.85, 0.60, 0.25), 180.0)
-	_movable_call(4.6, 15.6, func() -> void: _modern_desk(0.0, 0.0, 1.5))
-	_task_chair(4.6, 15.0, 180)
-	var soc_light := OmniLight3D.new()
-	soc_light.position = Vector3(3.0, 2.2, 14.5)
-	soc_light.light_color = Color(0.9, 0.35, 0.35)
-	soc_light.light_energy = 0.7
-	soc_light.omni_range = 4.0
-	soc_light.shadow_enabled = false
-	add_child(soc_light)
-	# --- SERVER ROOM (glass, center-south): two rows, cold aisle center
-	for gy2 in range(9, 14):
-		for gx2 in range(9, 15):
+					_mat("dc_floor", Color(0.22, 0.23, 0.26))
+	for rxx in [6.9, 8.4, 9.9, 11.4]:
+		_rack(rxx, 1.9, 0.0)      # north row fronts face the cold aisle
+		_rack(rxx, 4.4, 180.0)    # south row faces back at it
+	_box(Vector3(0.7, 1.6, 0.7), Vector3(12.0, 0.8, 5.1), _mat("crac", Color(0.86, 0.87, 0.88)))
+	_box(Vector3(5.6, 0.06, 0.22), Vector3(9.2, 2.35, 3.15), _mat("cable_tray", Color(0.45, 0.47, 0.50)))
+	var dcl := OmniLight3D.new()
+	dcl.position = Vector3(9.2, 2.0, 3.15)
+	dcl.light_color = Color(0.55, 0.75, 1.0)
+	dcl.light_energy = 0.8
+	dcl.omni_range = 5.0
+	dcl.shadow_enabled = false
+	add_child(dcl)
+
+	# --- SOC (far west, secure end of the machine band, dark)
+	for gy2 in range(1, 6):
+		for gx2 in range(1, 6):
 			if floor_tiles.has(Vector2i(gx2, gy2)):
 				(floor_tiles[Vector2i(gx2, gy2)] as MeshInstance3D).material_override = \
-					_mat("dc_floor", Color(0.22, 0.23, 0.26))
-	for rxx in [9.6, 10.9, 12.2, 13.5]:
-		_rack(rxx, 9.9)
-		_rack(rxx, 12.9)
-	_box(Vector3(0.7, 1.6, 0.7), Vector3(14.5, 0.8, 12.9), _mat("crac", Color(0.86, 0.87, 0.88)))
-	_box(Vector3(5.8, 0.06, 0.22), Vector3(11.9, 2.35, 11.4), _mat("cable_tray", Color(0.45, 0.47, 0.50)))
-	var dc_light := OmniLight3D.new()
-	dc_light.position = Vector3(11.9, 2.0, 11.4)
-	dc_light.light_color = Color(0.55, 0.75, 1.0)
-	dc_light.light_energy = 0.8
-	dc_light.omni_range = 5.0
-	dc_light.shadow_enabled = false
-	add_child(dc_light)
-	# --- Data & AI Lab (NE): GPU cluster + whiteboard wall + big bench
-	_station("publisher", 20.5, 3.0)
-	_movable_call(18.5, 4.4, func() -> void: _modern_desk(0.0, 0.0, 2.0))
-	_task_chair(18.0, 5.0, 0)
-	_task_chair(19.0, 5.0, 0)
-	for gpi in 3:
-		_box(Vector3(0.30, 0.55, 0.45), Vector3(17.6 + gpi * 0.4, 0.28, 1.1),
-			_mat("gpu_body", Color(0.10, 0.10, 0.12)))
-		_box(Vector3(0.02, 0.45, 0.35), Vector3(17.45 + gpi * 0.4, 0.30, 1.1),
-			_mat("gpu_glow", Color(0.5, 0.9, 0.6) * 0.6, "", Color(0.4, 1.0, 0.6)), self, false)
-	_prop("pottedPlant", 22.8, 1.0, 0, 1.0, 0.0, 1.15)
-	_prop("kaykit/pictureframe_medium", 22.9, 0.24, 0, 1.0, 1.7, 0.5)
-	# --- ERP War Room (glass, east): the change-management table
-	_movable_call(20.0, 10.6, func() -> void: _round_table(0.0, 0.0, 0.85))
-	_shell_chair(19.0, 9.9, 40, Color(0.88, 0.87, 0.84))
-	_shell_chair(21.0, 9.9, 320, CORAL)
-	_shell_chair(19.0, 11.3, 140, Color(0.35, 0.62, 0.62))
-	_shell_chair(21.0, 11.3, 220, Color(0.88, 0.87, 0.84))
-	_station("director", 20.5, 12.6)
-	_big_screen(22.6, 10.5, 2.0, Color(0.35, 0.65, 0.95), 270.0)
-	# --- pantry deck (SE)
-	_box(Vector3(1.6, 0.9, 0.55), Vector3(19.2, 0.45, 15.6), _mat("counter_white", Color(0.82, 0.81, 0.78)))
-	_prop("kitchenCoffeeMachine", 19.0, 15.6, 180, 1.0, 0.92)
-	_movable_call(21.3, 16.8, func() -> void: _round_table(0.0, 0.0))
-	_movable_call(20.5, 17.5, func() -> void: _bar_stool(0.0, 0.0))
-	_movable_call(22.1, 17.3, func() -> void: _bar_stool(0.0, 0.0))
-	_prop("kitchenFridgeSmall", 22.6, 15.4, 200, 1.0)
-	# corridor greens + generic dressing
-	_prop("pottedPlant", 7.4, 6.2, 0, 1.0, 0.0, 1.15)
-	_prop("pottedPlant", 16.6, 6.2, 0, 1.0, 0.0, 1.15)
-	_ceiling_grid()
-	_exterior()
+					_mat("soc_floor", Color(0.16, 0.17, 0.20))
+	_big_screen(2.6, 0.48, 2.0, Color(0.85, 0.30, 0.30))
+	_big_screen(0.48, 2.6, 1.8, Color(0.85, 0.60, 0.25), 90.0)
+	_station("editor", 2.6, 3.3)
+	var socl := OmniLight3D.new()
+	socl.position = Vector3(2.6, 2.2, 2.8)
+	socl.light_color = Color(0.9, 0.35, 0.35)
+	socl.light_energy = 0.7
+	socl.omni_range = 4.0
+	socl.shadow_enabled = false
+	add_child(socl)
 
+	# --- IT SUPPORT (NE corner of the machine band)
+	for dpos in [Vector2(20.9, 1.7), Vector2(22.7, 1.7)]:
+		_movable_call(dpos.x, dpos.y, func() -> void: _modern_desk(0.0, 0.0, 1.5))
+		_task_chair(dpos.x, dpos.y + 0.62, _face(Vector2(dpos.x, dpos.y + 0.62), dpos))
+		_prop("computerScreen", dpos.x, dpos.y - 0.12, 0, 1.0, DESK_H + 0.18, 0.38)
+		_prop("computerKeyboard", dpos.x, dpos.y + 0.18, 0, 0.28, DESK_H + 0.03)
+	_shelving(23.4, 3.6, 270)
+	_rack(20.4, 4.4, 0.0)
+	_prop("cardboardBoxOpen", 22.6, 4.5, 15, 0.5)
+	_prop("cardboardBoxClosed", 23.1, 4.8, 340, 0.55)
+
+	# --- SERVICE DESK at the elbow (SPOC faces the entrance path)
+	_box(Vector3(2.6, 1.05, 0.55), Vector3(15.0, 0.53, 7.5), _mat("counter_white", Color(0.82, 0.81, 0.78)))
+	_box(Vector3(2.7, 0.06, 0.62), Vector3(15.0, 1.09, 7.5), _mat("sp_oakit", Color(0.72, 0.60, 0.45)))
+	_prop("laptop", 14.6, 7.35, 180, 0.3, 1.12)
+	_task_chair(15.0, 6.9, _face(Vector2(15.0, 6.9), Vector2(15.0, 7.5)))
+	_prop("pottedPlant", 13.4, 7.6, 0, 1.0, 0.0, 1.15)
+
+	# --- DATA & AI LAB (east wing north — quiet analytical end)
+	for lpos in [Vector2(15.2, 10.9), Vector2(17.4, 10.9)]:
+		_movable_call(lpos.x, lpos.y, func() -> void: _modern_desk(0.0, 0.0, 1.6))
+		_task_chair(lpos.x, lpos.y + 0.62, _face(Vector2(lpos.x, lpos.y + 0.62), lpos))
+		_prop("computerScreen", lpos.x - 0.25, lpos.y - 0.12, 0, 1.0, DESK_H + 0.18, 0.38)
+		_prop("computerKeyboard", lpos.x, lpos.y + 0.18, 0, 0.28, DESK_H + 0.03)
+	for gpi in 3:
+		_box(Vector3(0.30, 0.55, 0.45), Vector3(13.85, 0.28, 11.0 + gpi * 0.6),
+			_mat("gpu_body", Color(0.10, 0.10, 0.12)))
+		_box(Vector3(0.02, 0.45, 0.35), Vector3(14.02, 0.30, 11.0 + gpi * 0.6),
+			_mat("gpu_glow", Color(0.5, 0.9, 0.6) * 0.6, "", Color(0.4, 1.0, 0.6)), self, false)
+	_station("publisher", 16.3, 12.9)
+
+	# --- ERP WAR ROOM (glass, east wing): everyone faces the table
+	var wt := Vector2(21.6, 11.6)
+	_movable_call(wt.x, wt.y, func() -> void: _round_table(0.0, 0.0, 0.8))
+	for ang in [0.0, 90.0, 180.0, 270.0]:
+		var cp := wt + Vector2(sin(deg_to_rad(ang)), cos(deg_to_rad(ang))) * 1.15
+		_shell_chair(cp.x, cp.y, _face(cp, wt),
+			[Color(0.88, 0.87, 0.84), CORAL, Color(0.35, 0.62, 0.62), Color(0.88, 0.87, 0.84)][int(ang / 90.0)])
+	_big_screen(21.6, 10.45, 2.0, Color(0.35, 0.65, 0.95))
+	_station("director", 21.6, 13.3)
+
+	# --- DEV BENCH (software, back-to-back pairs facing their desks)
+	for bx in [14.9, 17.5]:
+		_movable_call(bx, 15.9, func() -> void: _modern_desk(0.0, 0.0, 1.5))
+		_task_chair(bx, 15.3, _face(Vector2(bx, 15.3), Vector2(bx, 15.9)))
+		_prop("computerScreen", bx, 16.0, 180, 1.0, DESK_H + 0.18, 0.38)
+		_movable_call(bx, 17.1, func() -> void: _modern_desk(0.0, 0.0, 1.5))
+		_task_chair(bx, 17.7, _face(Vector2(bx, 17.7), Vector2(bx, 17.1)))
+		_prop("computerScreen", bx, 17.0, 0, 1.0, DESK_H + 0.18, 0.38)
+	_station("writer", 16.3, 16.5)
+	_prop("kaykit/cactus_medium_A", 14.3, 18.6, 0, 1.0, 0.0, 0.6)
+
+	# --- PANTRY (SE, farthest from the racks — noise gradient)
+	_box(Vector3(0.55, 0.9, 1.6), Vector3(23.35, 0.45, 16.2), _mat("counter_white", Color(0.82, 0.81, 0.78)))
+	_prop("kitchenCoffeeMachine", 23.3, 15.9, 270, 1.0, 0.95)
+	_movable_call(21.3, 17.6, func() -> void: _round_table(0.0, 0.0))
+	_movable_call(20.5, 18.2, func() -> void: _bar_stool(0.0, 0.0))
+	_movable_call(22.1, 18.1, func() -> void: _bar_stool(0.0, 0.0))
+	_movable_call(21.2, 16.8, func() -> void: _bar_stool(0.0, 0.0))
+	_prop("kitchenFridgeSmall", 23.2, 18.6, 270, 1.0)
+
+	# --- TERRACE in the crook of the L (research: give the loud band a
+	# social release valve outdoors; deck path leads to both wings)
+	_tree(Vector3(3.5, 0, 12.2), 1.1)
+	_tree(Vector3(9.8, 0, 16.9), 0.9)
+	_tree(Vector3(11.4, 0, 10.9), 0.8)
+	_bush(Vector3(1.6, 0, 15.4))
+	_bush(Vector3(6.9, 0, 18.3))
+	_bush(Vector3(12.1, 0, 13.2))
+	var tt := Vector2(5.6, 16.4)
+	_movable_call(tt.x, tt.y, func() -> void: _round_table(0.0, 0.0))
+	_shell_chair(4.6, 16.0, _face(Vector2(4.6, 16.0), tt), CORAL)
+	_shell_chair(6.5, 15.9, _face(Vector2(6.5, 15.9), tt), Color(0.35, 0.62, 0.62))
+	_shell_chair(5.8, 17.4, _face(Vector2(5.8, 17.4), tt), Color(0.88, 0.87, 0.84))
+	for bpx in [2.5, 5.5, 8.5]:
+		_box(Vector3(0.12, 0.55, 0.12), Vector3(bpx, 0.28, 13.6), _mat("bollard", Color(0.30, 0.31, 0.34)))
+		_box(Vector3(0.10, 0.08, 0.10), Vector3(bpx, 0.60, 13.6),
+			_mat("bollard_glow", Color(1.0, 0.85, 0.55) * 0.7, "", Color(1.0, 0.85, 0.55)), self, false)
+	_ceiling_grid()
 
 # ============ WAYFINDING (flooring-as-wayfinding research: a high-contrast
 # line marks the loop; hanging signs name every zone's purpose) ============
