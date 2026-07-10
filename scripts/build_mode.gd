@@ -583,7 +583,7 @@ func _build_catalog_ui() -> void:
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	v.add_child(scroll)
 	_grid = GridContainer.new()
-	_grid.columns = 2
+	_grid.columns = 3
 	_grid.add_theme_constant_override("h_separation", 6)
 	_grid.add_theme_constant_override("v_separation", 6)
 	scroll.add_child(_grid)
@@ -611,28 +611,20 @@ func _show_cat(idx: int) -> void:
 		var kind: String = it[1]
 		var params: Dictionary = it[2]
 		var b := Button.new()
-		b.custom_minimum_size = Vector2(112, 112)
+		b.custom_minimum_size = Vector2(74, 74)
 		b.focus_mode = Control.FOCUS_NONE
+		b.tooltip_text = str(names.get(I18n.lang, names.get("th", "?")))
 		b.pressed.connect(func() -> void: _catalog_pick(kind, params))
-		var v := VBoxContainer.new()
-		v.set_anchors_preset(Control.PRESET_FULL_RECT)
-		v.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		v.add_theme_constant_override("separation", 2)
-		b.add_child(v)
 		var tr := TextureRect.new()
+		tr.set_anchors_preset(Control.PRESET_FULL_RECT)
+		tr.offset_left = 4.0
+		tr.offset_top = 4.0
+		tr.offset_right = -4.0
+		tr.offset_bottom = -4.0
 		tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		tr.custom_minimum_size = Vector2(0, 76)
-		tr.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		v.add_child(tr)
-		var lb := Label.new()
-		lb.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		lb.text = str(names.get(I18n.lang, names.get("th", "?")))
-		lb.add_theme_font_size_override("font_size", 11)
-		lb.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		lb.clip_text = true
-		v.add_child(lb)
+		b.add_child(tr)
 		b.set_meta("icon_rect", tr)
 		_grid.add_child(b)
 	_icon_gen += 1
@@ -682,11 +674,16 @@ func _item_icon(kind: String, params: Dictionary) -> Texture2D:
 	var aabb: AABB = office._combined_aabb(node, Transform3D.IDENTITY)
 	var c := aabb.get_center()
 	var r: float = maxf(aabb.size.length() * 0.5, 0.18)
-	_vp_cam.look_at_from_position(c + Vector3(1.0, 0.85, 1.0).normalized() * r * 2.7, c)
+	_vp_cam.look_at_from_position(c + Vector3(1.0, 0.85, 1.0).normalized() * r * 3.9, c)
 	_vp.render_target_update_mode = SubViewport.UPDATE_ONCE
 	await RenderingServer.frame_post_draw
 	var img := _vp.get_texture().get_image()
 	node.queue_free()
+	# autocrop to the drawn pixels so the piece FILLS its card (no dead
+	# margins, nothing cut off — framing is exact regardless of shape)
+	var used := img.get_used_rect()
+	if used.size.x > 4 and used.size.y > 4:
+		img = img.get_region(used.grow(3).intersection(Rect2i(Vector2i.ZERO, img.get_size())))
 	var tex := ImageTexture.create_from_image(img)
 	_icon_cache[key] = tex
 	return tex
@@ -696,7 +693,7 @@ func _ensure_vp() -> void:
 	if _vp:
 		return
 	_vp = SubViewport.new()
-	_vp.size = Vector2i(112, 112)
+	_vp.size = Vector2i(160, 160)
 	_vp.own_world_3d = true
 	_vp.transparent_bg = true
 	_vp.render_target_update_mode = SubViewport.UPDATE_DISABLED
