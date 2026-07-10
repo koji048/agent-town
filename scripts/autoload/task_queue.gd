@@ -160,10 +160,18 @@ func _poll() -> void:
 					clip_active = true
 					var abs := _inbox().path_join(f)
 					EventBus.log_line.emit("🎬 Footage arrived: %s" % f)
+					var copts: Dictionary = {}
+					var opts_path := abs + ".opts.json"
+					if FileAccess.file_exists(opts_path):
+						var od: Variant = JSON.parse_string(FileAccess.get_file_as_string(opts_path))
+						if od is Dictionary:
+							copts = od
+						DirAccess.remove_absolute(opts_path)
 					EventBus.request_received.emit({
 						"topic": "clip: %s" % f.get_basename().left(28),
 						"clip": abs,
 						"clip_file": f,
+						"clip_opts": copts,
 					})
 					return
 	var dir := DirAccess.open(_qdir("pending"))

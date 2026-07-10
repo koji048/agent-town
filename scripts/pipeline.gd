@@ -133,6 +133,9 @@ func _run_clip_reels(request: Dictionary) -> void:
 	var clip := str(request.get("clip", ""))
 	var lang := str(request.get("language", Config.language))
 	var niche := str(request.get("niche", Config.niche))
+	var opts: Dictionary = request.get("clip_opts", {})
+	var want_burn := bool(opts.get("burn", true))
+	var want_caption := bool(opts.get("caption", true))
 
 	# 1) Director: reel.sh ingest — EP number, batch folders, renaming
 	await _walk_stage("plan", "director", request)
@@ -188,56 +191,73 @@ func _run_clip_reels(request: Dictionary) -> void:
 		Memory.remember("editor", I18n.f("mem_clip_edited", [Config.owner_name, clip.get_file()]), 7.0)
 		EventBus.stage_completed.emit("edit", "editor", request, reviewed)
 
-		# 3) CAPTION REVIEW STUDIO — the human checks captions the way an
-		# editor would in CapCut: filmstrip + audio scrub + style pick.
-		# Falls back to the plain approval desk if ffmpeg can't prep.
-		var footage := _first_file(batch.path_join("01_FOOTAGE"))
-		var action := "default"
-		var style: Dictionary = {}
-		var prev_dir := "/tmp/at_preview_%d" % int(Time.get_unix_time_from_system())
-		var prepared := false
-		if not footage.is_empty():
-			EventBus.log_line.emit("🎞 Preparing studio preview (frames + audio)...")
-			prepared = await PreviewMaker.prepare(footage, prev_dir)
-		if prepared:
-			EventBus.agent_say.emit("editor", I18n.f("say_studio", [Config.owner_name]))
-			var decided: Array = [false, "default", {}]
-			var cb := func(a: String, s: Dictionary) -> void:
-				decided[0] = true
-				decided[1] = a
-				decided[2] = s
-			EventBus.clip_review_resolved.connect(cb)
-			EventBus.clip_review_requested.emit(request, srt_path, prev_dir)
-			while not decided[0]:
-				await get_tree().create_timer(0.25).timeout
-			EventBus.clip_review_resolved.disconnect(cb)
-			action = str(decided[1])
-			style = decided[2]
-			# studio edits wrote the srt — refresh what publish reports
-			results["edit"] = FileAccess.get_file_as_string(srt_path)
+		if not want_burn:
+			EventBus.log_line.emit("⏭ no-burn mode: delivering the .srt only, as ordered")
 		else:
-			await _await_approval(request, reviewed)
+			# 3) CAPTION REVIEW STUDIO — the human checks captions the way an
+			# editor would in CapCut: filmstrip + audio scrub + style pick.
+			# Falls back to the plain approval desk if ffmpeg can't prep.
+			var footage := _first_file(batch.path_join("01_FOOTAGE"))
+			var action := "default"
+			var style: Dictionary = {}
+			var prev_dir := "/tmp/at_preview_%d" % int(Time.get_unix_time_from_system())
+			var prepared := false
+			if not footage.is_empty():
+				EventBus.log_line.emit("🎞 Preparing studio preview (frames + audio)...")
+				prepared = await PreviewMaker.prepare(footage, prev_dir)
+			if prepared:
+				EventBus.agent_say.emit("editor", I18n.f("say_studio", [Config.owner_name]))
+				var decided: Array = [false, "default", {}]
+				var cb := func(a: String, s: Dictionary) -> void:
+					decided[0] = true
+					decided[1] = a
+					decided[2] = s
+				EventBus.clip_review_resolved.connect(cb)
+				EventBus.clip_review_requested.emit(request, srt_path, prev_dir)
+				while not decided[0]:
+					await get_tree().create_timer(0.25).timeout
+				EventBus.clip_review_resolved.disconnect(cb)
+				action = str(decided[1])
+				style = decided[2]
+				# studio edits wrote the srt — refresh what publish reports
+				results["edit"] = FileAccess.get_file_as_string(srt_path)
+			else:
+				await _await_approval(request, reviewed)
 
-		# 4) burn — reel.sh (skill standard) or the studio's chosen style
-		var mp4 := ""
-		if action == "custom":
-			EventBus.log_line.emit("🔥 burn with studio style (1080x1920)...")
-			var base := srt_path.get_file().trim_suffix("-clean.srt")
-			mp4 = exports.path_join(base + ".mp4")
-			var cues: Array = PreviewMaker.parse_srt(FileAccess.get_file_as_string(srt_path))
-			r = await PreviewMaker.burn_custom(footage, cues, style, mp4)
-			if int(r[1]) != 0 or not FileAccess.file_exists(mp4):
-				mp4 = ""
-		else:
-			EventBus.log_line.emit("🔥 reel.sh burn (1080x1920)...")
-			ReelRunner.run(PackedStringArray(["burn"]))
-			r = await ReelRunner.finished
-			mp4 = ReelRunner.newest_file(exports, ".mp4")
-		if not mp4.is_empty():
-			results["publish"] = "Burned reel: %s\n\n%s" % [mp4.get_file(), str(r[0]).right(300)]
-			EventBus.log_line.emit("🎞 Cut file: %s" % mp4.get_file())
-		else:
-			results["publish"] = "(burn produced no mp4 — import the .srt in your editor)\n" + str(r[0]).right(300)
+			# 4) burn — reel.sh (skill standard) or the studio's chosen style
+			var mp4 := ""
+			if action == "custom":
+				EventBus.log_line.emit("🔥 burn with studio style (1080x1920)...")
+				var base := srt_path.get_file().trim_suffix("-clean.srt")
+				mp4 = exports.path_join(base + ".mp4")
+				var cues: Array = PreviewMaker.parse_srt(FileAccess.get_file_as_string(srt_path))
+				r = await PreviewMaker.burn_custom(footage, cues, style, mp4)
+				if int(r[1]) != 0 or not FileAccess.file_exists(mp4):
+					mp4 = ""
+			else:
+				EventBus.log_line.emit("🔥 reel.sh burn (1080x1920)...")
+				ReelRunner.run(PackedStringArray(["burn"]))
+				r = await ReelRunner.finished
+				mp4 = ReelRunner.newest_file(exports, ".mp4")
+			if not mp4.is_empty():
+				results["burn_note"] = "Burned reel: %s\n\n%s" % [mp4.get_file(), str(r[0]).right(300)]
+				EventBus.log_line.emit("🎞 Cut file: %s" % mp4.get_file())
+			else:
+				results["burn_note"] = "(burn produced no mp4 — import the .srt in your editor)\n" + str(r[0]).right(300)
+
+		# 5) optional Publisher: a REAL paste-ready caption from the
+		# actual transcript (only when the owner asked for it)
+		if want_caption and Config.provider_resolved != "simulate":
+			await _walk_stage("publish", "publisher", request)
+			EventBus.log_line.emit("✏ Writing the Reel caption from the real transcript...")
+			var cap: String = await Claude.complete(Prompts.publisher(lang, niche),
+				"Write the publish package for this reel. Full subtitle transcript:\n\n"
+				+ str(results.get("edit", "")).left(5000), "publish")
+			if not cap.is_empty():
+				results["publish"] = cap
+				EventBus.stage_completed.emit("publish", "publisher", request, cap)
+		elif not want_caption:
+			results.erase("publish")
 
 	results["review"] = "EP%d files live in:\n%s" % [ep, batch]
 	request["_batch"] = batch  # so a typed fix can revise the REAL files

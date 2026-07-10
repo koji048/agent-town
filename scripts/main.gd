@@ -18,6 +18,7 @@ var _approval_text: Label
 var _studio: CaptionStudio
 var _build: BuildMode
 var _awaiting_approval := false
+var _approval_full := ""
 var _sun: DirectionalLight3D
 var _env: Environment
 var _day_t := 150.0  # start mid-morning
@@ -201,9 +202,9 @@ func _ready() -> void:
 	_build_approval_panel()
 	EventBus.approval_requested.connect(func(request: Dictionary, preview: String) -> void:
 		_awaiting_approval = true
-		_approval_text.text = "APPROVAL DESK — '%s'\n\n%s...\n\n[Y] approve · [N] request revision · auto-approve in 45 s" % [
-			str(request.get("topic", "")).left(48),
-			I18n.strip_md(preview).left(280)]
+		_approval_full = preview
+		_approval_text.text = "APPROVAL DESK — '%s'\n\n%s\n\n[Y] approve · [N] request revision · auto-approve in 45 s" % [
+			str(request.get("topic", "")).left(48), _review_summary(preview)]
 		_approval_panel.visible = true
 		Sfx.play_ui("paper", -6.0))
 	EventBus.approval_resolved.connect(func(_a: bool) -> void:
@@ -258,14 +259,77 @@ const VIDEO_EXT := ["mov", "mp4", "m4v", "mkv", "webm"]
 func _on_files_dropped(files: PackedStringArray) -> void:
 	for f in files:
 		if f.get_extension().to_lower() in VIDEO_EXT:
-			_ingest_dropped(f)
+			_ask_clip_options(f)
 
 
-func _ingest_dropped(path: String) -> void:
+func _ingest_dropped(path: String, opts: Dictionary = {}) -> void:
 	var dest := ProjectSettings.globalize_path("res://inbox").path_join(path.get_file())
 	if DirAccess.copy_absolute(path, dest) == OK:
+		if not opts.is_empty():
+			var f := FileAccess.open(dest + ".opts.json", FileAccess.WRITE)
+			if f:
+				f.store_string(JSON.stringify(opts))
 		_append_log(I18n.t("clip_received"))
 		Sfx.play_ui("paper", -6.0)
+
+
+## Follow-up questions before the team touches a clip (the owner picks
+## the scope): subtitles always; burn and caption are opt-in toggles.
+func _ask_clip_options(path: String) -> void:
+	var hud := CanvasLayer.new()
+	hud.layer = 6
+	add_child(hud)
+	var panel := PanelContainer.new()
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.10, 0.12, 0.16, 0.96)
+	sb.border_color = Color(0.55, 0.75, 1.0)
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(10)
+	sb.set_content_margin_all(14)
+	panel.add_theme_stylebox_override("panel", sb)
+	panel.position = Vector2(560, 210)
+	panel.custom_minimum_size = Vector2(520, 0)
+	var vb := VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 10)
+	var l := Label.new()
+	l.text = I18n.f("clip_opt_title", [path.get_file()])
+	l.add_theme_font_size_override("font_size", 16)
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.custom_minimum_size = Vector2(490, 0)
+	vb.add_child(l)
+	var srt_row := Label.new()
+	srt_row.text = "✓  " + I18n.t("clip_opt_srt")
+	srt_row.add_theme_font_size_override("font_size", 14)
+	srt_row.add_theme_color_override("font_color", Color(0.62, 0.78, 0.62))
+	vb.add_child(srt_row)
+	var burn_cb := CheckButton.new()
+	I18n.reg(burn_cb, "text", "clip_opt_burn")
+	burn_cb.button_pressed = true
+	burn_cb.add_theme_font_size_override("font_size", 14)
+	vb.add_child(burn_cb)
+	var cap_cb := CheckButton.new()
+	I18n.reg(cap_cb, "text", "clip_opt_caption")
+	cap_cb.button_pressed = true
+	cap_cb.add_theme_font_size_override("font_size", 14)
+	vb.add_child(cap_cb)
+	var hb := HBoxContainer.new()
+	hb.add_theme_constant_override("separation", 12)
+	var go := Button.new()
+	go.text = I18n.t("btn_send_team")
+	go.pressed.connect(func() -> void:
+		_ingest_dropped(path, {
+			"burn": burn_cb.button_pressed,
+			"caption": cap_cb.button_pressed,
+		})
+		hud.queue_free())
+	hb.add_child(go)
+	var no := Button.new()
+	no.text = I18n.t("btn_not_work")
+	no.pressed.connect(hud.queue_free)
+	hb.add_child(no)
+	vb.add_child(hb)
+	panel.add_child(vb)
+	hud.add_child(panel)
 
 
 ## Watch Downloads for videos that appear AFTER boot (AirDrop lands
@@ -324,8 +388,8 @@ func _ask_clip(path: String) -> void:
 	var yes := Button.new()
 	yes.text = I18n.t("btn_send_team")
 	yes.pressed.connect(func() -> void:
-		_ingest_dropped(path)
-		hud.queue_free())
+		hud.queue_free()
+		_ask_clip_options(path))
 	hb.add_child(yes)
 	var no := Button.new()
 	no.text = I18n.t("btn_not_work")
@@ -1206,6 +1270,25 @@ func _open_toast(text: String, open_path: String) -> void:
 			hud.queue_free())
 
 
+## Compact review: outline + lead line instead of a wall of markdown.
+## The full text is one button away (opens in the default editor).
+func _review_summary(preview: String) -> String:
+	var heads: Array[String] = []
+	var lead := ""
+	for line in preview.split("\n"):
+		var t := str(line).strip_edges()
+		if t.begins_with("#"):
+			if heads.size() < 6:
+				heads.append("  • " + t.lstrip("# ").strip_edges().left(60))
+		elif not t.is_empty() and lead.length() < 170:
+			lead += I18n.strip_md(t) + " "
+	var s := lead.strip_edges().left(180)
+	if not heads.is_empty():
+		s += "\n\n" + I18n.t("review_outline") + "\n" + "\n".join(heads)
+	s += "\n\n" + I18n.f("review_stats", [preview.length()])
+	return s
+
+
 ## The approval-desk HUD panel (hidden until the pipeline waits on you).
 func _build_approval_panel() -> void:
 	var hud := CanvasLayer.new()
@@ -1230,6 +1313,16 @@ func _build_approval_panel() -> void:
 	vb.add_child(_approval_text)
 	var hb := HBoxContainer.new()
 	hb.add_theme_constant_override("separation", 12)
+	var full := Button.new()
+	I18n.reg(full, "text", "btn_open_full")
+	full.pressed.connect(func() -> void:
+		var fp := "user://review_full.md"
+		var f := FileAccess.open(fp, FileAccess.WRITE)
+		if f:
+			f.store_string(_approval_full)
+			f = null
+			OS.shell_open(ProjectSettings.globalize_path(fp)))
+	hb.add_child(full)
 	var ok := Button.new()
 	I18n.reg(ok, "text", "btn_approve")
 	ok.pressed.connect(func() -> void:
