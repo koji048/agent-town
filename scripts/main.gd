@@ -215,6 +215,8 @@ func _ready() -> void:
 	_build.office = office
 	add_child(_build)
 	_build.apply_layout()
+	if OS.get_environment("AGENT_TOWN_BUILD") != "":  # dev: shot with catalog open
+		_build.toggle()
 
 	# the Caption Review Studio: pre-burn gate for clips (CapCut moment)
 	var studio_layer := CanvasLayer.new()

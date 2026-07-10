@@ -357,9 +357,13 @@ func _build_catalog_ui() -> void:
 	sb.content_margin_top = 10.0
 	sb.content_margin_bottom = 12.0
 	panel.add_theme_stylebox_override("panel", sb)
-	panel.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	panel.position = Vector2(-278.0, 96.0)
+	panel.anchor_left = 1.0
+	panel.anchor_right = 1.0
+	panel.offset_left = -278.0
+	panel.offset_right = -16.0
+	panel.offset_top = 96.0
 	panel.custom_minimum_size = Vector2(262, 0)
+	panel.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	_ui.add_child(panel)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 8)
