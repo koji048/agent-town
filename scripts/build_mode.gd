@@ -367,6 +367,7 @@ const CATALOG := [
 		[{"th": "สกู๊ตเตอร์วินเทจ", "en": "Vintage scooter"}, "special", {"id": "scooter"}],
 	]],
 	["cat_floor", [
+		[{"th": "ยางลบพื้น (คืนลายเดิม)", "en": "Eraser (original)"}, "floor", {"erase": 1}],
 		[{"th": "ไม้เด็ค", "en": "Wood deck"}, "floor", {"tex": "deck"}],
 		[{"th": "คอนกรีต", "en": "Concrete"}, "floor", {"tex": "concrete"}],
 		[{"th": "คอนกรีตเข้ม", "en": "Dark concrete"}, "floor", {"tex": "concrete_dark"}],
@@ -718,16 +719,23 @@ func _paint_tile(p: Vector3) -> void:
 	if not office.floor_tiles.has(cell):
 		return
 	var mi := office.floor_tiles[cell] as MeshInstance3D
-	mi.material_override = _floor_mat(_paint)
-	Sfx.play_ui("paper", -14.0)
 	var layout := _load_layout()
 	var floors: Dictionary = layout.get("floors", {})
-	floors["%d,%d" % [cell.x, cell.y]] = _paint
+	if int(_paint.get("erase", 0)) == 1:
+		# eraser: back to the room's ORIGINAL material (the mesh's own)
+		mi.material_override = null
+		floors.erase("%d,%d" % [cell.x, cell.y])
+	else:
+		mi.material_override = _floor_mat(_paint)
+		floors["%d,%d" % [cell.x, cell.y]] = _paint
+	Sfx.play_ui("paper", -14.0)
 	layout["floors"] = floors
 	_write_layout(layout)
 
 
 func _floor_mat(style: Dictionary) -> StandardMaterial3D:
+	if int(style.get("erase", 0)) == 1:   # icon swatch for the eraser
+		return office._mat("bfloor_eraser", Color(0.93, 0.72, 0.70))
 	if style.has("tex"):
 		return office._mat("floor_" + str(style["tex"]), Color.WHITE,
 			"res://assets/textures/%s.png" % str(style["tex"]))
