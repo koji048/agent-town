@@ -60,6 +60,7 @@ const S := {
 	"clip_opt_srt": {"en": "Subtitles (.srt) — always included", "th": "ทำซับไตเติล (.srt) — ทำให้เสมอ"},
 	"clip_opt_burn": {"en": "Burn subs into the video (finished file)", "th": "เบิร์นซับลงคลิป (ได้ไฟล์วิดีโอพร้อมซับ)"},
 	"clip_opt_caption": {"en": "Write the Reel caption too", "th": "คิดแคปชั่นโพสต์ Reel ให้ด้วย"},
+	"cat_fun": {"en": "Fun", "th": "สันทนาการ"},
 	"cat_floor": {"en": "Floors", "th": "พื้น"},
 	"cat_wall": {"en": "Walls", "th": "ผนัง"},
 	"side_done": {"en": "  Deliverables", "th": "  งานที่เสร็จ"},

@@ -12,14 +12,11 @@ const SNAP := 0.25
 
 ## kinds: chair/sofa/armchair/shelf = procedural office builders,
 ## prop = Office3D._prop (normalized fit), glb = native-scale model,
-## wall = procedural partition, floor = tile paint style.
+## wall = procedural partition, floor = tile paint style, special = the
+## original packs. params._pal expands into the 12-colour PALETTE.
 const CATALOG := [
 	["cat_seat", [
 		[{"th": "เก้าอี้ทำงาน", "en": "Task chair"}, "chair", {}],
-		[{"th": "โซฟาเทา", "en": "Sofa gray"}, "sofa", {"col": "8c8a87"}],
-		[{"th": "โซฟาเขียวเสจ", "en": "Sofa sage"}, "sofa", {"col": "9eab91"}],
-		[{"th": "อาร์มแชร์น้ำเงิน", "en": "Armchair blue"}, "armchair", {"col": "4d619e"}],
-		[{"th": "อาร์มแชร์อิฐ", "en": "Armchair clay"}, "armchair", {"col": "cc8266"}],
 		[{"th": "เลานจ์แชร์", "en": "Lounge chair"}, "glb", {"model": "loungeChair"}],
 		[{"th": "โซฟาเลานจ์", "en": "Lounge sofa"}, "glb", {"model": "loungeSofa"}],
 		[{"th": "เก้าอี้เบาะนวม", "en": "Cushion chair"}, "glb", {"model": "chairModernCushion"}],
@@ -33,34 +30,22 @@ const CATALOG := [
 		[{"th": "สตูลไม้", "en": "Wood stool"}, "glb", {"model": "kaykit/chair_stool_wood"}],
 		[{"th": "อาร์มแชร์หมอน", "en": "Pillow armchair"}, "glb", {"model": "kaykit/armchair_pillows"}],
 		[{"th": "โซฟาหมอน", "en": "Pillow couch"}, "glb", {"model": "kaykit/couch_pillows"}],
-		[{"th": "โซฟากรมท่า", "en": "Sofa navy"}, "sofa", {"col": "33415e"}],
-		[{"th": "โซฟามัสตาร์ด", "en": "Sofa mustard"}, "sofa", {"col": "cfa63f"}],
-		[{"th": "โซฟาชมพู", "en": "Sofa blush"}, "sofa", {"col": "e0b4b8"}],
-		[{"th": "โซฟาดำ", "en": "Sofa black"}, "sofa", {"col": "2b2c30"}],
-		[{"th": "อาร์มแชร์เขียว", "en": "Armchair green"}, "armchair", {"col": "5f7a5a"}],
-		[{"th": "อาร์มแชร์เทา", "en": "Armchair gray"}, "armchair", {"col": "8c8a87"}],
-		[{"th": "อาร์มแชร์มัสตาร์ด", "en": "Armchair mustard"}, "armchair", {"col": "cfa63f"}],
-		[{"th": "เก้าอี้คาเฟ่ม่วง", "en": "Cafe chair purple"}, "special", {"id": "cafe_chair", "col": "8f6bb0"}],
-		[{"th": "เก้าอี้คาเฟ่แดง", "en": "Cafe chair red"}, "special", {"id": "cafe_chair", "col": "c14b3f"}],
-		[{"th": "บีนแบ็กเทา", "en": "Beanbag gray"}, "special", {"id": "beanbag", "col": "7d7f83"}],
-		[{"th": "บีนแบ็กเขียว", "en": "Beanbag green"}, "special", {"id": "beanbag", "col": "5f7a5a"}],
-		[{"th": "บีนแบ็กส้ม", "en": "Beanbag orange"}, "special", {"id": "beanbag", "col": "d96c33"}],
-		[{"th": "ออตโตมันครีม", "en": "Ottoman cream"}, "special", {"id": "ottoman", "col": "d9cbb0"}],
-		[{"th": "ออตโตมันเทียล", "en": "Ottoman teal"}, "special", {"id": "ottoman", "col": "2a7f86"}],
-		[{"th": "ออตโตมันชมพู", "en": "Ottoman blush"}, "special", {"id": "ottoman", "col": "e0b4b8"}],
 		[{"th": "ม้านั่งไม้", "en": "Wood bench"}, "special", {"id": "bench_wood"}],
-		[{"th": "โซฟาตัว L เทา", "en": "L-sofa gray"}, "special", {"id": "sofa_l", "col": "8c8a87"}],
-		[{"th": "โซฟาตัว L เขียว", "en": "L-sofa green"}, "special", {"id": "sofa_l", "col": "5f7a5a"}],
-		[{"th": "สตูลกลมชมพู", "en": "Round stool blush"}, "special", {"id": "stool_round", "col": "e0b4b8"}],
-		[{"th": "สตูลกลมดำ", "en": "Round stool black"}, "special", {"id": "stool_round", "col": "2b2c30"}],
-		[{"th": "เก้าอี้ปีกกรมท่า", "en": "Wingback navy"}, "special", {"id": "wing", "col": "33415e"}],
-		[{"th": "เก้าอี้ปีกอิฐ", "en": "Wingback clay"}, "special", {"id": "wing", "col": "b3705c"}],
-		[{"th": "เก้าอี้เชลล์ขาว", "en": "Shell chair white"}, "special", {"id": "shell", "col": "e0dfd6"}],
-		[{"th": "เก้าอี้เชลล์คอรัล", "en": "Shell chair coral"}, "special", {"id": "shell", "col": "f27059"}],
-		[{"th": "เก้าอี้เชลล์เทียล", "en": "Shell chair teal"}, "special", {"id": "shell", "col": "599e9e"}],
 		[{"th": "สตูลบาร์ออฟฟิศ", "en": "Office bar stool"}, "special", {"id": "bar_office"}],
-		[{"th": "เบาะรองนั่งอิฐ", "en": "Cushion clay"}, "special", {"id": "cushion", "col": "cc8266"}],
-		[{"th": "เบาะรองนั่งเสจ", "en": "Cushion sage"}, "special", {"id": "cushion", "col": "9eab91"}],
+		[{"th": "เดย์เบด", "en": "Daybed"}, "special", {"id": "daybed"}],
+		[{"th": "อาร์มแชร์ไม้ดัด", "en": "Bentwood chair"}, "special", {"id": "bentchair"}],
+		[{"th": "สตูลบันได", "en": "Step stool"}, "special", {"id": "stepstool"}],
+		[{"th": "เตียงนอน", "en": "Double bed"}, "special", {"id": "bed"}],
+		[{"th": "โซฟา", "en": "Sofa"}, "sofa", {"_pal": 1}],
+		[{"th": "อาร์มแชร์", "en": "Armchair"}, "armchair", {"_pal": 1}],
+		[{"th": "เก้าอี้คาเฟ่", "en": "Cafe chair"}, "special", {"id": "cafe_chair", "_pal": 1}],
+		[{"th": "บีนแบ็ก", "en": "Beanbag"}, "special", {"id": "beanbag", "_pal": 1}],
+		[{"th": "ออตโตมัน", "en": "Ottoman"}, "special", {"id": "ottoman", "_pal": 1}],
+		[{"th": "สตูลกลม", "en": "Round stool"}, "special", {"id": "stool_round", "_pal": 1}],
+		[{"th": "เก้าอี้ปีก", "en": "Wingback"}, "special", {"id": "wing", "_pal": 1}],
+		[{"th": "เก้าอี้เชลล์", "en": "Shell chair"}, "special", {"id": "shell", "_pal": 1}],
+		[{"th": "เบาะรองนั่ง", "en": "Cushion"}, "special", {"id": "cushion", "_pal": 1}],
+		[{"th": "โซฟาตัว L", "en": "L-sofa"}, "special", {"id": "sofa_l", "_pal": 1}],
 	]],
 	["cat_table", [
 		[{"th": "โต๊ะทำงาน", "en": "Desk"}, "glb", {"model": "desk"}],
@@ -83,20 +68,24 @@ const CATALOG := [
 		[{"th": "โต๊ะประชุมยาว 3 ม.", "en": "Long table 3m"}, "special", {"id": "table_std", "top": "wood", "w": 3.0, "d": 1.1}],
 		[{"th": "โต๊ะคอนโซลผนัง", "en": "Console table"}, "special", {"id": "table_std", "top": "wood", "w": 1.2, "d": 0.35}],
 		[{"th": "โต๊ะสี่เหลี่ยมเล็ก", "en": "Small square"}, "special", {"id": "table_std", "top": "white", "w": 0.8, "d": 0.8}],
-		[{"th": "โต๊ะตัว L ขาว", "en": "L-desk white"}, "special", {"id": "desk_l", "col": "f0ede6"}],
-		[{"th": "โต๊ะตัว L ไม้", "en": "L-desk wood"}, "special", {"id": "desk_l", "col": "b08a5e"}],
 		[{"th": "โต๊ะกระจก", "en": "Glass desk"}, "special", {"id": "desk_glass"}],
 		[{"th": "โต๊ะผู้บริหาร", "en": "Executive desk"}, "special", {"id": "desk_exec"}],
 		[{"th": "โต๊ะปิกนิก", "en": "Picnic table"}, "special", {"id": "picnic"}],
-		[{"th": "โต๊ะบาร์สูงไม้", "en": "Bar table wood"}, "special", {"id": "table_bar", "col": "b08a5e"}],
-		[{"th": "โต๊ะบาร์สูงดำ", "en": "Bar table black"}, "special", {"id": "table_bar", "col": "2b2c30"}],
-		[{"th": "โต๊ะกาแฟวงรีไม้", "en": "Oval coffee wood"}, "special", {"id": "coffee_oval", "col": "b08a5e"}],
-		[{"th": "โต๊ะกาแฟวงรีขาว", "en": "Oval coffee white"}, "special", {"id": "coffee_oval", "col": "f0ede6"}],
-		[{"th": "โต๊ะลูกบาศก์ขาว", "en": "Cube table white"}, "special", {"id": "side_cube", "col": "f0ede6"}],
-		[{"th": "โต๊ะลูกบาศก์ดำ", "en": "Cube table black"}, "special", {"id": "side_cube", "col": "26272b"}],
 		[{"th": "โต๊ะพับ", "en": "Folding table"}, "special", {"id": "folding"}],
 		[{"th": "โต๊ะทำงานออฟฟิศ", "en": "Office desk"}, "special", {"id": "desk_office"}],
 		[{"th": "โต๊ะกลมออฟฟิศ", "en": "Office round table"}, "special", {"id": "round_office"}],
+		[{"th": "โต๊ะปรับยืน", "en": "Standing desk"}, "special", {"id": "desk_stand"}],
+		[{"th": "โต๊ะประชุม", "en": "Conference table"}, "special", {"id": "conftable"}],
+		[{"th": "โต๊ะขาวมินิมอล", "en": "Frame desk"}, "special", {"id": "desk_scandi"}],
+		[{"th": "โต๊ะกลมทิวลิป", "en": "Tulip table"}, "special", {"id": "tulip_table"}],
+		[{"th": "โต๊ะข้างทรงกลอง", "en": "Drum table"}, "special", {"id": "drumtable"}],
+		[{"th": "โต๊ะขาแฮร์พิน", "en": "Hairpin table"}, "special", {"id": "hairpin"}],
+		[{"th": "โต๊ะถาดกลม", "en": "Tray table"}, "special", {"id": "traytable"}],
+		[{"th": "โต๊ะตัว L", "en": "L-desk"}, "special", {"id": "desk_l", "_pal": 1}],
+		[{"th": "โต๊ะลูกบาศก์", "en": "Cube table"}, "special", {"id": "side_cube", "_pal": 1}],
+		[{"th": "โต๊ะกาแฟวงรี", "en": "Oval coffee"}, "special", {"id": "coffee_oval", "_pal": 1}],
+		[{"th": "โต๊ะบาร์สูง", "en": "Bar table"}, "special", {"id": "table_bar", "_pal": 1}],
+		[{"th": "โต๊ะคิวบ์", "en": "Side cube"}, "special", {"id": "cubeside", "_pal": 1}],
 	]],
 	["cat_store", [
 		[{"th": "ชั้นหนังสือ", "en": "Bookshelf"}, "shelf", {}],
@@ -117,51 +106,47 @@ const CATALOG := [
 		[{"th": "ถังขยะ", "en": "Trash can"}, "prop", {"model": "trashcan", "fit_h": 0.35}],
 		[{"th": "ชั้นคิวบ์ 2×2", "en": "Cube shelf 2x2"}, "special", {"id": "shelf_cube", "n": 2}],
 		[{"th": "ชั้นคิวบ์ 4×2", "en": "Cube shelf 4x2"}, "special", {"id": "shelf_cube", "n": 4}],
-		[{"th": "ตู้เอกสาร 2 ลิ้นชัก", "en": "File cabinet 2"}, "special", {"id": "file_cab", "n": 2, "col": "9b9c9a"}],
-		[{"th": "ตู้เอกสาร 4 ลิ้นชัก", "en": "File cabinet 4"}, "special", {"id": "file_cab", "n": 4, "col": "9b9c9a"}],
-		[{"th": "ตู้เอกสารดำ", "en": "File cabinet black"}, "special", {"id": "file_cab", "n": 4, "col": "2b2c30"}],
-		[{"th": "ตู้เสื้อผ้าขาว", "en": "Wardrobe white"}, "special", {"id": "wardrobe", "col": "f0ede6"}],
-		[{"th": "ตู้เสื้อผ้าไม้", "en": "Wardrobe wood"}, "special", {"id": "wardrobe", "col": "b08a5e"}],
 		[{"th": "ตู้เซฟ", "en": "Safe"}, "special", {"id": "safe"}],
 		[{"th": "ชั้นลอยติดผนัง", "en": "Wall shelf"}, "special", {"id": "shelf_wall", "y": 1.4, "wall": 1}],
 		[{"th": "กองลังไม้", "en": "Crate stack"}, "special", {"id": "crate_stack"}],
-		[{"th": "ชั้นพิงผนังไม้", "en": "Ladder shelf wood"}, "special", {"id": "shelf_ladder", "col": "b08a5e"}],
-		[{"th": "ชั้นพิงผนังดำ", "en": "Ladder shelf black"}, "special", {"id": "shelf_ladder", "col": "26272b"}],
-		[{"th": "กล่องพลาสติกฟ้า", "en": "Plastic box blue"}, "special", {"id": "box_plastic", "col": "7da7c9"}],
-		[{"th": "กล่องพลาสติกเทา", "en": "Plastic box gray"}, "special", {"id": "box_plastic", "col": "9b9c9a"}],
 		[{"th": "ชั้นท่ออุตสาหกรรม", "en": "Pipe shelf"}, "special", {"id": "shelf_pipe"}],
 		[{"th": "รถเข็นชั้นวาง", "en": "Utility cart"}, "special", {"id": "cart_roll"}],
-		[{"th": "ล็อกเกอร์เขียวเสจ", "en": "Lockers sage"}, "special", {"id": "locker", "col": "9eab91"}],
-		[{"th": "ล็อกเกอร์แดงอิฐ", "en": "Lockers clay"}, "special", {"id": "locker", "col": "b3705c"}],
 		[{"th": "เครเดนซ่าออฟฟิศ", "en": "Office credenza"}, "special", {"id": "credenza_office"}],
+		[{"th": "ตู้ลิ้นชัก 7 ชั้น", "en": "7-drawer unit"}, "special", {"id": "drawer7"}],
+		[{"th": "ไซด์บอร์ดขาว", "en": "Sideboard"}, "special", {"id": "sideboard"}],
+		[{"th": "ตะกร้าผ้า", "en": "Fabric basket"}, "special", {"id": "basket"}],
+		[{"th": "ชั้นสตริงขาว", "en": "String shelf"}, "special", {"id": "string_shelf"}],
+		[{"th": "ชั้นลอยขาว", "en": "Floating shelf"}, "special", {"id": "floatshelf", "col": "f0ede6", "y": 1.4, "wall": 1}],
+		[{"th": "ตู้เอกสาร", "en": "File cabinet"}, "special", {"id": "file_cab", "n": 4, "_pal": 1}],
+		[{"th": "ตู้เสื้อผ้า", "en": "Wardrobe"}, "special", {"id": "wardrobe", "_pal": 1}],
+		[{"th": "ล็อกเกอร์", "en": "Lockers"}, "special", {"id": "locker", "_pal": 1}],
+		[{"th": "กล่องพลาสติก", "en": "Plastic box"}, "special", {"id": "box_plastic", "_pal": 1}],
+		[{"th": "ชั้นพิงผนัง", "en": "Ladder shelf"}, "special", {"id": "shelf_ladder", "_pal": 1}],
+		[{"th": "ชั้นตาราง", "en": "Grid shelf"}, "special", {"id": "kallax", "_pal": 1}],
 	]],
 	["cat_light", [
 		[{"th": "โคมตั้งพื้นกลม", "en": "Floor lamp"}, "glb", {"model": "lampRoundFloor", "light": 1.4}],
 		[{"th": "โคมตั้งพื้นสูง", "en": "Standing lamp"}, "glb", {"model": "kaykit/lamp_standing", "light": 1.5}],
 		[{"th": "โคมโต๊ะเหลี่ยม", "en": "Table lamp"}, "glb", {"model": "lampSquareTable", "light": 0.5, "y": 0.74}],
 		[{"th": "โคมโต๊ะ", "en": "Desk lamp"}, "glb", {"model": "kaykit/lamp_table", "light": 0.5, "y": 0.74}],
-		[{"th": "ไฟห้อยดำ", "en": "Pendant black"}, "special", {"id": "pendant", "col": "26272b"}],
-		[{"th": "ไฟห้อยทอง", "en": "Pendant gold"}, "special", {"id": "pendant", "col": "c9a13b"}],
-		[{"th": "ไฟห้อยขาว", "en": "Pendant white"}, "special", {"id": "pendant", "col": "f0ede6"}],
-		[{"th": "นีออนชมพู", "en": "Neon pink"}, "special", {"id": "neon_strip", "col": "e84393", "y": 1.4}],
-		[{"th": "นีออนฟ้า", "en": "Neon blue"}, "special", {"id": "neon_strip", "col": "3fb8d9", "y": 1.4}],
-		[{"th": "นีออนเหลือง", "en": "Neon yellow"}, "special", {"id": "neon_strip", "col": "e8c93f", "y": 1.4}],
 		[{"th": "ไฟราวเฟสตูน", "en": "String lights"}, "special", {"id": "string_lights"}],
 		[{"th": "โคมโค้งตั้งพื้น", "en": "Arc lamp"}, "special", {"id": "lamp_arc"}],
 		[{"th": "โคมสามขา", "en": "Tripod lamp"}, "special", {"id": "lamp_tripod"}],
-		[{"th": "โคมแขนพับดำ", "en": "Task lamp black"}, "special", {"id": "lamp_arm", "col": "26272b", "y": 0.74}],
-		[{"th": "โคมแขนพับขาว", "en": "Task lamp white"}, "special", {"id": "lamp_arm", "col": "f0ede6", "y": 0.74}],
 		[{"th": "โคมกระดาษเล็ก", "en": "Lantern small"}, "special", {"id": "lantern", "s": 0.16}],
 		[{"th": "โคมกระดาษใหญ่", "en": "Lantern big"}, "special", {"id": "lantern", "s": 0.26}],
 		[{"th": "ซอฟต์บ็อกซ์", "en": "Softbox"}, "special", {"id": "softbox"}],
 		[{"th": "ริงไลท์", "en": "Ring light"}, "special", {"id": "ring_light"}],
-		[{"th": "โคมเห็ดส้ม", "en": "Mushroom orange"}, "special", {"id": "lamp_mushroom", "col": "d96c33", "y": 0.74}],
-		[{"th": "โคมเห็ดเขียว", "en": "Mushroom green"}, "special", {"id": "lamp_mushroom", "col": "5f7a5a", "y": 0.74}],
 		[{"th": "ชุดเทียน", "en": "Candles"}, "special", {"id": "candles", "y": 0.74}],
 		[{"th": "โคมแบงเกอร์", "en": "Banker lamp"}, "special", {"id": "banker", "y": 0.74}],
 		[{"th": "โคมตั้งพื้นออฟฟิศ", "en": "Office floor lamp"}, "special", {"id": "lamp_office"}],
 		[{"th": "โคมโต๊ะออฟฟิศ", "en": "Office task lamp"}, "special", {"id": "tasklamp_office", "y": 0.74}],
 		[{"th": "ไฟห้อยออฟฟิศ", "en": "Office pendant"}, "special", {"id": "pendant_office"}],
+		[{"th": "โคมกระดาษตั้งพื้น", "en": "Paper floor lamp"}, "special", {"id": "paperlamp"}],
+		[{"th": "โคมลาวา", "en": "Lava lamp"}, "special", {"id": "lava", "y": 0.74}],
+		[{"th": "ไฟห้อย", "en": "Pendant"}, "special", {"id": "pendant", "_pal": 1}],
+		[{"th": "ไฟนีออน", "en": "Neon"}, "special", {"id": "neon_strip", "y": 1.4, "_pal": 1}],
+		[{"th": "โคมแขนพับ", "en": "Task lamp"}, "special", {"id": "lamp_arm", "y": 0.74, "_pal": 1}],
+		[{"th": "โคมเห็ด", "en": "Mushroom lamp"}, "special", {"id": "lamp_mushroom", "y": 0.74, "_pal": 1}],
 	]],
 	["cat_plant", [
 		[{"th": "ต้นไม้กระถาง", "en": "Potted plant"}, "prop", {"model": "pottedPlant", "fit_h": 1.15}],
@@ -170,18 +155,12 @@ const CATALOG := [
 		[{"th": "ไม้แขวน", "en": "Hanging plant"}, "glb", {"model": "plantSmall3"}],
 		[{"th": "กระบองเพชรเล็ก", "en": "Small cactus"}, "prop", {"model": "kaykit/cactus_small_A", "fit_h": 0.42}],
 		[{"th": "กระบองเพชรกลาง", "en": "Cactus"}, "prop", {"model": "kaykit/cactus_medium_A", "fit_h": 0.6}],
-		[{"th": "มอนสเตอร่า", "en": "Monstera"}, "special", {"id": "monstera"}],
 		[{"th": "ปาล์มกระถาง", "en": "Palm"}, "special", {"id": "palm"}],
-		[{"th": "ไทรใบสัก", "en": "Ficus"}, "special", {"id": "ficus"}],
-		[{"th": "ลิ้นมังกร", "en": "Snake plant"}, "special", {"id": "snake_plant"}],
 		[{"th": "เฟิร์นแขวน", "en": "Hanging fern"}, "special", {"id": "fern_hang", "y": 1.9}],
 		[{"th": "ไผ่กวนอิม", "en": "Bamboo"}, "special", {"id": "bamboo"}],
 		[{"th": "ต้นไม้ใหญ่ในอาคาร", "en": "Big indoor tree"}, "special", {"id": "bigtree"}],
 		[{"th": "กระบะต้นไม้ยาว", "en": "Long planter"}, "special", {"id": "planter_long"}],
 		[{"th": "บอนไซ", "en": "Bonsai"}, "special", {"id": "bonsai", "y": 0.74}],
-		[{"th": "แจกันดอกไม้แดง", "en": "Vase red"}, "special", {"id": "vase", "col": "c14b3f", "y": 0.74}],
-		[{"th": "แจกันดอกไม้เหลือง", "en": "Vase yellow"}, "special", {"id": "vase", "col": "e8c93f", "y": 0.74}],
-		[{"th": "แจกันดอกไม้ฟ้า", "en": "Vase blue"}, "special", {"id": "vase", "col": "7da7c9", "y": 0.74}],
 		[{"th": "สมุนไพรครัว", "en": "Herb set"}, "special", {"id": "herbs", "y": 0.74}],
 		[{"th": "สวนแนวตั้ง", "en": "Green wall"}, "special", {"id": "mosswall", "y": 1.2, "wall": 1}],
 		[{"th": "กระบองเพชรยักษ์", "en": "Saguaro"}, "special", {"id": "saguaro"}],
@@ -190,6 +169,13 @@ const CATALOG := [
 		[{"th": "ต้นไม้สนามใหญ่", "en": "Yard tree big"}, "special", {"id": "tree_office", "s": 1.2}],
 		[{"th": "ต้นไม้สนามเล็ก", "en": "Yard tree small"}, "special", {"id": "tree_office", "s": 0.8}],
 		[{"th": "พุ่มไม้", "en": "Bush"}, "special", {"id": "bush_office"}],
+		[{"th": "ชั้นวางต้นไม้", "en": "Plant stand"}, "special", {"id": "plant_stand"}],
+		[{"th": "ทิวลิปกระถาง", "en": "Tulip pot"}, "special", {"id": "tulip", "y": 0.74}],
+		[{"th": "ขาตั้งต้นไม้", "en": "Plant pedestal"}, "special", {"id": "standscandi"}],
+		[{"th": "แจกันดอกไม้", "en": "Flower vase"}, "special", {"id": "vase", "y": 0.74, "_pal": 1}],
+		[{"th": "มอนสเตอร่ากระถางสี", "en": "Monstera pot"}, "special", {"id": "monstera", "_pal": 1}],
+		[{"th": "ลิ้นมังกรกระถางสี", "en": "Snake plant pot"}, "special", {"id": "snake_plant", "_pal": 1}],
+		[{"th": "ไทรกระถางสี", "en": "Ficus pot"}, "special", {"id": "ficus", "_pal": 1}],
 	]],
 	["cat_decor", [
 		[{"th": "พรมผืนใหญ่", "en": "Area rug"}, "glb", {"model": "rugRectangle"}],
@@ -204,26 +190,32 @@ const CATALOG := [
 		[{"th": "กองหนังสือ", "en": "Books"}, "glb", {"model": "books", "y": 0.74}],
 		[{"th": "หนังสือตั้งโต๊ะ", "en": "Book set"}, "prop", {"model": "kaykit/book_set", "fit": 0.3, "y": 0.74}],
 		[{"th": "กรอบรูปตั้งโต๊ะ", "en": "Standing frame"}, "prop", {"model": "kaykit/pictureframe_standing_A", "fit": 0.25, "y": 0.74}],
-		[{"th": "พรมกลมอิฐ", "en": "Round rug clay"}, "special", {"id": "rug_col", "col": "b3705c"}],
-		[{"th": "พรมกลมกรม", "en": "Round rug navy"}, "special", {"id": "rug_col", "col": "33415e"}],
-		[{"th": "พรมกลมครีม", "en": "Round rug cream"}, "special", {"id": "rug_col", "col": "d9cbb0"}],
-		[{"th": "พรมกลมเสจ", "en": "Round rug sage"}, "special", {"id": "rug_col", "col": "9eab91"}],
-		[{"th": "ม่านครีม", "en": "Curtain cream"}, "special", {"id": "curtain", "col": "e8dfc9"}],
-		[{"th": "ม่านเทาเข้ม", "en": "Curtain charcoal"}, "special", {"id": "curtain", "col": "55575c"}],
 		[{"th": "กระจกพิงผนัง", "en": "Leaning mirror"}, "special", {"id": "mirror_stand"}],
 		[{"th": "กระจกกลมแขวน", "en": "Round mirror"}, "special", {"id": "mirror_round", "y": 1.5, "wall": 1}],
-		[{"th": "แคนวาสเทียล", "en": "Canvas teal"}, "special", {"id": "art_canvas", "col": "2a9d8f", "y": 1.3, "wall": 1}],
-		[{"th": "แคนวาสส้ม", "en": "Canvas orange"}, "special", {"id": "art_canvas", "col": "d96c33", "y": 1.3, "wall": 1}],
-		[{"th": "ประติมากรรมทอง", "en": "Sculpture gold"}, "special", {"id": "sculpture", "col": "c9a13b"}],
-		[{"th": "ประติมากรรมดำ", "en": "Sculpture black"}, "special", {"id": "sculpture", "col": "26272b"}],
 		[{"th": "ที่กั้นหนังสือ", "en": "Bookends"}, "special", {"id": "bookends", "y": 0.74}],
 		[{"th": "เครื่องหอม", "en": "Diffuser"}, "special", {"id": "diffuser", "y": 0.74}],
-		[{"th": "แจกันพื้นครีม", "en": "Floor vase cream"}, "special", {"id": "vase_floor", "col": "d9cbb0"}],
-		[{"th": "แจกันพื้นดำ", "en": "Floor vase black"}, "special", {"id": "vase_floor", "col": "26272b"}],
 		[{"th": "ธงสามเหลี่ยม", "en": "Bunting"}, "special", {"id": "banner", "y": 1.7, "wall": 1}],
 		[{"th": "ผนังรูปภาพ", "en": "Photo wall"}, "special", {"id": "photo_wall", "y": 1.4, "wall": 1}],
 		[{"th": "บอร์ดรางวัล", "en": "Awards board"}, "special", {"id": "awards", "y": 1.4, "wall": 1}],
-		[{"th": "ชั้นวางต้นไม้", "en": "Plant stand"}, "special", {"id": "plant_stand"}],
+		[{"th": "ตู้ถ้วยรางวัล", "en": "Trophy case"}, "special", {"id": "trophy"}],
+		[{"th": "นาฬิกาตั้งพื้น", "en": "Standing clock"}, "special", {"id": "clock"}],
+		[{"th": "เก้าอี้หมุนไม้อ่อน", "en": "Swivel chair"}, "special", {"id": "chair_scandi"}],
+		[{"th": "นาฬิกาแขวน", "en": "Wall clock"}, "special", {"id": "wallclock", "y": 1.45, "wall": 1}],
+		[{"th": "นาฬิกา Flip", "en": "Flip clock"}, "special", {"id": "flipclock", "y": 0.74}],
+		[{"th": "ลูกโลก", "en": "Globe"}, "special", {"id": "globe", "y": 0.74}],
+		[{"th": "กระจกเต็มตัว", "en": "Full mirror"}, "special", {"id": "mirror_full"}],
+		[{"th": "พรมลายเส้น", "en": "Line rug"}, "special", {"id": "rug_lines"}],
+		[{"th": "ผ้าห่มพับ", "en": "Folded throw"}, "special", {"id": "throw", "y": 0.4}],
+		[{"th": "บันไดแขวนผ้า", "en": "Blanket ladder"}, "special", {"id": "ladder"}],
+		[{"th": "ราวแขวนผนัง", "en": "Hook rack"}, "special", {"id": "hookrack", "y": 1.5, "wall": 1}],
+		[{"th": "เตาผิง", "en": "Fireplace"}, "special", {"id": "fireplace"}],
+		[{"th": "ตู้ปลา", "en": "Aquarium"}, "special", {"id": "aquarium"}],
+		[{"th": "พรมกลม", "en": "Round rug"}, "special", {"id": "rug_col", "_pal": 1}],
+		[{"th": "ม่าน", "en": "Curtain"}, "special", {"id": "curtain", "_pal": 1}],
+		[{"th": "แคนวาส", "en": "Canvas"}, "special", {"id": "art_canvas", "y": 1.3, "wall": 1, "_pal": 1}],
+		[{"th": "ประติมากรรม", "en": "Sculpture"}, "special", {"id": "sculpture", "_pal": 1}],
+		[{"th": "โปสเตอร์", "en": "Poster"}, "special", {"id": "poster", "y": 1.25, "wall": 1, "_pal": 1}],
+		[{"th": "แจกันพื้นสูง", "en": "Floor vase"}, "special", {"id": "vase_floor", "_pal": 1}],
 	]],
 	["cat_gear", [
 		[{"th": "แล็ปท็อป", "en": "Laptop"}, "prop", {"model": "laptop", "fit": 0.32, "y": 0.74}],
@@ -239,7 +231,6 @@ const CATALOG := [
 		[{"th": "คอมออลอินวัน", "en": "All-in-one"}, "special", {"id": "aio", "y": 0.74}],
 		[{"th": "เคส PC ไฟ RGB", "en": "RGB tower"}, "special", {"id": "pc_rgb"}],
 		[{"th": "แล็ปท็อปบนแท่น", "en": "Laptop stand"}, "special", {"id": "laptop_stand", "y": 0.74}],
-		[{"th": "คีย์บอร์ด RGB", "en": "RGB keyboard"}, "special", {"id": "kb_rgb", "y": 0.74}],
 		[{"th": "เมาส์+แผ่นรอง", "en": "Mouse & pad"}, "special", {"id": "mouse_pad", "y": 0.74}],
 		[{"th": "ไมค์พอดแคสต์", "en": "Podcast mic"}, "special", {"id": "mic", "y": 0.74}],
 		[{"th": "แท่นวางหูฟัง", "en": "Headphones"}, "special", {"id": "headphone_stand", "y": 0.74}],
@@ -255,93 +246,45 @@ const CATALOG := [
 		[{"th": "เครื่องเกมคอนโซล", "en": "Game console"}, "special", {"id": "console", "y": 0.5}],
 		[{"th": "ลำโพงบูมบ็อกซ์", "en": "Boombox"}, "special", {"id": "boombox", "y": 0.74}],
 		[{"th": "ฉากกรีนสกรีน", "en": "Green screen"}, "special", {"id": "greenscreen"}],
+		[{"th": "ตู้เซิร์ฟเวอร์", "en": "Server rack"}, "special", {"id": "server"}],
+		[{"th": "ปรินเตอร์", "en": "Printer"}, "special", {"id": "printer", "y": 0.74}],
+		[{"th": "แท่นวางจอ", "en": "Monitor riser"}, "special", {"id": "monstand", "y": 0.74}],
+		[{"th": "ทีวีย้อนยุค", "en": "Retro TV"}, "special", {"id": "crt"}],
+		[{"th": "แผ่นรองโต๊ะ", "en": "Desk mat"}, "special", {"id": "desk_mat", "y": 0.74, "_pal": 1}],
+		[{"th": "คีย์บอร์ดเรืองแสง", "en": "RGB keyboard"}, "special", {"id": "kb_rgb", "y": 0.74, "_pal": 1}],
 	]],
 	["cat_office", [
-		[{"th": "โต๊ะปรับยืน", "en": "Standing desk"}, "special", {"id": "desk_stand"}],
 		[{"th": "บูธเงียบ", "en": "Focus booth"}, "special", {"id": "booth"}],
 		[{"th": "ตู้กดน้ำ", "en": "Water cooler"}, "special", {"id": "cooler"}],
 		[{"th": "ตู้ขายของ", "en": "Vending machine"}, "special", {"id": "vending"}],
 		[{"th": "เครื่องถ่ายเอกสาร", "en": "Copier"}, "special", {"id": "copier"}],
 		[{"th": "ไวท์บอร์ดล้อเลื่อน", "en": "Whiteboard"}, "special", {"id": "wboard"}],
-		[{"th": "ตู้ล็อกเกอร์", "en": "Lockers"}, "special", {"id": "locker"}],
-		[{"th": "โต๊ะประชุม", "en": "Conference table"}, "special", {"id": "conftable"}],
-		[{"th": "ตู้ถ้วยรางวัล", "en": "Trophy case"}, "special", {"id": "trophy"}],
-		[{"th": "โต๊ะปิงปอง", "en": "Ping-pong table"}, "special", {"id": "pingpong"}],
-		[{"th": "ตู้เซิร์ฟเวอร์", "en": "Server rack"}, "special", {"id": "server"}],
-		[{"th": "นาฬิกาตั้งพื้น", "en": "Standing clock"}, "special", {"id": "clock"}],
 		[{"th": "เคาน์เตอร์ต้อนรับ", "en": "Reception"}, "special", {"id": "reception"}],
 		[{"th": "โพเดียม", "en": "Podium"}, "special", {"id": "podium"}],
 		[{"th": "เวทียกพื้น", "en": "Stage riser"}, "special", {"id": "riser"}],
 		[{"th": "ฟลิปชาร์ต", "en": "Flipchart"}, "special", {"id": "flipchart"}],
 		[{"th": "รถเข็น AV", "en": "AV cart"}, "special", {"id": "projcart"}],
-		[{"th": "พาร์ทิชันเทา", "en": "Partition gray"}, "special", {"id": "cubpanel", "col": "8c8a87"}],
-		[{"th": "พาร์ทิชันเขียว", "en": "Partition sage"}, "special", {"id": "cubpanel", "col": "9eab91"}],
 		[{"th": "ช่องจดหมาย", "en": "Mail slots"}, "special", {"id": "mailslots"}],
 		[{"th": "กล่องปฐมพยาบาล", "en": "First aid"}, "special", {"id": "firstaid", "y": 1.3, "wall": 1}],
 		[{"th": "ถังดับเพลิง", "en": "Extinguisher"}, "special", {"id": "fireext"}],
 		[{"th": "ป้ายทางออก", "en": "Exit sign"}, "special", {"id": "exitsign", "y": 2.1, "wall": 1}],
-		[{"th": "ซับเสียงเทา", "en": "Acoustic gray"}, "special", {"id": "acoustic", "col": "55575c", "y": 1.5, "wall": 1}],
-		[{"th": "ซับเสียงกรม", "en": "Acoustic navy"}, "special", {"id": "acoustic", "col": "33415e", "y": 1.5, "wall": 1}],
-		[{"th": "แบนเนอร์โรลอัพ", "en": "Roll-up banner"}, "special", {"id": "rollup", "col": "2a7f86"}],
 		[{"th": "ประตูสแกนบัตร", "en": "Badge gate"}, "special", {"id": "badgegate"}],
 		[{"th": "กล้องวงจรปิด", "en": "CCTV"}, "special", {"id": "cctv", "y": 2.2, "wall": 1}],
 		[{"th": "กล่องความคิดเห็น", "en": "Suggestion box"}, "special", {"id": "suggest"}],
 		[{"th": "เครื่องตอกบัตร", "en": "Time clock"}, "special", {"id": "timeclock", "y": 1.3, "wall": 1}],
 		[{"th": "ฉากกั้นบนโต๊ะ", "en": "Desk divider"}, "special", {"id": "deskdivider", "y": 0.74}],
 		[{"th": "โทรศัพท์โต๊ะ", "en": "Desk phone"}, "special", {"id": "deskphone", "y": 0.74}],
-	]],
-	["cat_scandi", [
-		[{"th": "โต๊ะขาวมินิมอล", "en": "Frame desk"}, "special", {"id": "desk_scandi"}],
-		[{"th": "ตู้ลิ้นชัก 7 ชั้น", "en": "7-drawer unit"}, "special", {"id": "drawer7"}],
-		[{"th": "เก้าอี้หมุนไม้อ่อน", "en": "Swivel chair"}, "special", {"id": "chair_scandi"}],
-		[{"th": "ไซด์บอร์ดขาว", "en": "Sideboard"}, "special", {"id": "sideboard"}],
-		[{"th": "นาฬิกาแขวน", "en": "Wall clock"}, "special", {"id": "wallclock", "y": 1.45, "wall": 1}],
 		[{"th": "กระดานดำกรอบไม้", "en": "Chalkboard"}, "special", {"id": "chalkboard"}],
 		[{"th": "บอร์ดหมุดโน้ต", "en": "Pinboard"}, "special", {"id": "corkboard"}],
-		[{"th": "นาฬิกา Flip", "en": "Flip clock"}, "special", {"id": "flipclock", "y": 0.74}],
 		[{"th": "ที่ใส่แม็กกาซีน", "en": "Magazine files"}, "special", {"id": "magfiles", "y": 0.74}],
-		[{"th": "ทิวลิปกระถาง", "en": "Tulip pot"}, "special", {"id": "tulip", "y": 0.74}],
-		[{"th": "ตะกร้าผ้า", "en": "Fabric basket"}, "special", {"id": "basket"}],
-		[{"th": "ลูกโลก", "en": "Globe"}, "special", {"id": "globe", "y": 0.74}],
-		[{"th": "ปรินเตอร์", "en": "Printer"}, "special", {"id": "printer", "y": 0.74}],
-		[{"th": "โต๊ะกลมทิวลิป", "en": "Tulip table"}, "special", {"id": "tulip_table"}],
-		[{"th": "เก้าอี้คาเฟ่เหลือง", "en": "Cafe chair yellow"}, "special", {"id": "cafe_chair", "col": "d9b23a"}],
-		[{"th": "เก้าอี้คาเฟ่เขียว", "en": "Cafe chair green"}, "special", {"id": "cafe_chair", "col": "3aa06c"}],
-		[{"th": "เก้าอี้คาเฟ่ส้ม", "en": "Cafe chair orange"}, "special", {"id": "cafe_chair", "col": "d96c33"}],
-		[{"th": "เก้าอี้คาเฟ่เทียล", "en": "Cafe chair teal"}, "special", {"id": "cafe_chair", "col": "2a7f86"}],
-		[{"th": "ฉากกั้นตะแกรง", "en": "Grid divider"}, "special", {"id": "griddiv"}],
-		[{"th": "โปสเตอร์เทียล", "en": "Poster teal"}, "special", {"id": "poster", "col": "2a9d8f", "y": 1.25, "wall": 1}],
-		[{"th": "โปสเตอร์ครีม", "en": "Poster tan"}, "special", {"id": "poster", "col": "c9a074", "y": 1.25, "wall": 1}],
-		[{"th": "โต๊ะข้างทรงกลอง", "en": "Drum table"}, "special", {"id": "drumtable"}],
-		[{"th": "ชั้นสตริงขาว", "en": "String shelf"}, "special", {"id": "string_shelf"}],
-		[{"th": "เดย์เบด", "en": "Daybed"}, "special", {"id": "daybed"}],
-		[{"th": "โต๊ะขาแฮร์พิน", "en": "Hairpin table"}, "special", {"id": "hairpin"}],
-		[{"th": "โต๊ะคิวบ์ขาว", "en": "Cube white"}, "special", {"id": "cubeside", "col": "f0ede6"}],
-		[{"th": "โต๊ะคิวบ์ดำ", "en": "Cube black"}, "special", {"id": "cubeside", "col": "26272b"}],
-		[{"th": "ชั้นตารางขาว", "en": "Grid shelf white"}, "special", {"id": "kallax", "col": "f0ede6"}],
-		[{"th": "ชั้นตารางไม้", "en": "Grid shelf wood"}, "special", {"id": "kallax", "col": "b08a5e"}],
-		[{"th": "อาร์มแชร์ไม้ดัด", "en": "Bentwood chair"}, "special", {"id": "bentchair"}],
-		[{"th": "สตูลบันได", "en": "Step stool"}, "special", {"id": "stepstool"}],
-		[{"th": "กระจกเต็มตัว", "en": "Full mirror"}, "special", {"id": "mirror_full"}],
-		[{"th": "โคมกระดาษตั้งพื้น", "en": "Paper floor lamp"}, "special", {"id": "paperlamp"}],
-		[{"th": "พรมลายเส้น", "en": "Line rug"}, "special", {"id": "rug_lines"}],
-		[{"th": "ผ้าห่มพับ", "en": "Folded throw"}, "special", {"id": "throw", "y": 0.4}],
-		[{"th": "บันไดแขวนผ้า", "en": "Blanket ladder"}, "special", {"id": "ladder"}],
-		[{"th": "ราวแขวนผนัง", "en": "Hook rack"}, "special", {"id": "hookrack", "y": 1.5, "wall": 1}],
-		[{"th": "โต๊ะถาดกลม", "en": "Tray table"}, "special", {"id": "traytable"}],
-		[{"th": "ขาตั้งต้นไม้", "en": "Plant pedestal"}, "special", {"id": "standscandi"}],
 		[{"th": "ชุดจัดโต๊ะ", "en": "Desk organizer"}, "special", {"id": "organizer", "y": 0.74}],
-		[{"th": "แท่นวางจอ", "en": "Monitor riser"}, "special", {"id": "monstand", "y": 0.74}],
-		[{"th": "ชั้นลอยขาว", "en": "Floating shelf"}, "special", {"id": "floatshelf", "col": "f0ede6", "y": 1.4, "wall": 1}],
+		[{"th": "พาร์ทิชัน", "en": "Partition"}, "special", {"id": "cubpanel", "_pal": 1}],
+		[{"th": "โรลอัพ", "en": "Roll-up"}, "special", {"id": "rollup", "_pal": 1}],
+		[{"th": "ซับเสียง", "en": "Acoustic"}, "special", {"id": "acoustic", "y": 1.5, "wall": 1, "_pal": 1}],
 	]],
-	["cat_special", [
-		[{"th": "เตียงนอน", "en": "Double bed"}, "special", {"id": "bed"}],
+	["cat_fun", [
+		[{"th": "โต๊ะปิงปอง", "en": "Ping-pong table"}, "special", {"id": "pingpong"}],
 		[{"th": "แกรนด์เปียโน", "en": "Grand piano"}, "special", {"id": "piano"}],
-		[{"th": "เตาผิง", "en": "Fireplace"}, "special", {"id": "fireplace"}],
-		[{"th": "ตู้ปลา", "en": "Aquarium"}, "special", {"id": "aquarium"}],
-		[{"th": "โคมลาวา", "en": "Lava lamp"}, "special", {"id": "lava", "y": 0.74}],
-		[{"th": "ทีวีย้อนยุค", "en": "Retro TV"}, "special", {"id": "crt"}],
-		[{"th": "โต๊ะพูล", "en": "Pool table"}, "special", {"id": "pool"}],
 		[{"th": "ตู้เพลง", "en": "Jukebox"}, "special", {"id": "jukebox"}],
 		[{"th": "ชิงช้า", "en": "Swing set"}, "special", {"id": "swing"}],
 		[{"th": "อ่างน้ำร้อน", "en": "Hot tub"}, "special", {"id": "hottub"}],
@@ -363,8 +306,9 @@ const CATALOG := [
 		[{"th": "รถเข็นกาแฟ", "en": "Coffee cart"}, "special", {"id": "coffeecart"}],
 		[{"th": "ตู้ถ่ายรูป", "en": "Photo booth"}, "special", {"id": "photobooth"}],
 		[{"th": "คอนโดแมว", "en": "Cat tree"}, "special", {"id": "cattree"}],
-		[{"th": "สเก็ตบอร์ด", "en": "Skateboard"}, "special", {"id": "skateboard"}],
 		[{"th": "สกู๊ตเตอร์วินเทจ", "en": "Vintage scooter"}, "special", {"id": "scooter"}],
+		[{"th": "สเก็ตบอร์ด", "en": "Skateboard"}, "special", {"id": "skateboard", "_pal": 1}],
+		[{"th": "โต๊ะพูล", "en": "Pool table"}, "special", {"id": "pool", "_pal": 1}],
 	]],
 	["cat_floor", [
 		[{"th": "ยางลบพื้น (คืนลายเดิม)", "en": "Eraser (original)"}, "floor", {"erase": 1}],
@@ -400,36 +344,48 @@ const CATALOG := [
 		[{"th": "โกโก้", "en": "Cocoa"}, "floor", {"col": "6e5442"}],
 	]],
 	["cat_wall", [
-		[{"th": "ผนังทึบ 2 ม.", "en": "Wall 2m"}, "wall", {"w": 2.0}],
-		[{"th": "ผนังทึบ 1 ม.", "en": "Wall 1m"}, "wall", {"w": 1.0}],
-		[{"th": "ผนังครึ่ง 2 ม.", "en": "Half wall 2m"}, "wall", {"w": 2.0, "half": 1}],
+		[{"th": "ฉากกั้นตะแกรง", "en": "Grid divider"}, "special", {"id": "griddiv"}],
 		[{"th": "กระจกกั้น 2 ม.", "en": "Glass 2m"}, "wall", {"w": 2.0, "glass": 1}],
 		[{"th": "กระจกกั้น 1 ม.", "en": "Glass 1m"}, "wall", {"w": 1.0, "glass": 1}],
-		[{"th": "ผนังขาว", "en": "Wall white"}, "wall", {"w": 2.0, "col": "f0ede6"}],
-		[{"th": "ผนังครีม", "en": "Wall cream"}, "wall", {"w": 2.0, "col": "e8dfc9"}],
-		[{"th": "ผนังเทา", "en": "Wall gray"}, "wall", {"w": 2.0, "col": "9b9c9a"}],
-		[{"th": "ผนังดำ", "en": "Wall black"}, "wall", {"w": 2.0, "col": "26272b"}],
-		[{"th": "ผนังเขียวเสจ", "en": "Wall sage"}, "wall", {"w": 2.0, "col": "9eab91"}],
-		[{"th": "ผนังกรมท่า", "en": "Wall navy"}, "wall", {"w": 2.0, "col": "33415e"}],
-		[{"th": "ผนังเทอร์รา", "en": "Wall terracotta"}, "wall", {"w": 2.0, "col": "c17a5f"}],
-		[{"th": "ผนังมัสตาร์ด", "en": "Wall mustard"}, "wall", {"w": 2.0, "col": "cfa63f"}],
-		[{"th": "ผนังอิฐ", "en": "Wall brick"}, "wall", {"w": 2.0, "col": "9c4a35"}],
-		[{"th": "ครึ่งผนังขาว", "en": "Half white"}, "wall", {"w": 2.0, "half": 1, "col": "f0ede6"}],
-		[{"th": "ครึ่งผนังเสจ", "en": "Half sage"}, "wall", {"w": 2.0, "half": 1, "col": "9eab91"}],
-		[{"th": "ครึ่งผนังกรม", "en": "Half navy"}, "wall", {"w": 2.0, "half": 1, "col": "33415e"}],
-		[{"th": "ระแนงไม้", "en": "Wood slats"}, "special", {"id": "slatwall", "col": "b08a5e"}],
-		[{"th": "ระแนงดำ", "en": "Black slats"}, "special", {"id": "slatwall", "col": "26272b"}],
 		[{"th": "กระจกกรอบดำ 2 ม.", "en": "Framed glass 2m"}, "special", {"id": "glassframe", "w": 2.0}],
 		[{"th": "กระจกกรอบดำ 1 ม.", "en": "Framed glass 1m"}, "special", {"id": "glassframe", "w": 1.0}],
-		[{"th": "เสากลมขาว", "en": "Column white"}, "special", {"id": "column_p", "col": "f0ede6"}],
-		[{"th": "เสากลมดำ", "en": "Column black"}, "special", {"id": "column_p", "col": "26272b"}],
-		[{"th": "รั้วเตี้ยขาว", "en": "Low fence white"}, "special", {"id": "fence", "col": "f0ede6"}],
-		[{"th": "รั้วเตี้ยดำ", "en": "Low fence black"}, "special", {"id": "fence", "col": "26272b"}],
 		[{"th": "กระจกออฟฟิศ 1 ม.", "en": "Office glass 1m"}, "special", {"id": "gwall", "w": 1.0}],
 		[{"th": "กระจกออฟฟิศ 2 ม.", "en": "Office glass 2m"}, "special", {"id": "gwall", "w": 2.0}],
 		[{"th": "กระจกออฟฟิศ 3 ม.", "en": "Office glass 3m"}, "special", {"id": "gwall", "w": 3.0}],
+		[{"th": "ระแนง", "en": "Slat wall"}, "special", {"id": "slatwall", "_pal": 1}],
+		[{"th": "รั้วเตี้ย", "en": "Fence"}, "special", {"id": "fence", "_pal": 1}],
+		[{"th": "เสากลม", "en": "Column"}, "special", {"id": "column_p", "_pal": 1}],
+		[{"th": "ผนังทึบ", "en": "Wall"}, "wall", {"w": 2.0, "_pal": 1}],
+		[{"th": "ครึ่งผนัง", "en": "Half wall"}, "wall", {"w": 2.0, "half": 1, "_pal": 1}],
 	]],
 ]
+
+const PALETTE := [["เทา", "8c8a87"], ["ครีม", "d9cbb0"], ["ดำ", "2b2c30"],
+	["ขาว", "f0ede6"], ["เขียวเสจ", "9eab91"], ["เขียวป่า", "2f4f3e"],
+	["กรมท่า", "33415e"], ["ฟ้า", "7da7c9"], ["เทียล", "2a7f86"],
+	["มัสตาร์ด", "cfa63f"], ["ส้มอิฐ", "c17a5f"], ["ชมพู", "e0b4b8"]]
+var _cats: Array = []
+
+
+## Expand _pal families into one entry per palette colour — every
+## family ships in all 12 shades without hand-writing 500 lines.
+func _expand_catalog() -> void:
+	_cats = []
+	for cat in CATALOG:
+		var items: Array = []
+		for it in cat[1]:
+			var params: Dictionary = it[2]
+			if int(params.get("_pal", 0)) == 1:
+				for pc in PALETTE:
+					var np: Dictionary = params.duplicate()
+					np.erase("_pal")
+					np["col"] = pc[1]
+					items.append([{"th": str(it[0]["th"]) + " " + str(pc[0]),
+						"en": str(it[0]["en"]) + " #" + str(pc[1])}, it[1], np])
+			else:
+				items.append(it)
+		_cats.append([cat[0], items])
+
 
 var cam: Camera3D
 var office: Node3D
@@ -468,6 +424,7 @@ signal mode_changed(on: bool)
 
 
 func _ready() -> void:
+	_expand_catalog()
 	_build_catalog_ui()
 
 
@@ -962,6 +919,7 @@ func _spawn_special(id: String, params: Dictionary, at: Vector3) -> Node3D:
 	var metal: StandardMaterial3D = office._mat("sp_metal", Color(0.46, 0.47, 0.50))
 	var white: StandardMaterial3D = office._mat("sp_white", Color(0.94, 0.93, 0.90))
 	var black: StandardMaterial3D = office._mat("sp_black", Color(0.10, 0.10, 0.12))
+	var pchex := str(params.get("col", "cccccc"))
 	match id:
 		"bed":
 			office._box(Vector3(1.65, 0.25, 2.10), Vector3(0, 0.25, 0), dwood, root, false)
@@ -1035,7 +993,7 @@ func _spawn_special(id: String, params: Dictionary, at: Vector3) -> Node3D:
 				for lz in [-0.45, 0.45]:
 					office._box(Vector3(0.13, 0.76, 0.13), Vector3(lx, 0.38, lz), dwood, root, false)
 			office._box(Vector3(2.20, 0.20, 1.20), Vector3(0, 0.80, 0), dwood, root, false)
-			var felt: StandardMaterial3D = office._mat("sp_felt", Color(0.15, 0.45, 0.28))
+			var felt: StandardMaterial3D = office._mat("sp_feltc_" + pchex, Color.html(pchex)) if params.has("col") else office._mat("sp_felt", Color(0.15, 0.45, 0.28))
 			office._box(Vector3(2.02, 0.03, 1.02), Vector3(0, 0.915, 0), felt, root, false)
 			for rz in [-0.56, 0.56]:
 				office._box(Vector3(2.20, 0.07, 0.09), Vector3(0, 0.945, rz), wood, root, false)
@@ -1734,7 +1692,7 @@ func _spawn_extra(id: String, params: Dictionary, root: Node3D) -> bool:
 			_omni(Vector3(0, 0.28, 0.1), Color(1.0, 0.85, 0.55), 0.5, 1.1, root)
 		# ------------------------------------------------------- plants
 		"monstera":
-			_cyl(0.16, 0.12, 0.28, Vector3(0, 0.14, 0), pot, root)
+			_cyl(0.16, 0.12, 0.28, Vector3(0, 0.14, 0), pm if params.has("col") else pot, root)
 			for i in 5:
 				var ang := i * TAU / 5.0
 				var lf := _sph(0.16, Vector3(cos(ang) * 0.20, 0.55 + (i % 3) * 0.12,
@@ -1752,13 +1710,13 @@ func _spawn_extra(id: String, params: Dictionary, root: Node3D) -> bool:
 					Vector3(cos(ang) * 0.28, 0.92, sin(ang) * 0.28), green, root, false)
 				fr.rotation_degrees = Vector3(20, -rad_to_deg(ang) + 90.0, 0)
 		"ficus":
-			_cyl(0.17, 0.13, 0.30, Vector3(0, 0.15, 0), white, root)
+			_cyl(0.17, 0.13, 0.30, Vector3(0, 0.15, 0), pm if params.has("col") else white, root)
 			_cyl(0.03, 0.045, 0.60, Vector3(0, 0.58, 0), dwood, root)
 			_sph(0.26, Vector3(0, 1.05, 0), green, root)
 			_sph(0.20, Vector3(0.14, 1.25, 0.05), dgreen, root)
 			_sph(0.16, Vector3(-0.15, 1.22, -0.05), green, root)
 		"snake_plant":
-			_cyl(0.13, 0.10, 0.22, Vector3(0, 0.11, 0), white, root)
+			_cyl(0.13, 0.10, 0.22, Vector3(0, 0.11, 0), pm if params.has("col") else white, root)
 			for i in 7:
 				var ang := i * TAU / 7.0
 				var bl2: MeshInstance3D = office._box(Vector3(0.06, 0.55 + (i % 3) * 0.12, 0.015),
@@ -1940,7 +1898,7 @@ func _spawn_extra(id: String, params: Dictionary, root: Node3D) -> bool:
 			office._box(Vector3(0.34, 0.008, 0.11), Vector3(0, 0.03, 0),
 				office._mat("sp_keys", Color(0.28, 0.29, 0.32)), root, false)
 			office._box(Vector3(0.37, 0.006, 0.14), Vector3(0, 0.006, 0),
-				_emat(Color(0.5, 0.3, 1.0), 1.6), root, false)
+				_emat(Color.html(pchex) if params.has("col") else Color(0.5, 0.3, 1.0), 1.6), root, false)
 			_omni(Vector3(0, 0.05, 0.1), Color(0.55, 0.35, 1.0), 0.35, 0.7, root)
 		"mouse_pad":
 			office._box(Vector3(0.42, 0.005, 0.32), Vector3(0, 0.003, 0),
@@ -2693,7 +2651,7 @@ func _spawn_extra(id: String, params: Dictionary, root: Node3D) -> bool:
 			tail.rotation_degrees = Vector3(0, 0, 70)
 		"skateboard":
 			office._box(Vector3(0.20, 0.015, 0.60), Vector3(0, 0.06, 0),
-				office._mat("sp_c_2a7f86", Color.html("2a7f86")), root, false)
+				pm if params.has("col") else office._mat("sp_c_2a7f86", Color.html("2a7f86")), root, false)
 			for kz in [-0.32, 0.32]:
 				var kick2: MeshInstance3D = office._box(Vector3(0.20, 0.015, 0.10),
 					Vector3(0, 0.075, kz), office._mat("sp_c_2a7f86", Color.html("2a7f86")), root, false)
@@ -3045,9 +3003,9 @@ func _build_catalog_ui() -> void:
 	_cat_bar.add_theme_constant_override("h_separation", 4)
 	_cat_bar.add_theme_constant_override("v_separation", 4)
 	v.add_child(_cat_bar)
-	for i in CATALOG.size():
+	for i in _cats.size():
 		var b := Button.new()
-		I18n.reg(b, "text", str(CATALOG[i][0]))
+		I18n.reg(b, "text", str(_cats[i][0]))
 		b.add_theme_font_size_override("font_size", 12)
 		b.toggle_mode = true
 		b.focus_mode = Control.FOCUS_NONE
@@ -3080,7 +3038,7 @@ func _show_cat(idx: int) -> void:
 	for c in _grid.get_children():
 		_grid.remove_child(c)
 		c.queue_free()
-	var items: Array = CATALOG[idx][1]
+	var items: Array = _cats[idx][1]
 	for it in items:
 		var names: Dictionary = it[0]
 		var kind: String = it[1]
@@ -3109,7 +3067,7 @@ func _show_cat(idx: int) -> void:
 ## The Sims sells with pictures: render each piece once from a 3/4
 ## angle into a tiny viewport, cache the texture, drop it on the card.
 func _fill_icons(idx: int, gen: int) -> void:
-	var items: Array = CATALOG[idx][1]
+	var items: Array = _cats[idx][1]
 	for i in items.size():
 		if gen != _icon_gen:
 			return
