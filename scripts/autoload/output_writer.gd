@@ -7,7 +7,7 @@ extends Node
 const DELIVERABLES := {
 	"script": "1_สคริปต์.md",
 	"edit": "2_แคปชั่น.srt",
-	"publish": "3_แผนโพสต์.md",
+	"publish": "3_โพสต์.txt",  # plain text, paste-ready (no markdown)
 }
 const BEHIND := {
 	"plan": "แผนงานผู้กำกับ.md",

@@ -378,6 +378,11 @@ func _stage(stage: String, role: String, request: Dictionary, system_prompt: Str
 
 	# memories + team dynamics color every call (retrieval by topic)
 	var topic := str(request.get("topic", ""))
+	# mid-flight scope change: the owner's newest direction overrides
+	# everything upstream for every stage still to run
+	var scope := str(TaskQueue.scope_notes.get(topic, ""))
+	if not scope.is_empty():
+		user_prompt += "\n\nOWNER'S MID-FLIGHT SCOPE UPDATE (overrides earlier direction): " + scope
 	var out: String = await Claude.complete(
 		system_prompt + Memory.context_for(role, topic), user_prompt, stage)
 	if out.is_empty():

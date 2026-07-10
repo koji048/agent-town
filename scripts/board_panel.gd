@@ -5,6 +5,9 @@
 class_name BoardPanel
 extends PanelContainer
 
+## The owner wants to redirect a RUNNING job (mid-flight scope change).
+signal scope_requested(topic: String)
+
 const ROLE_COLOR := {
 	"director": Color(0.85, 0.67, 0.24),
 	"researcher": Color(0.17, 0.48, 0.32),
@@ -14,7 +17,8 @@ const ROLE_COLOR := {
 }
 
 const STAGE_PIC := {
-	"1_สคริปต์.md": "writer", "2_แคปชั่น.srt": "editor", "3_แผนโพสต์.md": "publisher",
+	"1_สคริปต์.md": "writer", "2_แคปชั่น.srt": "editor", "3_โพสต์.txt": "publisher",
+	"3_แผนโพสต์.md": "publisher",
 	# legacy package names (pre folder-contract)
 	"00_plan.md": "director", "01_research.md": "researcher",
 	"02_script.md": "writer", "03_captions.srt": "editor",
@@ -210,7 +214,26 @@ func _card(holder: VBoxContainer, title_text: String, sub: String, accent: Color
 		b.pressed.connect(func() -> void:
 			OS.shell_open(ProjectSettings.globalize_path(open_path)))
 		btn_row.add_child(b)
+		# archive (Jira/Asana pattern: hide from views, never delete) —
+		# only for shipped packages (their open_path is the package dir)
+		if open_path.begins_with("res://output/") and not open_path.get_file().contains("."):
+			var ab := Button.new()
+			ab.text = I18n.t("btn_archive")
+			ab.add_theme_color_override("font_color", Color(0.65, 0.68, 0.72))
+			ab.pressed.connect(func() -> void:
+				var src := ProjectSettings.globalize_path(open_path)
+				var dst_dir := ProjectSettings.globalize_path("res://output/_archive")
+				DirAccess.make_dir_recursive_absolute(dst_dir)
+				DirAccess.rename_absolute(src, dst_dir.path_join(open_path.get_file()))
+				EventBus.log_line.emit("🗄 Archived: %s" % title_text.left(40))
+				_refresh())
+			btn_row.add_child(ab)
 	if not cancel_topic.is_empty():
+		var sc := Button.new()
+		sc.text = I18n.t("btn_scope")
+		sc.pressed.connect(func() -> void:
+			scope_requested.emit(cancel_topic))
+		btn_row.add_child(sc)
 		var cb := Button.new()
 		cb.text = I18n.t("btn_cancel_job")
 		cb.add_theme_color_override("font_color", Color(0.95, 0.55, 0.5))
@@ -352,7 +375,8 @@ func _refresh() -> void:
 	if out:
 		var dirs: Array = []
 		for d in out.get_directories():
-			dirs.append(d)
+			if not str(d).begins_with("_"):  # _archive stays out of sight
+				dirs.append(d)
 		dirs.sort()
 		dirs.reverse()
 		var shown := 0

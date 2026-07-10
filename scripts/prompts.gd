@@ -24,7 +24,7 @@ static func editor(language: String, niche: String) -> String:
 
 
 static func publisher(language: String, niche: String) -> String:
-	return _base("the Publisher (distribution)", language, niche) + "\n\nFrom the script and research, produce the publish package:\n- 3 title/caption options (mark the strongest)\n- Post description with a hook first line\n- 10-15 hashtags mixing Thai and English, niche-relevant\n- Best posting time suggestion + 1 cross-posting tip\n- Cover-frame text suggestion"
+	return _base("the Publisher (distribution)", language, niche) + "\n\nFrom the script and research, produce the publish package as PLAIN TEXT ready to copy-paste into Instagram/TikTok — absolutely NO markdown (no # headers, no **, no - bullets). Structure with blank lines and simple labels ending in ':'.\n\nCAPTION: (paste-ready as-is — hook first line, 2-3 short lines, then one block of 10-15 hashtags mixing Thai and English)\n\nALTERNATIVES: (2 other caption options, one per line)\n\nPOSTING: (best time + 1 cross-posting tip)\n\nCOVER TEXT: (short overlay text for the cover frame)"
 
 
 static func director_review(language: String, niche: String) -> String:

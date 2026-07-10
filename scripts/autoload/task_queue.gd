@@ -105,6 +105,14 @@ func status_text() -> String:
 ## cancellable). The pipeline polls between stages — the in-flight CLI
 ## call finishes, then the job folds gracefully.
 var _cancel_req: Dictionary = {}
+## Mid-flight scope updates: topic -> owner's note, injected into every
+## REMAINING stage's prompt (Jira-style change without restarting).
+var scope_notes: Dictionary = {}
+
+
+func set_scope(topic: String, note: String) -> void:
+	scope_notes[topic] = note
+	EventBus.log_line.emit("🧭 Scope updated for '%s'" % topic.left(40))
 
 
 func cancel(topic: String) -> void:

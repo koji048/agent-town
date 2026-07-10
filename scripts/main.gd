@@ -703,6 +703,11 @@ func _build_costume_panel() -> void:
 	var board_panel := BoardPanel.new()
 	board_panel.visible = false
 	hud.add_child(board_panel)
+	# mid-flight scope change: typed note reaches every remaining stage
+	board_panel.scope_requested.connect(func(topic: String) -> void:
+		_open_input(I18n.t("prompt_scope"), func(text: String) -> void:
+			TaskQueue.set_scope(topic, text)
+			EventBus.agent_say.emit("director", I18n.f("say_scope", [text.left(60)]))))
 	var feed := ChatFeed.new()
 	feed.visible = false
 	hud.add_child(feed)
