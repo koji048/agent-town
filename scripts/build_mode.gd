@@ -441,6 +441,15 @@ var _paint := {}                 # active floor style ({} = off)
 var _carry_wall := false         # carried piece is wall-mounted
 var _carry_snap := ""            # "", "edge" (walls) or "corner" (columns)
 var _last_paint_cell := Vector2i(-9999, -9999)
+# The Sims drawing gestures: walls are DRAWN (press a corner, drag along
+# an axis, release = one run), floors FILL a dragged rectangle.
+var _wall_draw := {}             # active wall style: {kind, params}
+var _draw_from := Vector3.INF
+var _draw_preview: Node3D = null
+var _draw_len := 0.0
+var _draw_horiz := true
+var _rect_from := Vector2i(-9999, -9999)
+var _rect_hl: MeshInstance3D = null
 var _wall_ok := false            # currently snapped to a wall
 var _orig: Transform3D
 var _ring: MeshInstance3D
@@ -466,6 +475,9 @@ func toggle() -> void:
 	if active and carrying:
 		cancel_carry()
 	_paint = {}
+	_wall_draw = {}
+	_cancel_draw()
+	_end_rect(false)
 	active = not active
 	if _ui:
 		_ui.visible = active
@@ -482,8 +494,12 @@ func handle_click(mpos: Vector2) -> bool:
 		_place()
 		return true
 	var p := _floor_point(mpos)
+	if not _wall_draw.is_empty():
+		_draw_from = Vector3(roundf(p.x), 0, roundf(p.z))
+		return true
 	if not _paint.is_empty():
-		_paint_tile(p)
+		var c := office.CELL as float
+		_rect_from = Vector2i(int(floorf(p.x / c)), int(floorf(p.z / c)))
 		return true
 	var best: Node3D = null
 	var bd := 0.9
@@ -512,8 +528,13 @@ func handle_click(mpos: Vector2) -> bool:
 func handle_key(keycode: int) -> bool:
 	if not active:
 		return false
+	if keycode == KEY_ESCAPE and not _wall_draw.is_empty():
+		_cancel_draw()
+		_wall_draw = {}
+		return true
 	if keycode == KEY_ESCAPE and not _paint.is_empty():
 		_paint = {}
+		_end_rect(false)
 		return true
 	if carrying == null:
 		return false
@@ -532,16 +553,30 @@ func handle_key(keycode: int) -> bool:
 func _process(_delta: float) -> void:
 	if not active or cam == null:
 		return
-	# drag-paint floors (The Sims): hold the mouse and sweep across
-	# tiles — every cell you cross takes the style
-	if carrying == null and not _paint.is_empty() \
-			and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) \
-			and get_viewport().gui_get_hovered_control() == null:
+	var lmb := Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)
+	# WALL DRAWING (The Sims): press a corner, drag along an axis — live
+	# preview grows in whole tiles; release builds the run as one piece
+	if not _wall_draw.is_empty() and _draw_from != Vector3.INF:
 		var fp := _floor_point(get_viewport().get_mouse_position())
-		var cell := Vector2i(int(floorf(fp.x / office.CELL)), int(floorf(fp.z / office.CELL)))
-		if cell != _last_paint_cell:
-			_last_paint_cell = cell
-			_paint_tile(fp)
+		var ex := roundf(fp.x)
+		var ez := roundf(fp.z)
+		var dx := ex - _draw_from.x
+		var dz := ez - _draw_from.z
+		var horiz := absf(dx) >= absf(dz)
+		var ln := clampf(absf(dx) if horiz else absf(dz), 1.0, 14.0)
+		if lmb:
+			if ln != _draw_len or horiz != _draw_horiz:
+				_update_draw_preview(ln, horiz, signf(dx if horiz else dz))
+			return
+		_finish_draw()
+		return
+	# FLOOR RECT FILL: drag a rectangle, release pours the style
+	if not _paint.is_empty() and _rect_from.x > -9000:
+		if lmb:
+			_update_rect_highlight()
+			return
+		_end_rect(true)
+		return
 	if carrying == null:
 		return
 	var p := _floor_point(get_viewport().get_mouse_position())
@@ -710,6 +745,92 @@ func _floor_point(mpos: Vector2) -> Vector3:
 		return from
 	var t := -from.y / dir.y
 	return from + dir * t
+
+
+# ------------------------------------------------ drawing gestures
+
+func _update_draw_preview(ln: float, horiz: bool, dir: float) -> void:
+	_cancel_draw()
+	_draw_len = ln
+	_draw_horiz = horiz
+	var half := ln / 2.0 * (1.0 if dir >= 0 else -1.0)
+	var mid := _draw_from + (Vector3(half, 0, 0) if horiz else Vector3(0, 0, half))
+	var params: Dictionary = (_wall_draw["params"] as Dictionary).duplicate()
+	params["w"] = ln
+	_draw_preview = _spawn(str(_wall_draw["kind"]), params, mid)
+	if _draw_preview:
+		_draw_preview.rotation_degrees.y = 0.0 if horiz else 90.0
+
+
+func _finish_draw() -> void:
+	if _draw_preview:
+		var params: Dictionary = (_wall_draw["params"] as Dictionary).duplicate()
+		params["w"] = _draw_len
+		if int(params.get("wall", 0)) == 0:
+			pass
+		_record_added(_draw_preview, {"kind": str(_wall_draw["kind"]), "params": params})
+		Sfx.play_ui("chair", -8.0)
+		_draw_preview = null
+	_draw_from = Vector3.INF
+	_draw_len = 0.0
+
+
+func _cancel_draw() -> void:
+	if _draw_preview and is_instance_valid(_draw_preview):
+		_draw_preview.queue_free()
+	_draw_preview = null
+	_draw_from = Vector3.INF
+	_draw_len = 0.0
+
+
+func _update_rect_highlight() -> void:
+	var fp := _floor_point(get_viewport().get_mouse_position())
+	var c := office.CELL as float
+	var cell := Vector2i(int(floorf(fp.x / c)), int(floorf(fp.z / c)))
+	var a := Vector2i(mini(_rect_from.x, cell.x), mini(_rect_from.y, cell.y))
+	var bb := Vector2i(maxi(_rect_from.x, cell.x), maxi(_rect_from.y, cell.y))
+	if _rect_hl == null or not is_instance_valid(_rect_hl):
+		_rect_hl = MeshInstance3D.new()
+		_rect_hl.mesh = BoxMesh.new()
+		var m := StandardMaterial3D.new()
+		m.albedo_color = Color(1.0, 1.0, 1.0, 0.28)
+		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		_rect_hl.material_override = m
+		office.add_child(_rect_hl)
+	(_rect_hl.mesh as BoxMesh).size = Vector3((bb.x - a.x + 1) * c, 0.02, (bb.y - a.y + 1) * c)
+	_rect_hl.position = Vector3((a.x + bb.x + 1) * c / 2.0, 0.04, (a.y + bb.y + 1) * c / 2.0)
+
+
+func _end_rect(apply: bool) -> void:
+	if apply and _rect_from.x > -9000:
+		var fp := _floor_point(get_viewport().get_mouse_position())
+		var c := office.CELL as float
+		var cell := Vector2i(int(floorf(fp.x / c)), int(floorf(fp.z / c)))
+		var a := Vector2i(mini(_rect_from.x, cell.x), mini(_rect_from.y, cell.y))
+		var bb := Vector2i(maxi(_rect_from.x, cell.x), maxi(_rect_from.y, cell.y))
+		var layout := _load_layout()
+		var floors: Dictionary = layout.get("floors", {})
+		var erase := int(_paint.get("erase", 0)) == 1
+		for gy in range(a.y, bb.y + 1):
+			for gx in range(a.x, bb.x + 1):
+				var cl := Vector2i(gx, gy)
+				if not office.floor_tiles.has(cl):
+					continue
+				var mi := office.floor_tiles[cl] as MeshInstance3D
+				if erase:
+					mi.material_override = null
+					floors.erase("%d,%d" % [cl.x, cl.y])
+				else:
+					mi.material_override = _floor_mat(_paint)
+					floors["%d,%d" % [cl.x, cl.y]] = _paint
+		layout["floors"] = floors
+		_write_layout(layout)
+		Sfx.play_ui("paper", -12.0)
+	_rect_from = Vector2i(-9999, -9999)
+	if _rect_hl and is_instance_valid(_rect_hl):
+		_rect_hl.queue_free()
+	_rect_hl = null
 
 
 # ----------------------------------------------------------- floor paint
@@ -1729,11 +1850,15 @@ func _spawn_extra(id: String, params: Dictionary, root: Node3D) -> bool:
 				vn.rotation_degrees = Vector3(24, i * 40.0 - 40.0, 0)
 		# ------------------------------------------------- wall pieces
 		"slatwall":
-			office._box(Vector3(2.00, 0.06, 0.10), Vector3(0, 0.03, 0), dwood, root, false)
-			office._box(Vector3(2.00, 0.06, 0.10), Vector3(0, 2.30, 0), dwood, root, false)
-			for i in 13:
-				office._box(Vector3(0.07, 2.25, 0.05), Vector3(-0.93 + i * 0.155, 1.16, 0),
+			var sw := float(params.get("w", 2.0))
+			office._box(Vector3(sw, 0.06, 0.10), Vector3(0, 0.03, 0), dwood, root, false)
+			office._box(Vector3(sw, 0.06, 0.10), Vector3(0, 2.30, 0), dwood, root, false)
+			var nslat := maxi(int(sw / 0.155), 3)
+			for i in nslat:
+				office._box(Vector3(0.07, 2.25, 0.05),
+					Vector3(-sw / 2.0 + 0.07 + i * (sw - 0.14) / maxf(nslat - 1, 1), 1.16, 0),
 					pm, root, false)
+			root.set_meta("half_len", sw / 2.0)
 		"glassframe":
 			var gw := float(params.get("w", 2.0))
 			office._box(Vector3(gw, 0.06, 0.07), Vector3(0, 0.03, 0), black, root, false)
@@ -1751,11 +1876,15 @@ func _spawn_extra(id: String, params: Dictionary, root: Node3D) -> bool:
 			_cyl(0.21, 0.21, 0.08, Vector3(0, 0.04, 0), pm, root)
 			_cyl(0.21, 0.21, 0.08, Vector3(0, 2.51, 0), pm, root)
 		"fence":
+			var fw := float(params.get("w", 1.8))
 			for rz2 in [0.30, 0.75]:
-				office._box(Vector3(1.80, 0.05, 0.04), Vector3(0, rz2, 0), pm, root, false)
-			for i in 5:
-				office._box(Vector3(0.05, 0.90, 0.05), Vector3(-0.80 + i * 0.40, 0.45, 0),
+				office._box(Vector3(fw, 0.05, 0.04), Vector3(0, rz2, 0), pm, root, false)
+			var npk := maxi(int(fw / 0.40) + 1, 3)
+			for i in npk:
+				office._box(Vector3(0.05, 0.90, 0.05),
+					Vector3(-fw / 2.0 + 0.05 + i * (fw - 0.10) / maxf(npk - 1, 1), 0.45, 0),
 					pm, root, false)
+			root.set_meta("half_len", fw / 2.0)
 		# ----------------------------------------------- gadgets & tech
 		"dual_mon":
 			office._box(Vector3(0.22, 0.03, 0.16), Vector3(0, 0.015, 0), black, root, false)
@@ -2714,10 +2843,17 @@ func _catalog_pick(kind: String, params: Dictionary) -> void:
 	if carrying:
 		cancel_carry()
 	if kind == "floor":
-		_paint = params        # paint mode: click OR drag across tiles
+		_paint = params        # paint mode: click a tile or drag a rect
+		_wall_draw = {}
 		_last_paint_cell = Vector2i(-9999, -9999)
 		return
+	if kind == "wall" or str(params.get("id", "")) in ["gwall", "slatwall", "glassframe", "fence"]:
+		_paint = {}
+		_wall_draw = {"kind": kind, "params": params}
+		EventBus.log_line.emit(I18n.t("hint_walldraw"))
+		return
 	_paint = {}
+	_wall_draw = {}
 	var at := _floor_point(get_viewport().get_visible_rect().size * 0.5)
 	var node := _spawn(kind, params, at)
 	if node == null:
