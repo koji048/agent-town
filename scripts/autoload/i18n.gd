@@ -47,6 +47,8 @@ const S := {
 	"cat_scandi": {"en": "Minimal", "th": "มินิมอล"},
 	"btn_open_full": {"en": "Open full file", "th": "เปิดไฟล์เต็ม"},
 	"say_parked": {"en": "Claude quota is out for now — I parked '%s'. We resume automatically around %s, continuing from the finished stages (nothing restarts, nothing fake ships).", "th": "โควต้า Claude หมดชั่วคราวครับ งาน '%s' ผมพักไว้ก่อน ประมาณ %s ระบบกลับมาแล้วทีมจะทำต่อจากขั้นที่เสร็จแล้วอัตโนมัติ — ไม่เริ่มใหม่ และไม่ส่งไฟล์เปล่าเด็ดขาด"},
+	"say_workplan": {"en": "Work plan for this one: %s", "th": "แผนงานรอบนี้: %s"},
+	"say_fix_stage": {"en": "Not shipping yet — fixing %s first: %s", "th": "ยังไม่ส่งครับ ขอแก้ขั้น%sก่อน: %s"},
 	"say_quota_back": {"en": "Quota's back — picking up the parked jobs right where we left off.", "th": "โควต้ากลับมาแล้วครับ ทีมหยิบงานที่พักไว้มาทำต่อจากจุดเดิมเลย"},
 	"say_ops_retry": {"en": "You're right — last round was a SYSTEM failure (quota ran out mid-job), not the content. I've queued a fresh full run that starts the moment the provider is healthy. Sorry about the empty files.", "th": "ขอโทษครับ รอบที่แล้วเป็นปัญหาระบบ (โควต้าหมดกลางงาน) ไม่ใช่เรื่องเนื้อหา — ผมจัดคิวรันใหม่ทั้งชุดให้แล้ว จะเริ่มทันทีที่ระบบพร้อม ไฟล์เปล่าแบบนั้นจะไม่ถูกส่งอีก"},
 	"review_outline": {"en": "In this piece:", "th": "หัวข้อในงาน:"},

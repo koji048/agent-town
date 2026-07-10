@@ -36,92 +36,105 @@ func _run(request: Dictionary) -> void:
 	var niche := str(request.get("niche", Config.niche))
 	var brief := _describe(request)
 
-	# INTENT PASS (owner's ask): before anyone works, the Director
-	# distills what the human actually MEANS — core message, angle,
-	# must-haves — announces it (correctable), and it steers the plan.
+	# DIRECTOR TRIAGE (orchestrator-worker, the Anthropic pattern): ONE
+	# call reads the request and decides WHICH specialists this job
+	# actually needs, with a one-line brief for each. The office is no
+	# longer a fixed assembly line — a caption-only ask runs the
+	# Publisher alone; a script ask never wastes a publish pass.
+	var stages: Array = ["plan", "research", "script", "edit", "publish"]
+	var sbriefs: Dictionary = {}
 	if Config.provider_resolved != "simulate":
-		var intent: String = await Claude.complete(
-			"You are the Director of a Reels production office. The owner typed a raw idea. " +
-			"Distill their UNDERLYING INTENT in the same language they used: " +
-			"1) core message to communicate, 2) angle/tone, 3) must-not-miss points. " +
-			"Max 3 short lines, no preamble.",
-			"Owner's raw words:\n%s" % brief, "plan")
-		if not intent.is_empty():
-			request["intent"] = intent
-			brief += "\n\nDIRECTOR'S READING OF THE OWNER'S INTENT:\n" + intent
-			EventBus.agent_say.emit("director", I18n.f("say_intent", [intent.left(140)]))
-			EventBus.log_line.emit("🎯 Intent: %s" % intent.left(80))
+		var tri: String = await Claude.complete(
+			"You are the Director of a Reels production office, triaging one incoming request. "
+			+ "Decide the MINIMAL set of stages this job truly needs and reply with STRICT JSON only:\n"
+			+ "{\"intent\": \"1-3 short lines, same language as the owner: core message, angle, must-haves\",\n"
+			+ " \"stages\": [subset of \"plan\",\"research\",\"script\",\"edit\",\"publish\", kept in this order],\n"
+			+ " \"briefs\": {stage: one-line brief for that specialist}}\n"
+			+ "Rules: caption/post-only asks -> [\"publish\"]. Script without posting -> [\"plan\",\"research\",\"script\"]. "
+			+ "Full reel content -> all five. \"edit\" only ever accompanies \"script\". NO text outside the JSON.",
+			"Owner's request:\n%s" % brief, "plan")
+		if tri.is_empty() and Claude.limited():
+			_park_job(request, results)
+			return
+		var parsed := _parse_triage(tri)
+		if not parsed.is_empty():
+			stages = parsed["stages"]
+			sbriefs = parsed.get("briefs", {})
+			request["intent"] = str(parsed.get("intent", ""))
+			if not str(request["intent"]).is_empty():
+				brief += "\n\nDIRECTOR'S READING OF THE OWNER'S INTENT:\n" + str(request["intent"])
+				EventBus.agent_say.emit("director", I18n.f("say_intent", [str(request["intent"]).left(140)]))
+			EventBus.agent_say.emit("director", I18n.f("say_workplan", [_stages_thai(stages)]))
+			EventBus.log_line.emit("🗺 Work plan: %s" % " → ".join(PackedStringArray(stages)))
 
-	var plan := await _stage("plan", "director", request,
-		Prompts.director_plan(lang, niche),
-		"Content request:\n%s" % brief, results)
-	if plan.is_empty():
+	var role_of := {"plan": "director", "research": "researcher",
+		"script": "writer", "edit": "editor", "publish": "publisher"}
+	for st in ["plan", "research", "script", "edit", "publish"]:
+		if not stages.has(st):
+			continue
+		var out := await _stage(str(st), str(role_of[st]), request,
+			_sys_prompt(str(st), lang, niche),
+			_user_prompt(str(st), brief, results, str(sbriefs.get(st, ""))), results)
+		if TaskQueue.take_cancel(request):
+			_cancel_job(request)
+			return
+		if out.is_empty():
+			_park_job(request, results)
+			return
+		# the approval desk gates the script (skipped on caption-only jobs)
+		if str(st) == "edit" and stages.has("script"):
+			if not await _await_approval(request, str(results.get("script", ""))):
+				EventBus.log_line.emit("✍ Revision requested — the Writer takes another pass.")
+				Memory.remember("writer", "The reviewer sent my script for '%s' back. Round two." % topic, 7.0)
+				Memory.nudge_affinity("writer", "director", -0.03)
+				results.erase("script")
+				results.erase("edit")
+				var s2 := await _stage("script", "writer", request, _sys_prompt("script", lang, niche),
+					_user_prompt("script", brief, results,
+					"REVIEWER FEEDBACK: tighten the hook, cut anything slow, keep it punchy."), results)
+				if s2.is_empty():
+					_park_job(request, results)
+					return
+				var e2 := await _stage("edit", "editor", request, _sys_prompt("edit", lang, niche),
+					_user_prompt("edit", brief, results, ""), results)
+				if e2.is_empty():
+					_park_job(request, results)
+					return
+
+	# DIRECTOR'S REVIEW WITH REAL AUTHORITY (LLM-as-judge, ONE bounded
+	# fix round — Anthropic: give the judge teeth but a stopping rule)
+	var verdict := await _stage("review", "director", request,
+		Prompts.director_review(lang, niche)
+		+ "\nStart your reply with exactly GO or FIX <stage>: <what to fix>, stage one of plan/research/script/edit/publish.",
+		_user_prompt("review", brief, results, ""), results)
+	if verdict.is_empty() and Claude.limited():
 		_park_job(request, results)
 		return
-	if TaskQueue.take_cancel(request):
-		_cancel_job(request)
-		return
+	var fix_re := RegEx.new()
+	fix_re.compile("^FIX\\s+(plan|research|script|edit|publish)\\s*:?\\s*(.*)")
+	var fm := fix_re.search(verdict.strip_edges())
+	if fm and stages.has(fm.get_string(1)):
+		var fst := fm.get_string(1)
+		var fnote := fm.get_string(2).left(300)
+		EventBus.agent_say.emit("director", I18n.f("say_fix_stage", [_stages_thai([fst]), fnote.left(80)]))
+		EventBus.log_line.emit("🔧 Director orders a fix on %s: %s" % [fst, fnote.left(60)])
+		results.erase(fst)
+		var fixed := await _stage(fst, str(role_of[fst]), request, _sys_prompt(fst, lang, niche),
+			_user_prompt(fst, brief, results,
+			"DIRECTOR'S FIX ORDER (address this precisely): " + fnote), results)
+		if fixed.is_empty() and Claude.limited():
+			_park_job(request, results)
+			return
 
-	var research := await _stage("research", "researcher", request,
-		Prompts.researcher(lang, niche),
-		"Request:\n%s\n\nDirector's brief:\n%s" % [brief, plan], results)
-	if research.is_empty():
+	# the PRIMARY deliverable is whatever this job was really about —
+	# ship nothing unless it is genuinely there
+	var primary := "script"
+	for cand in ["publish", "edit", "script", "research", "plan"]:
+		if stages.has(cand):
+			primary = cand
+			break
+	if not _valid(primary, str(results.get(primary, ""))):
 		_park_job(request, results)
-		return
-	if TaskQueue.take_cancel(request):
-		_cancel_job(request)
-		return
-
-	var script := await _stage("script", "writer", request,
-		Prompts.scriptwriter(lang, niche),
-		"Request:\n%s\n\nDirector's brief:\n%s\n\nResearch notes:\n%s" % [brief, plan, research], results)
-	if script.is_empty():
-		_park_job(request, results)
-		return
-	if TaskQueue.take_cancel(request):
-		_cancel_job(request)
-		return
-
-	var captions := await _stage("edit", "editor", request,
-		Prompts.editor(lang, niche),
-		"Script:\n%s" % script, results)
-	if captions.is_empty():
-		_park_job(request, results)
-		return
-	if TaskQueue.take_cancel(request):
-		_cancel_job(request)
-		return
-
-	# ---- the approval desk: work WAITS for the human at a designed
-	# checkpoint (Devin's lesson: the cheapest intervention is a gate,
-	# not a popup). Auto-approves after a timeout so ambient mode lives.
-	if not await _await_approval(request, script):
-		EventBus.log_line.emit("✍ Revision requested — the Writer takes another pass.")
-		Memory.remember("writer", "The reviewer sent my script for '%s' back. Round two." % topic, 7.0)
-		Memory.nudge_affinity("writer", "director", -0.03)
-		script = await _stage("script", "writer", request,
-			Prompts.scriptwriter(lang, niche),
-			"Request:\n%s\n\nDirector's brief:\n%s\n\nResearch notes:\n%s\n\nREVIEWER FEEDBACK: tighten the hook, cut anything slow, keep it punchy. Revise the script." % [brief, plan, research], results)
-		captions = await _stage("edit", "editor", request,
-			Prompts.editor(lang, niche),
-			"Script:\n%s" % script, results)
-
-	var publish := await _stage("publish", "publisher", request,
-		Prompts.publisher(lang, niche),
-		"Script:\n%s\n\nResearch notes:\n%s" % [script, research], results)
-	if publish.is_empty():
-		_park_job(request, results)
-		return
-	if TaskQueue.take_cancel(request):
-		_cancel_job(request)
-		return
-
-	await _stage("review", "director", request,
-		Prompts.director_review(lang, niche),
-		"Research:\n%s\n\nScript:\n%s\n\nCaptions:\n%s\n\nPublish plan:\n%s" % [research, script, captions, publish], results)
-
-	if not _valid("script", str(results.get("script", ""))):
-		_park_job(request, results)   # never ship an empty package
 		return
 	var out_dir: String = OutputWriter.write_package(request, results)
 	TaskQueue.finish(request)
@@ -141,6 +154,71 @@ func _run(request: Dictionary) -> void:
 ## pythainlp wrapping, glossary) -> Claude review pass written back to
 ## 05_EXPORTS -> owner approval -> reel.sh burn (9:16 reframe + subs).
 ## Falls back to the built-in Whisper flow if the skill isn't installed.
+## Parse the Director's triage JSON defensively (strict subset, edit
+## requires script); {} on any malformed reply -> full pipeline.
+func _parse_triage(text: String) -> Dictionary:
+	var re := RegEx.new()
+	re.compile("(?s)\\{.*\\}")
+	var mres := re.search(text)
+	if mres == null:
+		return {}
+	var d: Variant = JSON.parse_string(mres.get_string(0))
+	if not (d is Dictionary):
+		return {}
+	var stages: Array = []
+	for s in d.get("stages", []):
+		var ss := str(s)
+		if ss in ["plan", "research", "script", "edit", "publish"] and not stages.has(ss):
+			stages.append(ss)
+	if stages.is_empty():
+		return {}
+	if stages.has("edit") and not stages.has("script"):
+		stages.erase("edit")
+	var briefs: Dictionary = {}
+	if d.get("briefs") is Dictionary:
+		briefs = d["briefs"]
+	return {"stages": stages, "briefs": briefs, "intent": str(d.get("intent", ""))}
+
+
+const STAGE_TH := {"plan": "วางแผน", "research": "ค้นคว้า", "script": "เขียนสคริปต์",
+	"edit": "ทำแคปชั่น", "publish": "แพ็กโพสต์"}
+
+
+func _stages_thai(stages: Array) -> String:
+	var names: Array[String] = []
+	for s in stages:
+		names.append(str(STAGE_TH.get(str(s), str(s))))
+	return " → ".join(names)
+
+
+func _sys_prompt(stage: String, lang: String, niche: String) -> String:
+	match stage:
+		"plan": return Prompts.director_plan(lang, niche)
+		"research": return Prompts.researcher(lang, niche)
+		"script": return Prompts.scriptwriter(lang, niche)
+		"edit": return Prompts.editor(lang, niche)
+		"publish": return Prompts.publisher(lang, niche)
+	return Prompts.director_review(lang, niche)
+
+
+## Context injection: each specialist sees the request + exactly the
+## upstream results that exist, never a blind chain of assumptions.
+func _user_prompt(stage: String, brief: String, results: Dictionary, extra: String) -> String:
+	var p := "Request:\n" + brief
+	var ups: Dictionary = {"plan": [], "research": ["plan"], "script": ["plan", "research"],
+		"edit": ["script"], "publish": ["script", "research"],
+		"review": ["research", "script", "edit", "publish"]}
+	for up in ups.get(stage, []):
+		var txt := str(results.get(up, ""))
+		if not txt.is_empty():
+			p += "\n\n%s STAGE RESULT:\n%s" % [str(up).to_upper(), txt]
+	if stage == "publish" and not results.has("script"):
+		p += "\n\nThere is NO script for this job — write the publish package directly from the request and intent above."
+	if not extra.strip_edges().is_empty():
+		p += "\n\nDIRECTOR'S STAGE BRIEF: " + extra.strip_edges()
+	return p
+
+
 func _run_clip(request: Dictionary) -> void:
 	if ReelRunner.available():
 		await _run_clip_reels(request)
