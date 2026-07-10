@@ -563,6 +563,26 @@ func _col_hpane_x(gx: int) -> float:
 ## the ACTUAL plane of whatever they meet — a crossing pane or the
 ## perimeter wall face — so corners butt clean, with a post at each
 ## true junction. No overlaps, no through-pane crossings.
+var _gwall_seq := 0
+
+
+func _glass_run_piece(cx: float, cz: float, length: float, horiz: bool,
+		glass: StandardMaterial3D, steel: StandardMaterial3D) -> void:
+	var root := Node3D.new()
+	root.position = Vector3(cx, 0, cz)
+	root.rotation_degrees = Vector3(0, 0.0 if horiz else 90.0, 0)
+	add_child(root)
+	root.add_to_group("furniture")
+	root.add_to_group("wall_surface")
+	root.set_meta("piece_id", "g%03d" % _gwall_seq)
+	_gwall_seq += 1
+	root.set_meta("snap_mode", "edge")
+	root.set_meta("half_len", length / 2.0)
+	root.set_meta("half_t", 0.05)
+	_box(Vector3(length, 2.0, 0.07), Vector3(0, 1.0, 0), glass, root, false)
+	_box(Vector3(length + 0.06, 0.05, 0.06), Vector3(0, 2.02, 0), steel, root, false)
+
+
 func _build_glass_runs() -> void:
 	var glass := _mat("podglass", Color(0.75, 0.86, 0.94, 0.25), "", Color.BLACK, true)
 	var steel := _mat("steel", Color(0.42, 0.42, 0.46))
@@ -591,12 +611,7 @@ func _build_glass_runs() -> void:
 				xb = _col_hpane_x(gx)
 			elif PERIMETER.contains(e_ch):
 				xb += CELL - WALL_T
-			var gpane := _box(Vector3(xb - xa, 2.0, 0.07), Vector3((xa + xb) / 2.0, 1.0, pane_z), glass, self, false)
-			gpane.add_to_group("wall_surface")
-			gpane.set_meta("horiz", true)
-			gpane.set_meta("half_len", (xb - xa) / 2.0)
-			gpane.set_meta("half_t", 0.05)
-			_box(Vector3(xb - xa + 0.06, 0.05, 0.06), Vector3((xa + xb) / 2.0, 2.02, pane_z), steel, self, false)
+			_glass_run_piece((xa + xb) / 2.0, pane_z, xb - xa, true, glass, steel)
 			posts["%.1f_%.1f" % [xa, pane_z]] = Vector3(xa, 0, pane_z)
 			posts["%.1f_%.1f" % [xb, pane_z]] = Vector3(xb, 0, pane_z)
 	for gx in cols:
@@ -622,12 +637,7 @@ func _build_glass_runs() -> void:
 				zb = _row_gpane_z(gy)
 			elif PERIMETER.contains(s_ch):
 				zb += CELL - WALL_T
-			var vpane := _box(Vector3(0.07, 2.0, zb - za), Vector3(pane_x, 1.0, (za + zb) / 2.0), glass, self, false)
-			vpane.add_to_group("wall_surface")
-			vpane.set_meta("horiz", false)
-			vpane.set_meta("half_len", (zb - za) / 2.0)
-			vpane.set_meta("half_t", 0.05)
-			_box(Vector3(0.06, 0.05, zb - za + 0.06), Vector3(pane_x, 2.02, (za + zb) / 2.0), steel, self, false)
+			_glass_run_piece(pane_x, (za + zb) / 2.0, zb - za, false, glass, steel)
 			posts["%.1f_%.1f" % [pane_x, za]] = Vector3(pane_x, 0, za)
 			posts["%.1f_%.1f" % [pane_x, zb]] = Vector3(pane_x, 0, zb)
 	for key in posts:
