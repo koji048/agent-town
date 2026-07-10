@@ -502,6 +502,18 @@ func devtest_walls() -> void:
 	var after := get_tree().get_nodes_in_group("furniture").size()
 	print("[walltest] pieces before=%d after=%d (+%d expected 2) added_records=%d" % [
 		before, after, after - before, (_load_layout().get("added", []) as Array).size()])
+	# leave no trace: free the two test pieces and their records
+	var layout := _load_layout()
+	var added: Array = layout.get("added", [])
+	for _i in 2:
+		if added.is_empty():
+			break
+		var rec: Dictionary = added.pop_back()
+		for f in get_tree().get_nodes_in_group("furniture"):
+			if str((f as Node).get_meta("piece_id", "")) == str(rec.get("id", "")):
+				(f as Node).queue_free()
+	layout["added"] = added
+	_write_layout(layout)
 
 
 func toggle() -> void:
@@ -2899,6 +2911,10 @@ func _spawn_extra(id: String, params: Dictionary, root: Node3D) -> bool:
 			root.set_meta("half_t", 0.05)
 			gnode.remove_from_group("furniture")
 			gnode.remove_from_group("wall_surface")
+			var gw2 := float(params.get("w", 2.0))
+			for gpx in [-gw2 / 2.0, gw2 / 2.0]:
+				office._box(Vector3(0.09, 2.04, 0.09), Vector3(gpx, 1.02, 0),
+					office._mat("steel", Color(0.42, 0.42, 0.46)), root, false)
 		"shell":
 			var sh: Node3D = office._shell_chair(0.0, 0.0, 180.0, Color.html(pchex))
 			office.remove_child(sh)
