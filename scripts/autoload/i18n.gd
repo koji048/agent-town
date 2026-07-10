@@ -43,6 +43,8 @@ const S := {
 	"cat_light": {"en": "Lighting", "th": "ไฟ"},
 	"cat_decor": {"en": "Decor", "th": "ตกแต่ง"},
 	"cat_special": {"en": "Specials", "th": "ของพิเศษ"},
+	"cat_office": {"en": "Office", "th": "ออฟฟิศ"},
+	"cat_scandi": {"en": "Minimal", "th": "มินิมอล"},
 	"cat_floor": {"en": "Floors", "th": "พื้น"},
 	"cat_wall": {"en": "Walls", "th": "ผนัง"},
 	"side_done": {"en": "  Deliverables", "th": "  งานที่เสร็จ"},
