@@ -330,6 +330,7 @@ func _box(size: Vector3, pos: Vector3, mat: StandardMaterial3D, parent: Node3D =
 ## Build-mode identity: rooted pieces join the "furniture" group with a
 ## stable id (creation order is deterministic), so the owner can move
 ## and rotate them Sims-style and the layout persists across boots.
+var _gltf_scene_cache := {}   # model -> generated template (off-tree)
 var _piece_seq := 0
 var floor_tiles := {}   # Vector2i cell -> floor MeshInstance3D (build-mode paint)
 
@@ -418,22 +419,31 @@ func _tint_meshes(node: Node, tint: Color) -> void:
 		_tint_meshes(child, tint)
 
 
+## FREEZE FIX (same disease as the costume cache, 2026-07-10 beach
+## ball): calling generate_scene() a SECOND time on a cached GLTFState
+## can spin forever inside native malloc — the main thread never
+## returns. Generate each model's scene ONCE, keep the template
+## off-tree, and hand out duplicate()s. Build mode spawns, catalog
+## icons and boot-time layout rebuilds all go through here.
 func _instantiate_glb(model: String) -> Node3D:
+	if _gltf_scene_cache.has(model):
+		return (_gltf_scene_cache[model] as Node3D).duplicate()
 	var path := "res://assets/models/%s.glb" % model
 	if not FileAccess.file_exists(path):
 		path = "res://assets/models/%s.gltf" % model
-	if not _gltf_cache.has(model):
-		if not FileAccess.file_exists(path):
-			push_warning("missing model: " + path)
-			return null
-		var doc := GLTFDocument.new()
-		var state := GLTFState.new()
-		if doc.append_from_file(path, state) != OK:
-			push_warning("failed to parse " + path)
-			return null
-		_gltf_cache[model] = [doc, state]
-	var pair: Array = _gltf_cache[model]
-	return pair[0].generate_scene(pair[1]) as Node3D
+	if not FileAccess.file_exists(path):
+		push_warning("missing model: " + path)
+		return null
+	var doc := GLTFDocument.new()
+	var state := GLTFState.new()
+	if doc.append_from_file(path, state) != OK:
+		push_warning("failed to parse " + path)
+		return null
+	var template := doc.generate_scene(state) as Node3D
+	if template == null:
+		return null
+	_gltf_scene_cache[model] = template
+	return template.duplicate()
 
 
 func _combined_aabb(node: Node, xform: Transform3D) -> AABB:
