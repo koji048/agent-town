@@ -38,9 +38,27 @@ func set_master(pct: float) -> void:
 		f.store_string(str(master_pct))
 
 
+var ambience_on := false
+var _tone_host: Node = null
+
+
+func set_ambience(on: bool) -> void:
+	ambience_on = on
+	var f := FileAccess.open("user://ambience.txt", FileAccess.WRITE)
+	if f:
+		f.store_string("1" if on else "0")
+	if not on and _tone:
+		_tone.queue_free()
+		_tone = null
+	elif on and _tone == null and _tone_host:
+		_spin_tone()
+
+
 func _ready() -> void:
 	if FileAccess.file_exists("user://sfx_vol.txt"):
 		master_pct = clampf(float(FileAccess.get_file_as_string("user://sfx_vol.txt")), 0.0, 100.0)
+	if FileAccess.file_exists("user://ambience.txt"):
+		ambience_on = FileAccess.get_file_as_string("user://ambience.txt").strip_edges() == "1"
 	for group in VARIANTS:
 		var list: Array = []
 		for name in VARIANTS[group]:
@@ -81,8 +99,15 @@ func play_ui(group: String, vol_db: float = 0.0) -> void:
 
 ## The looping HVAC room-tone bed. Call once from main.
 func start_room_tone(host: Node, vol_db: float = -24.0) -> void:
+	_tone_host = host
+	_tone_base = vol_db
+	if ambience_on:
+		_spin_tone()
+
+
+func _spin_tone() -> void:
 	var path := "res://assets/audio/roomtone.wav"
-	if not ResourceLoader.exists(path):
+	if not ResourceLoader.exists(path) or _tone_host == null:
 		return
 	var stream: AudioStreamWAV = load(path).duplicate()
 	stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
@@ -90,8 +115,7 @@ func start_room_tone(host: Node, vol_db: float = -24.0) -> void:
 	stream.loop_end = stream.data.size() / 2  # 16-bit mono: 2 bytes/frame
 	var p := AudioStreamPlayer.new()
 	_tone = p
-	_tone_base = vol_db
 	p.stream = stream
-	p.volume_db = vol_db
-	host.add_child(p)
+	p.volume_db = _tone_base + master_db()
+	_tone_host.add_child(p)
 	p.play()

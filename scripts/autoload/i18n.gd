@@ -33,6 +33,7 @@ const S := {
 	"side_build": {"en": "  Build mode", "th": "  จัดห้อง"},
 	"build_hint": {"en": "BUILD: pick from the catalog or click a piece · R rotate · X delete · click to set down · Esc cancel", "th": "จัดห้อง: เลือกของจากแคตตาล็อก หรือคลิกของที่มีอยู่ (ย้ายได้ทุกชิ้น) · R หมุน · X ลบ · พื้น: ลากเมาส์ทาสีได้ · กำแพง: snap ขอบช่องอัตโนมัติ · Esc ยกเลิก"},
 	"build_catalog": {"en": "CATALOG", "th": "แคตตาล็อก"},
+	"set_amb": {"en": "Background air-con hum", "th": "เสียงแอร์พื้นหลัง (บรรยากาศ)"},
 	"set_sfx": {"en": "Effects volume", "th": "ระดับเสียงเอฟเฟกต์"},
 	"hint_walldraw": {"en": "WALL: press on the grid and DRAG along a line — release builds the whole run. Esc = back to select.", "th": "ผนัง: กดค้างบนพื้นแล้วลากเป็นเส้นตรง ปล่อย = สร้างทั้งแนวชิ้นเดียว · Esc กลับโหมดเลือกของ"},
 	"build_keys": {"en": "R rotate · X delete · click place · floors: pick style then click tiles · Esc cancel", "th": "R หมุน · X ลบ · คลิกวาง · พื้น: ลากคลุมพื้นที่แล้วปล่อย = เทสีทั้งผืน · ผนัง: กดแล้วลากเป็นแนว · Esc ยกเลิก"},

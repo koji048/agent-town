@@ -215,6 +215,13 @@ func _ready() -> void:
 	_build.cam = _cam
 	_build.office = office
 	add_child(_build)
+	if OS.get_environment("AGENT_TOWN_DUMP") != "":   # dev: piece census
+		for fnode in get_tree().get_nodes_in_group("furniture"):
+			var n3 := fnode as Node3D
+			print("[dump] %s %.2f %.2f" % [str(n3.get_meta("piece_id", "")),
+				n3.global_position.x, n3.global_position.z])
+		get_tree().quit()
+		return
 	_build.apply_layout()
 	if OS.get_environment("AGENT_TOWN_BUILD") != "":  # dev: shot with catalog open
 		_build.toggle()
@@ -1075,6 +1082,12 @@ func _build_settings_panel(hud: CanvasLayer) -> PanelContainer:
 		Sfx.play_ui("paper", -8.0))
 	vrow.add_child(vs)
 	vb.add_child(vrow)
+	var amb := CheckButton.new()
+	I18n.reg(amb, "text", "set_amb")
+	amb.button_pressed = Sfx.ambience_on
+	amb.add_theme_font_size_override("font_size", 14)
+	amb.toggled.connect(func(on: bool) -> void: Sfx.set_ambience(on))
+	vb.add_child(amb)
 	var title := Label.new()
 	I18n.reg(title, "text", "set_title")
 	title.add_theme_font_size_override("font_size", 18)
