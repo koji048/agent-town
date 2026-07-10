@@ -567,7 +567,7 @@ var _gwall_seq := 0
 
 
 func _glass_run_piece(cx: float, cz: float, length: float, horiz: bool,
-		glass: StandardMaterial3D, steel: StandardMaterial3D) -> void:
+		glass: StandardMaterial3D, steel: StandardMaterial3D) -> Node3D:
 	var root := Node3D.new()
 	root.position = Vector3(cx, 0, cz)
 	root.rotation_degrees = Vector3(0, 0.0 if horiz else 90.0, 0)
@@ -581,6 +581,7 @@ func _glass_run_piece(cx: float, cz: float, length: float, horiz: bool,
 	root.set_meta("half_t", 0.05)
 	_box(Vector3(length, 2.0, 0.07), Vector3(0, 1.0, 0), glass, root, false)
 	_box(Vector3(length + 0.06, 0.05, 0.06), Vector3(0, 2.02, 0), steel, root, false)
+	return root
 
 
 func _build_glass_runs() -> void:
@@ -911,7 +912,7 @@ func _round_table(x: float, z: float, r: float = 0.55) -> void:
 
 
 ## Molded shell side chair on slim steel legs. Front faces +Z.
-func _shell_chair(x: float, z: float, rot_deg: float, col: Color) -> void:
+func _shell_chair(x: float, z: float, rot_deg: float, col: Color) -> Node3D:
 	var root := Node3D.new()
 	root.position = Vector3(x, 0, z)
 	root.rotation_degrees = Vector3(0, rot_deg, 0)
@@ -925,6 +926,7 @@ func _shell_chair(x: float, z: float, rot_deg: float, col: Color) -> void:
 	_box(Vector3(0.42, 0.05, 0.40), Vector3(0, 0.44, 0), shell, root)
 	var back := _box(Vector3(0.40, 0.40, 0.045), Vector3(0, 0.66, -0.19), shell, root)
 	back.rotation_degrees = Vector3(8, 0, 0)
+	return root
 
 
 ## Open shelving: black steel frame, oak shelves, colored book spines.

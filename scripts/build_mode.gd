@@ -55,6 +55,12 @@ const CATALOG := [
 		[{"th": "สตูลกลมดำ", "en": "Round stool black"}, "special", {"id": "stool_round", "col": "2b2c30"}],
 		[{"th": "เก้าอี้ปีกกรมท่า", "en": "Wingback navy"}, "special", {"id": "wing", "col": "33415e"}],
 		[{"th": "เก้าอี้ปีกอิฐ", "en": "Wingback clay"}, "special", {"id": "wing", "col": "b3705c"}],
+		[{"th": "เก้าอี้เชลล์ขาว", "en": "Shell chair white"}, "special", {"id": "shell", "col": "e0dfd6"}],
+		[{"th": "เก้าอี้เชลล์คอรัล", "en": "Shell chair coral"}, "special", {"id": "shell", "col": "f27059"}],
+		[{"th": "เก้าอี้เชลล์เทียล", "en": "Shell chair teal"}, "special", {"id": "shell", "col": "599e9e"}],
+		[{"th": "สตูลบาร์ออฟฟิศ", "en": "Office bar stool"}, "special", {"id": "bar_office"}],
+		[{"th": "เบาะรองนั่งอิฐ", "en": "Cushion clay"}, "special", {"id": "cushion", "col": "cc8266"}],
+		[{"th": "เบาะรองนั่งเสจ", "en": "Cushion sage"}, "special", {"id": "cushion", "col": "9eab91"}],
 	]],
 	["cat_table", [
 		[{"th": "โต๊ะทำงาน", "en": "Desk"}, "glb", {"model": "desk"}],
@@ -89,6 +95,8 @@ const CATALOG := [
 		[{"th": "โต๊ะลูกบาศก์ขาว", "en": "Cube table white"}, "special", {"id": "side_cube", "col": "f0ede6"}],
 		[{"th": "โต๊ะลูกบาศก์ดำ", "en": "Cube table black"}, "special", {"id": "side_cube", "col": "26272b"}],
 		[{"th": "โต๊ะพับ", "en": "Folding table"}, "special", {"id": "folding"}],
+		[{"th": "โต๊ะทำงานออฟฟิศ", "en": "Office desk"}, "special", {"id": "desk_office"}],
+		[{"th": "โต๊ะกลมออฟฟิศ", "en": "Office round table"}, "special", {"id": "round_office"}],
 	]],
 	["cat_store", [
 		[{"th": "ชั้นหนังสือ", "en": "Bookshelf"}, "shelf", {}],
@@ -125,6 +133,7 @@ const CATALOG := [
 		[{"th": "รถเข็นชั้นวาง", "en": "Utility cart"}, "special", {"id": "cart_roll"}],
 		[{"th": "ล็อกเกอร์เขียวเสจ", "en": "Lockers sage"}, "special", {"id": "locker", "col": "9eab91"}],
 		[{"th": "ล็อกเกอร์แดงอิฐ", "en": "Lockers clay"}, "special", {"id": "locker", "col": "b3705c"}],
+		[{"th": "เครเดนซ่าออฟฟิศ", "en": "Office credenza"}, "special", {"id": "credenza_office"}],
 	]],
 	["cat_light", [
 		[{"th": "โคมตั้งพื้นกลม", "en": "Floor lamp"}, "glb", {"model": "lampRoundFloor", "light": 1.4}],
@@ -150,6 +159,9 @@ const CATALOG := [
 		[{"th": "โคมเห็ดเขียว", "en": "Mushroom green"}, "special", {"id": "lamp_mushroom", "col": "5f7a5a", "y": 0.74}],
 		[{"th": "ชุดเทียน", "en": "Candles"}, "special", {"id": "candles", "y": 0.74}],
 		[{"th": "โคมแบงเกอร์", "en": "Banker lamp"}, "special", {"id": "banker", "y": 0.74}],
+		[{"th": "โคมตั้งพื้นออฟฟิศ", "en": "Office floor lamp"}, "special", {"id": "lamp_office"}],
+		[{"th": "โคมโต๊ะออฟฟิศ", "en": "Office task lamp"}, "special", {"id": "tasklamp_office", "y": 0.74}],
+		[{"th": "ไฟห้อยออฟฟิศ", "en": "Office pendant"}, "special", {"id": "pendant_office"}],
 	]],
 	["cat_plant", [
 		[{"th": "ต้นไม้กระถาง", "en": "Potted plant"}, "prop", {"model": "pottedPlant", "fit_h": 1.15}],
@@ -175,6 +187,9 @@ const CATALOG := [
 		[{"th": "กระบองเพชรยักษ์", "en": "Saguaro"}, "special", {"id": "saguaro"}],
 		[{"th": "หญ้าแพมพาส", "en": "Pampas"}, "special", {"id": "pampas"}],
 		[{"th": "พลูด่างกระถาง", "en": "Pothos"}, "special", {"id": "pothos", "y": 0.74}],
+		[{"th": "ต้นไม้สนามใหญ่", "en": "Yard tree big"}, "special", {"id": "tree_office", "s": 1.2}],
+		[{"th": "ต้นไม้สนามเล็ก", "en": "Yard tree small"}, "special", {"id": "tree_office", "s": 0.8}],
+		[{"th": "พุ่มไม้", "en": "Bush"}, "special", {"id": "bush_office"}],
 	]],
 	["cat_decor", [
 		[{"th": "พรมผืนใหญ่", "en": "Area rug"}, "glb", {"model": "rugRectangle"}],
@@ -239,6 +254,7 @@ const CATALOG := [
 		[{"th": "แท่นชาร์จมือถือ", "en": "Charging dock"}, "special", {"id": "charging_dock", "y": 0.74}],
 		[{"th": "เครื่องเกมคอนโซล", "en": "Game console"}, "special", {"id": "console", "y": 0.5}],
 		[{"th": "ลำโพงบูมบ็อกซ์", "en": "Boombox"}, "special", {"id": "boombox", "y": 0.74}],
+		[{"th": "ฉากกรีนสกรีน", "en": "Green screen"}, "special", {"id": "greenscreen"}],
 	]],
 	["cat_office", [
 		[{"th": "โต๊ะปรับยืน", "en": "Standing desk"}, "special", {"id": "desk_stand"}],
@@ -408,6 +424,9 @@ const CATALOG := [
 		[{"th": "เสากลมดำ", "en": "Column black"}, "special", {"id": "column_p", "col": "26272b"}],
 		[{"th": "รั้วเตี้ยขาว", "en": "Low fence white"}, "special", {"id": "fence", "col": "f0ede6"}],
 		[{"th": "รั้วเตี้ยดำ", "en": "Low fence black"}, "special", {"id": "fence", "col": "26272b"}],
+		[{"th": "กระจกออฟฟิศ 1 ม.", "en": "Office glass 1m"}, "special", {"id": "gwall", "w": 1.0}],
+		[{"th": "กระจกออฟฟิศ 2 ม.", "en": "Office glass 2m"}, "special", {"id": "gwall", "w": 2.0}],
+		[{"th": "กระจกออฟฟิศ 3 ม.", "en": "Office glass 3m"}, "special", {"id": "gwall", "w": 3.0}],
 	]],
 ]
 
@@ -2560,9 +2579,68 @@ func _spawn_extra(id: String, params: Dictionary, root: Node3D) -> bool:
 			_sph(0.03, Vector3(0.18, 0.82, 0.49), metal, root)
 			office._box(Vector3(0.05, 0.14, 0.02), Vector3(0, 0.42, -0.51),
 				_emat(Color(0.95, 0.85, 0.55), 0.8), root, false)
+		# --------------------------------- the town's own designs, buyable
+		"gwall":
+			var gnode: Node3D = office._glass_run_piece(0.0, 0.0, float(params.get("w", 2.0)), true,
+				office._mat("podglass", Color(0.75, 0.86, 0.94, 0.25), "", Color.BLACK, true),
+				office._mat("steel", Color(0.42, 0.42, 0.46)))
+			office.remove_child(gnode)
+			gnode.position = Vector3.ZERO
+			root.add_child(gnode)
+			root.add_to_group("wall_surface")
+			root.set_meta("snap_mode", "edge")
+			root.set_meta("half_len", float(params.get("w", 2.0)) / 2.0)
+			root.set_meta("half_t", 0.05)
+			gnode.remove_from_group("furniture")
+			gnode.remove_from_group("wall_surface")
+		"shell":
+			var sh: Node3D = office._shell_chair(0.0, 0.0, 180.0, Color.html(pchex))
+			office.remove_child(sh)
+			sh.position = Vector3.ZERO
+			sh.remove_from_group("furniture")
+			root.add_child(sh)
+		"cushion":
+			office._box(Vector3(0.55, 0.10, 0.55), Vector3(0, 0.06, 0), pm, root, false)
+			office._box(Vector3(0.57, 0.025, 0.57), Vector3(0, 0.115, 0), pm, root, false)
+		"desk_office":
+			_adopt(office._movable_call(0.0, 0.0, func() -> void: office._modern_desk(0.0, 0.0, 1.7)), root)
+		"round_office":
+			_adopt(office._movable_call(0.0, 0.0, func() -> void: office._round_table(0.0, 0.0)), root)
+		"bar_office":
+			_adopt(office._movable_call(0.0, 0.0, func() -> void: office._bar_stool(0.0, 0.0)), root)
+		"lamp_office":
+			_adopt(office._movable_call(0.0, 0.0, func() -> void: office._floor_lamp(0.0, 0.0)), root)
+		"tasklamp_office":
+			_adopt(office._movable_call(0.0, 0.0, func() -> void: office._task_lamp(0.0, 0.0, 180, 0.0)), root)
+		"pendant_office":
+			_adopt(office._movable_call(0.0, 0.0, func() -> void: office._pendant(Vector3(0, 2.4, 0))), root)
+		"credenza_office":
+			_adopt(office._movable_call(0.0, 0.0, func() -> void: office._credenza(0.0, 0.0)), root)
+		"tree_office":
+			var ts := float(params.get("s", 1.0))
+			_adopt(office._movable_call(0.0, 0.0, func() -> void: office._tree(Vector3.ZERO, ts)), root)
+		"bush_office":
+			_adopt(office._movable_call(0.0, 0.0, func() -> void: office._bush(Vector3.ZERO)), root)
+		"greenscreen":
+			var chroma: StandardMaterial3D = office._mat("chroma", Color(0.28, 0.78, 0.31))
+			office._box(Vector3(3.0, 2.2, 0.09), Vector3(0, 1.1, 0), chroma, root, false)
+			office._box(Vector3(3.0, 0.02, 1.2), Vector3(0, 0.012, 0.65), chroma, root, false)
+			office._box(Vector3(3.1, 0.06, 0.12), Vector3(0, 2.23, 0),
+				office._mat("sp_black", Color(0.10, 0.10, 0.12)), root, false)
 		_:
 			return false
 	return true
+
+
+## Fold a wrapper-created piece into the catalog root (strip its own
+## registration so ids/persistence belong to the purchase, not a clone).
+func _adopt(piece: Node3D, root: Node3D) -> void:
+	if piece == null:
+		return
+	office.remove_child(piece)
+	piece.position = Vector3.ZERO
+	piece.remove_from_group("furniture")
+	root.add_child(piece)
 
 
 ## Native-scale model (Kenney/KayKit kits are true-to-life meters) with
