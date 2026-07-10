@@ -672,6 +672,7 @@ func _delete_carried() -> void:
 		layout.get("moved", {}).erase(id)
 		_write_layout(layout)
 	carrying.queue_free()
+	_prune_posts(_load_layout())
 	_drop_ring()
 	Sfx.play_ui("paper", -12.0)
 	carrying = null
@@ -2790,6 +2791,33 @@ static func _load_layout() -> Dictionary:
 	return {"moved": dict, "deleted": [], "added": [], "floors": {}}  # phase-1 file
 
 
+## A junction post whose glass runs are ALL deleted has nothing left
+## to hold up — it leaves with them (unless the owner moved it on
+## purpose). Persisted like any deletion.
+func _prune_posts(layout: Dictionary) -> void:
+	var del: Array = layout.get("deleted", [])
+	var moved: Dictionary = layout.get("moved", {})
+	var changed := false
+	for f in get_tree().get_nodes_in_group("furniture"):
+		if not is_instance_valid(f) or not (f as Node).has_meta("runs"):
+			continue
+		var id := str((f as Node).get_meta("piece_id", ""))
+		if del.has(id) or moved.has(id):
+			continue
+		var all_gone := true
+		for rid in (f as Node).get_meta("runs"):
+			if not del.has(str(rid)):
+				all_gone = false
+				break
+		if all_gone:
+			del.append(id)
+			changed = true
+			(f as Node).queue_free()
+	if changed:
+		layout["deleted"] = del
+		_write_layout(layout)
+
+
 static func _write_layout(layout: Dictionary) -> void:
 	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if f:
@@ -2822,6 +2850,7 @@ func apply_layout() -> void:
 				node.set_meta("wall_item", true)
 			var n := int(str(e.get("id", "a0")).substr(1))
 			_added_seq = maxi(_added_seq, n + 1)
+	_prune_posts(layout)
 	var floors: Dictionary = layout.get("floors", {})
 	for key in floors:
 		var parts: PackedStringArray = str(key).split(",")

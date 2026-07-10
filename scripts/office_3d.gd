@@ -564,6 +564,7 @@ func _col_hpane_x(gx: int) -> float:
 ## perimeter wall face — so corners butt clean, with a post at each
 ## true junction. No overlaps, no through-pane crossings.
 var _gwall_seq := 0
+var _grun_ends: Array = []   # {id, a, b} per built glass run
 
 
 func _glass_run_piece(cx: float, cz: float, length: float, horiz: bool,
@@ -612,7 +613,9 @@ func _build_glass_runs() -> void:
 				xb = _col_hpane_x(gx)
 			elif PERIMETER.contains(e_ch):
 				xb += CELL - WALL_T
-			_glass_run_piece((xa + xb) / 2.0, pane_z, xb - xa, true, glass, steel)
+			var hr := _glass_run_piece((xa + xb) / 2.0, pane_z, xb - xa, true, glass, steel)
+			_grun_ends.append({"id": str(hr.get_meta("piece_id")),
+				"a": Vector3(xa, 0, pane_z), "b": Vector3(xb, 0, pane_z)})
 			posts["%.1f_%.1f" % [xa, pane_z]] = Vector3(xa, 0, pane_z)
 			posts["%.1f_%.1f" % [xb, pane_z]] = Vector3(xb, 0, pane_z)
 	for gx in cols:
@@ -638,7 +641,9 @@ func _build_glass_runs() -> void:
 				zb = _row_gpane_z(gy)
 			elif PERIMETER.contains(s_ch):
 				zb += CELL - WALL_T
-			_glass_run_piece(pane_x, (za + zb) / 2.0, zb - za, false, glass, steel)
+			var vr := _glass_run_piece(pane_x, (za + zb) / 2.0, zb - za, false, glass, steel)
+			_grun_ends.append({"id": str(vr.get_meta("piece_id")),
+				"a": Vector3(pane_x, 0, za), "b": Vector3(pane_x, 0, zb)})
 			posts["%.1f_%.1f" % [pane_x, za]] = Vector3(pane_x, 0, za)
 			posts["%.1f_%.1f" % [pane_x, zb]] = Vector3(pane_x, 0, zb)
 	for key in posts:
@@ -650,6 +655,13 @@ func _build_glass_runs() -> void:
 		post_root.set_meta("piece_id", "g%03d" % _gwall_seq)
 		_gwall_seq += 1
 		post_root.set_meta("snap_mode", "corner")
+		var owners := PackedStringArray()
+		for run in _grun_ends:
+			if (run["a"] as Vector3).distance_to(p) < 0.06 \
+					or (run["b"] as Vector3).distance_to(p) < 0.06:
+				owners.append(str(run["id"]))
+		if not owners.is_empty():
+			post_root.set_meta("runs", owners)
 		_box(Vector3(0.09, 2.04, 0.09), Vector3(0, 1.02, 0), steel, post_root)
 
 
