@@ -224,11 +224,10 @@ func _ready() -> void:
 	_build_cost_meter()
 	EventBus.stage_started.connect(func(_s, _r, _q) -> void:
 		_calls_inflight += 1)
-	EventBus.stage_completed.connect(func(_s, _r, _q, out: String) -> void:
+	EventBus.stage_completed.connect(func(_s, _r, _q, _out: String) -> void:
 		_calls_inflight = maxi(_calls_inflight - 1, 0)
-		_tokens_est += out.length() / 4
 		if _meter_label:
-			_meter_label.text = "≈%dk tok" % (_tokens_est / 1000) if _tokens_est >= 1000 else "≈%d tok" % _tokens_est)
+			_meter_label.text = "≈%dk tok" % (TaskQueue.tokens_est / 1000) if TaskQueue.tokens_est >= 1000 else "≈%d tok" % TaskQueue.tokens_est)
 
 	# Dev helper: AGENT_TOWN_SHOT=/path/out.png godot --path . -> renders a
 	# few seconds, saves a screenshot, quits. Used for README captures.
@@ -759,40 +758,9 @@ func _build_costume_panel() -> void:
 	idea.pressed.connect(func() -> void:
 		_open_input("Pin an idea on the board (a reel topic — Thai or English)",
 			_submit_idea))
-	sep.call()
-
-	# 2) VIEW — panels, with a lit state while open
-	var mark := func(b: Button, on: bool) -> void:
-		if on:
-			b.add_theme_color_override("font_color", coral)
-		else:
-			b.remove_theme_color_override("font_color")
-	var board_btn: Button = mk.call("btn_board", "B")
-	board_btn.pressed.connect(func() -> void:
-		board_panel.visible = not board_panel.visible
-		mark.call(board_btn, board_panel.visible))
-	var feed_btn: Button = mk.call("btn_chat_feed", "")
-	feed_btn.pressed.connect(func() -> void:
-		feed.visible = not feed.visible
-		mark.call(feed_btn, feed.visible))
-	var outputs: Button = mk.call("btn_deliver", "")
-	outputs.pressed.connect(func() -> void:
-		OS.shell_open(ProjectSettings.globalize_path("res://output")))
-	sep.call()
-
-	# 3) SETTINGS
-	var btn: Button = mk.call("btn_costumes", "C")
-	btn.pressed.connect(func() -> void:
-		_costume_panel.visible = not _costume_panel.visible
-		mark.call(btn, _costume_panel.visible))
-	var lang_btn := Button.new()
-	lang_btn.text = "  ไทย  " if I18n.lang == "en" else "  EN  "
-	lang_btn.custom_minimum_size = Vector2(0, 46)
-	lang_btn.add_theme_font_size_override("font_size", 15)
-	lang_btn.pressed.connect(func() -> void:
-		I18n.toggle()
-		lang_btn.text = "  ไทย  " if I18n.lang == "en" else "  EN  ")
-	dock_row.add_child(lang_btn)
+	# research: the dock holds ONLY act-now commands (3-5 max); every
+	# manage/observe surface lives in the sidebar rail
+	_build_sidebar(hud, board_panel, feed)
 	# first-run coach marks (UX audit P5): three ways to command, shown
 	# once, dismissed forever (UI-fade doctrine)
 	if not FileAccess.file_exists("user://seen_hints.txt"):
@@ -831,6 +799,242 @@ func _build_costume_panel() -> void:
 	# show the panel in dev screenshots
 	if not OS.get_environment("AGENT_TOWN_SHOT").is_empty():
 		_costume_panel.visible = true
+
+
+## ---- SIDEBAR RAIL (IA research: sidebar = grouped manage/observe
+## surfaces, shallow nesting; the dock keeps only act-now commands) ----
+var _side_buttons: Dictionary = {}
+var _side_panels: Dictionary = {}
+
+
+func _build_sidebar(hud: CanvasLayer, board_panel: Control, feed: Control) -> void:
+	_side_panels = {
+		"side_board": board_panel,
+		"side_chat": feed,
+		"side_team": _build_team_panel(hud),
+		"side_system": _build_system_panel(hud),
+		"side_settings": _build_settings_panel(hud),
+	}
+	var rail := PanelContainer.new()
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.08, 0.08, 0.12, 0.92)
+	sb.border_color = Color(0.32, 0.32, 0.40)
+	sb.set_border_width_all(1)
+	sb.set_corner_radius_all(12)
+	sb.set_content_margin_all(6)
+	rail.add_theme_stylebox_override("panel", sb)
+	rail.position = Vector2(16, 200)
+	var vb := VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 4)
+	for key in ["side_board", "side_chat", "side_team", "side_system", "side_done", "side_settings"]:
+		var b := Button.new()
+		I18n.reg(b, "text", key)
+		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		b.custom_minimum_size = Vector2(150, 40)
+		b.add_theme_font_size_override("font_size", 14)
+		b.flat = true
+		var k: String = key
+		b.pressed.connect(func() -> void: _side_toggle(k))
+		vb.add_child(b)
+		_side_buttons[key] = b
+	rail.add_child(vb)
+	hud.add_child(rail)
+
+
+func _side_toggle(key: String) -> void:
+	if key == "side_done":
+		OS.shell_open(ProjectSettings.globalize_path("res://output"))
+		return
+	var target: Control = _side_panels.get(key)
+	if target == null:
+		return
+	var opening := not target.visible
+	# one panel at a time (research: reduce simultaneous surfaces)
+	for k in _side_panels:
+		(_side_panels[k] as Control).visible = false
+		(_side_buttons.get(k) as Button).remove_theme_color_override("font_color")
+	if opening:
+		target.visible = true
+		(_side_buttons[key] as Button).add_theme_color_override(
+			"font_color", Color(0.95, 0.45, 0.33))
+
+
+## TEAM: each agent's experience, bond with you, and the levers that
+## exist today to grow them (praise/coach = the current skill system).
+func _build_team_panel(hud: CanvasLayer) -> PanelContainer:
+	var p := _side_panel_shell(hud, Vector2(190, 200), Vector2(560, 0))
+	var vb: VBoxContainer = p.get_child(0)
+	var title := Label.new()
+	I18n.reg(title, "text", "team_panel_title")
+	title.add_theme_font_size_override("font_size", 18)
+	title.modulate = Color(1.0, 0.85, 0.4)
+	vb.add_child(title)
+	var rows := VBoxContainer.new()
+	rows.add_theme_constant_override("separation", 8)
+	vb.add_child(rows)
+	var note := Label.new()
+	I18n.reg(note, "text", "team_note")
+	note.add_theme_font_size_override("font_size", 12)
+	note.modulate = Color(0.7, 0.7, 0.76)
+	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	vb.add_child(note)
+	var refresh := func() -> void:
+		for c in rows.get_children():
+			c.queue_free()
+		for a in get_tree().get_nodes_in_group("agents"):
+			var who := a
+			var row := HBoxContainer.new()
+			row.add_theme_constant_override("separation", 8)
+			var chip := ColorRect.new()
+			chip.custom_minimum_size = Vector2(10, 30)
+			chip.color = BoardPanel.ROLE_COLOR.get(who.role, Color.GRAY)
+			row.add_child(chip)
+			var name_l := Label.new()
+			name_l.text = I18n.t("role_" + who.role)
+			name_l.custom_minimum_size = Vector2(110, 0)
+			name_l.add_theme_font_size_override("font_size", 14)
+			row.add_child(name_l)
+			var xp := Label.new()
+			var mems: int = (Memory.memories.get(who.role, []) as Array).size()
+			xp.text = I18n.f("team_xp", [mems, int(Memory.get_affinity(who.role, "owner") * 100)])
+			xp.add_theme_font_size_override("font_size", 12)
+			xp.modulate = Color(0.75, 0.78, 0.75)
+			xp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			row.add_child(xp)
+			var coach := Button.new()
+			I18n.reg(coach, "text", "btn_coach")
+			coach.pressed.connect(func() -> void:
+				_open_input("Coach the %s (what should they do differently?)" % who.role,
+					func(text: String) -> void: who.coached(text)))
+			row.add_child(coach)
+			var chat := Button.new()
+			I18n.reg(chat, "text", "btn_chat")
+			chat.pressed.connect(func() -> void:
+				_open_input("Say something to the %s" % who.role,
+					func(text: String) -> void:
+						EventBus.chat_line.emit(Config.owner_name, text)
+						EventBus.agent_say.emit(who.role, I18n.t("ack_thinking"))
+						who.chat_reply(text)))
+			row.add_child(chat)
+			var dress := Button.new()
+			I18n.reg(dress, "text", "btn_dress")
+			dress.pressed.connect(func() -> void:
+				_costume_panel._on_role_selected(who.role)
+				_costume_panel.visible = true)
+			row.add_child(dress)
+			rows.add_child(row)
+	p.visibility_changed.connect(func() -> void:
+		if p.visible:
+			refresh.call())
+	return p
+
+
+## SYSTEM: the real flow — live jobs, token spend, engine health.
+func _build_system_panel(hud: CanvasLayer) -> PanelContainer:
+	var p := _side_panel_shell(hud, Vector2(190, 200), Vector2(560, 0))
+	var vb: VBoxContainer = p.get_child(0)
+	var title := Label.new()
+	I18n.reg(title, "text", "sys_title")
+	title.add_theme_font_size_override("font_size", 18)
+	title.modulate = Color(1.0, 0.85, 0.4)
+	vb.add_child(title)
+	var body := Label.new()
+	body.add_theme_font_size_override("font_size", 14)
+	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	vb.add_child(body)
+	var t := Timer.new()
+	t.wait_time = 1.0
+	t.timeout.connect(func() -> void:
+		if not p.visible:
+			return
+		var jobs := TaskQueue.status_text() if not TaskQueue.jobs.is_empty() else I18n.t("sys_none")
+		body.text = "%s\n\n%s %s\n%s %d  ·  %s %d %s\n%s %s" % [
+			jobs,
+			I18n.t("sys_tokens"), ("≈%dk" % (TaskQueue.tokens_est / 1000)) if TaskQueue.tokens_est >= 1000 else ("≈%d" % TaskQueue.tokens_est),
+			I18n.t("sys_fps"), int(Engine.get_frames_per_second()),
+			I18n.t("sys_uptime"), int(Time.get_ticks_msec() / 60000.0), I18n.t("sys_min"),
+			I18n.t("sys_display"), I18n.t("sys_on") if RenderingServer.render_loop_enabled else I18n.t("sys_off"),
+		])
+	p.add_child(t)
+	t.start()
+	return p
+
+
+## SETTINGS: language, character set, office branches (future), notes.
+func _build_settings_panel(hud: CanvasLayer) -> PanelContainer:
+	var p := _side_panel_shell(hud, Vector2(190, 200), Vector2(520, 0))
+	var vb: VBoxContainer = p.get_child(0)
+	var title := Label.new()
+	I18n.reg(title, "text", "set_title")
+	title.add_theme_font_size_override("font_size", 18)
+	title.modulate = Color(1.0, 0.85, 0.4)
+	vb.add_child(title)
+	# language
+	var lrow := HBoxContainer.new()
+	lrow.add_theme_constant_override("separation", 8)
+	var ll := Label.new()
+	I18n.reg(ll, "text", "set_lang")
+	ll.custom_minimum_size = Vector2(150, 0)
+	lrow.add_child(ll)
+	var lang_btn := Button.new()
+	lang_btn.text = "  ไทย  " if I18n.lang == "en" else "  EN  "
+	lang_btn.pressed.connect(func() -> void:
+		I18n.toggle()
+		lang_btn.text = "  ไทย  " if I18n.lang == "en" else "  EN  ")
+	lrow.add_child(lang_btn)
+	vb.add_child(lrow)
+	# character set
+	var crow := HBoxContainer.new()
+	crow.add_theme_constant_override("separation", 8)
+	var cl := Label.new()
+	I18n.reg(cl, "text", "set_charset")
+	cl.custom_minimum_size = Vector2(150, 0)
+	crow.add_child(cl)
+	for s in Costumes.SETS:
+		var sbn := Button.new()
+		sbn.text = " " + str(Costumes.SETS[s]["label"]) + " "
+		var sk := str(s)
+		sbn.pressed.connect(func() -> void:
+			Costumes.save_set(sk)
+			var preset: Dictionary = Costumes.set_preset(sk)
+			var all: Dictionary = {}
+			for a in get_tree().get_nodes_in_group("agents"):
+				a.apply_costume((preset[a.role] as Dictionary).duplicate(true))
+				all[a.role] = preset[a.role]
+			Costumes.save_all(all))
+		crow.add_child(sbn)
+	vb.add_child(crow)
+	# office branches (the future the owner sketched — honest placeholders)
+	var orow := Label.new()
+	I18n.reg(orow, "text", "set_office")
+	orow.add_theme_font_size_override("font_size", 14)
+	vb.add_child(orow)
+	for key in ["office_current", "office_soon1", "office_soon2"]:
+		var o := Label.new()
+		I18n.reg(o, "text", key)
+		o.add_theme_font_size_override("font_size", 13)
+		o.modulate = Color(0.9, 0.9, 0.86) if key == "office_current" else Color(0.55, 0.55, 0.6)
+		vb.add_child(o)
+	return p
+
+
+func _side_panel_shell(hud: CanvasLayer, pos: Vector2, min_size: Vector2) -> PanelContainer:
+	var p := PanelContainer.new()
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.07, 0.07, 0.10, 0.96)
+	sb.border_color = Color(0.32, 0.32, 0.40)
+	sb.set_border_width_all(1)
+	sb.set_corner_radius_all(10)
+	sb.set_content_margin_all(16)
+	p.add_theme_stylebox_override("panel", sb)
+	p.position = pos
+	p.custom_minimum_size = min_size
+	p.visible = false
+	var vb := VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 10)
+	p.add_child(vb)
+	hud.add_child(p)
+	return p
 
 
 ## The HUD NOW line: one chip per running job (UX audit P3) — never a

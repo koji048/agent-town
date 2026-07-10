@@ -16,6 +16,8 @@ var _timer: Timer
 ## Live job registry, so anyone (chat, watchdog) can answer "ถึงไหนแล้ว".
 ## topic -> {stage, role, since (unix), warned, pct}
 var jobs: Dictionary = {}
+## Rough LLM spend gauge (chars/4), read by the cost meter + System panel.
+var tokens_est := 0
 const OVERDUE_SEC := 240.0
 
 ## Discrete stages -> progress percent (approval desk bumps to 75).
@@ -62,6 +64,8 @@ func _ready() -> void:
 		jobs.erase(str(request.get("topic", "untitled"))))
 	EventBus.request_cancelled.connect(func(request: Dictionary) -> void:
 		jobs.erase(str(request.get("topic", "untitled"))))
+	EventBus.stage_completed.connect(func(_s: String, _r: String, _q: Dictionary, out: String) -> void:
+		tokens_est += out.length() / 4)
 	var watchdog := Timer.new()
 	watchdog.wait_time = 30.0
 	watchdog.timeout.connect(_check_overdue)
