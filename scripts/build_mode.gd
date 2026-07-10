@@ -419,6 +419,8 @@ var _carry_new := false          # spawned from catalog, not placed yet
 var _carry_entry := {}           # pending catalog entry {kind, params}
 var _paint := {}                 # active floor style ({} = off)
 var _carry_wall := false         # carried piece is wall-mounted
+var _carry_snap := ""            # "", "edge" (walls) or "corner" (columns)
+var _last_paint_cell := Vector2i(-9999, -9999)
 var _wall_ok := false            # currently snapped to a wall
 var _orig: Transform3D
 var _ring: MeshInstance3D
@@ -497,9 +499,34 @@ func handle_key(keycode: int) -> bool:
 
 
 func _process(_delta: float) -> void:
-	if not active or carrying == null or cam == null:
+	if not active or cam == null:
+		return
+	# drag-paint floors (The Sims): hold the mouse and sweep across
+	# tiles — every cell you cross takes the style
+	if carrying == null and not _paint.is_empty() \
+			and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) \
+			and get_viewport().gui_get_hovered_control() == null:
+		var fp := _floor_point(get_viewport().get_mouse_position())
+		var cell := Vector2i(int(floorf(fp.x / office.CELL)), int(floorf(fp.z / office.CELL)))
+		if cell != _last_paint_cell:
+			_last_paint_cell = cell
+			_paint_tile(fp)
+	if carrying == null:
 		return
 	var p := _floor_point(get_viewport().get_mouse_position())
+	if not _carry_snap.is_empty():
+		var yrot := fposmod(carrying.rotation_degrees.y, 180.0)
+		var horiz := yrot < 45.0 or yrot > 135.0
+		if _carry_snap == "corner":
+			carrying.position.x = roundf(p.x)
+			carrying.position.z = roundf(p.z)
+		elif horiz:
+			carrying.position.x = snappedf(p.x, 0.5)
+			carrying.position.z = roundf(p.z)
+		else:
+			carrying.position.x = roundf(p.x)
+			carrying.position.z = snappedf(p.z, 0.5)
+		return
 	if _carry_wall:
 		# The Sims rule: wall-mounted pieces live ON walls only — glue
 		# to the nearest wall face and turn to face the room.
@@ -558,6 +585,7 @@ func _pick(piece: Node3D) -> void:
 	_carry_new = false
 	_carry_entry = {}
 	_carry_wall = bool(piece.get_meta("wall_item", false))
+	_carry_snap = str(piece.get_meta("snap_mode", ""))
 	_wall_ok = not _carry_wall
 	_orig = piece.transform
 	Sfx.play_ui("paper", -10.0)
@@ -577,6 +605,7 @@ func _place() -> void:
 	carrying = null
 	_carry_new = false
 	_carry_entry = {}
+	_carry_snap = ""
 
 
 func cancel_carry() -> void:
@@ -590,6 +619,7 @@ func cancel_carry() -> void:
 	carrying = null
 	_carry_new = false
 	_carry_entry = {}
+	_carry_snap = ""
 
 
 func _delete_carried() -> void:
@@ -617,6 +647,7 @@ func _delete_carried() -> void:
 	carrying = null
 	_carry_new = false
 	_carry_entry = {}
+	_carry_snap = ""
 
 
 func _attach_ring() -> void:
@@ -2585,7 +2616,8 @@ func _catalog_pick(kind: String, params: Dictionary) -> void:
 	if carrying:
 		cancel_carry()
 	if kind == "floor":
-		_paint = params        # enter paint mode: click tiles to repaint
+		_paint = params        # paint mode: click OR drag across tiles
+		_last_paint_cell = Vector2i(-9999, -9999)
 		return
 	_paint = {}
 	var at := _floor_point(get_viewport().get_visible_rect().size * 0.5)
@@ -2599,6 +2631,15 @@ func _catalog_pick(kind: String, params: Dictionary) -> void:
 	_wall_ok = not _carry_wall
 	if _carry_wall:
 		node.set_meta("wall_item", true)
+	# The Sims wall convention: wall runs live ON tile edges, columns on
+	# corners — so pieces join cleanly and corners always meet
+	_carry_snap = ""
+	if kind == "wall" or str(params.get("id", "")) in ["slatwall", "glassframe", "fence"]:
+		_carry_snap = "edge"
+	elif str(params.get("id", "")) == "column_p":
+		_carry_snap = "corner"
+	if not _carry_snap.is_empty():
+		node.set_meta("snap_mode", _carry_snap)
 	Sfx.play_ui("paper", -10.0)
 	_attach_ring()
 

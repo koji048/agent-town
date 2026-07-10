@@ -340,6 +340,33 @@ func _movable(n: Node3D) -> void:
 	_piece_seq += 1
 
 
+## Adopt a loose builder's output into a movable root: the builder is
+## invoked at (0,0) so its parts are already root-local, then everything
+## it just added is reparented under a rooted, build-mode-tagged node.
+## Separate "w" id space keeps previously saved layouts valid.
+var _wrap_seq := 0
+
+
+func _movable_call(x: float, z: float, fn: Callable) -> Node3D:
+	var before := get_child_count()
+	fn.call()
+	var root := Node3D.new()
+	root.position = Vector3(x, 0, z)
+	add_child(root)
+	root.add_to_group("furniture")
+	root.set_meta("piece_id", "w%03d" % _wrap_seq)
+	_wrap_seq += 1
+	var adopted: Array = []
+	for i in range(before, get_child_count()):
+		var c := get_child(i)
+		if c != root:
+			adopted.append(c)
+	for c in adopted:
+		remove_child(c)
+		root.add_child(c)
+	return root
+
+
 func _prop(model: String, x: float, z: float, rot_deg: float = 0.0, fit: float = 1.0,
 		y: float = 0.0, fit_h: float = 0.0) -> Node3D:
 	var root := Node3D.new()
@@ -711,11 +738,11 @@ func _zone_director() -> void:
 	_box(Vector3(3.9, 1.5, 0.05), Vector3(10.0, 1.9, 0.21),
 		_mat("mural_art", Color.WHITE, "res://assets/textures/mural_full.png"), self, false)
 	_prop("kaykit/rug_rectangle_A", 10.6, 2.3, 0, 2.6)
-	_modern_desk(9.5, 1.7, 1.8)
+	_movable_call(9.5, 1.7, func() -> void: _modern_desk(0.0, 0.0, 1.8))
 	_prop("computerScreen", 9.2, 1.6, 165, 1.0, DESK_H + 0.18, 0.40)
 	_prop("computerKeyboard", 9.7, 1.95, 165, 0.3, DESK_H + 0.03)
 	_task_chair(10.0, 2.6, 205)
-	_credenza(13.8, 1.0, 1.3)
+	_movable_call(13.8, 1.0, func() -> void: _credenza(0.0, 0.0, 1.3))
 	_prop("kaykit/cactus_small_A", 12.9, 0.8, 0, 1.0, 0.0, 0.42)
 	_pendant(Vector3(10.5, 2.4, 2.5))
 
@@ -724,7 +751,7 @@ func _zone_director() -> void:
 func _zone_meeting_nook() -> void:
 	# glass walls come from the map (G row z5.5, H col x7.5) with doors
 	# at (4,5) and the open (7,4) corner — real to pathfinding
-	_round_table(3.5, 2.0)
+	_movable_call(3.5, 2.0, func() -> void: _round_table(0.0, 0.0))
 	_shell_chair(3.5, 1.1, 0, Color(0.88, 0.87, 0.84))
 	_shell_chair(2.6, 2.7, 135, CORAL)
 	_shell_chair(4.4, 2.7, 225, Color(0.35, 0.62, 0.62))
@@ -869,6 +896,7 @@ func _shell_chair(x: float, z: float, rot_deg: float, col: Color) -> void:
 	root.position = Vector3(x, 0, z)
 	root.rotation_degrees = Vector3(0, rot_deg, 0)
 	add_child(root)
+	_movable(root)
 	var steel := _mat("steel", Color(0.42, 0.42, 0.46))
 	var shell := _mat("shell_%02x%02x" % [int(col.r * 255), int(col.g * 255)], col)
 	for lx in [-0.16, 0.16]:
@@ -1035,13 +1063,13 @@ func _station(role: String, sx: float, sz: float) -> void:
 		_mat("trim_coral", CORAL, "", CORAL * 0.4), self, false)
 	_box(Vector3(0.3, 0.06, 0.11), Vector3(sx, 1.44, sz - 0.55),
 		_mat("chip_" + role, ROLE_ACCENT[role], "", (ROLE_ACCENT[role] as Color) * 0.5), self, false)
-	_modern_desk(sx, sz, 1.7)
+	_movable_call(sx, sz, func() -> void: _modern_desk(0.0, 0.0, 1.7))
 	_prop("computerScreen", sx - 0.25, sz - 0.1, 0, 1.0, DESK_H + 0.18, 0.38)
 	_prop("computerScreen", sx + 0.3, sz - 0.1, 5, 1.0, DESK_H + 0.18, 0.38)
 	for arm in [[sx - 0.25, sz - 0.1], [sx + 0.3, sz - 0.1]]:
 		_box(Vector3(0.03, 0.22, 0.03), Vector3(arm[0], DESK_H + 0.11, arm[1]), steel, self, false)
 	_prop("computerKeyboard", sx - 0.2, sz + 0.2, 180, 0.28, DESK_H + 0.03)
-	_task_lamp(sx + 0.6, sz - 0.15, 200, DESK_H + 0.02)
+	_movable_call(sx + 0.6, sz - 0.15, func() -> void: _task_lamp(0.0, 0.0, 200, DESK_H + 0.02))
 	_task_chair(sx, sz + 0.9, 175 + randf_range(-15.0, 15.0))
 	_prop("trashcan", sx - 0.75, sz + 0.85, 0, 1.0, 0.0, 0.35)
 
@@ -1055,7 +1083,7 @@ func _zone_library() -> void:
 	_prop("kaykit/book_set", 2.4, 5.85, 15, 0.3, DESK_H + 0.02)
 	# reading chair + floor lamp in the window corner
 	_modern_armchair(1.6, 8.4, 55, Color(0.42, 0.52, 0.44))
-	_floor_lamp(2.7, 8.6)
+	_movable_call(2.7, 8.6, func() -> void: _floor_lamp(0.0, 0.0))
 	_prop("kaykit/cactus_medium_A", 3.5, 8.5, 0, 1.0, 0.0, 0.6)
 
 
@@ -1069,7 +1097,7 @@ func _zone_writers() -> void:
 	_box(Vector3(0.03, 0.6, 0.9), Vector3(0.20, 1.9, 11.0),
 		_mat("kanban", Color(0.30, 0.30, 0.36)), self, false)
 	# spare growth desk (Phase-3 hireable role)
-	_modern_desk(4.8, 10.0, 1.6)
+	_movable_call(4.8, 10.0, func() -> void: _modern_desk(0.0, 0.0, 1.6))
 	_prop("kaykit/lamp_table", 5.1, 9.85, 160, 1.0, DESK_H + 0.02, 0.30)
 	var hire := Label3D.new()
 	hire.text = "HIRING"
@@ -1126,7 +1154,7 @@ func _zone_edit_bay() -> void:
 	_box(Vector3(0.3, 0.06, 0.13), Vector3(6.0, 2.15, 14.0),
 		_mat("chip_editor", ROLE_ACCENT["editor"], "", (ROLE_ACCENT["editor"] as Color) * 0.5), self, false)
 	# the editor's desk: triple monitors, waveform glow
-	_modern_desk(6.0, 16.0, 1.8)
+	_movable_call(6.0, 16.0, func() -> void: _modern_desk(0.0, 0.0, 1.8))
 	var glow_cols := [Color(0.55, 0.47, 1.0), Color(0.35, 0.86, 0.86), Color(1.0, 0.59, 0.7)]
 	for i in 3:
 		var mx := 5.45 + i * 0.55
@@ -1230,9 +1258,9 @@ func _zone_coffee_bar() -> void:
 	_box(Vector3(0.5, 0.16, 0.3), Vector3(20.2, 1.03, 6.15),
 		_mat("pantry_tray", Color(0.85, 0.80, 0.72)), self, false)
 	_prop("kitchenFridgeSmall", 21.7, 5.5, 180, 1.0, 0.0, 1.1)
-	_bar_stool(19.2, 7.3)
-	_bar_stool(20.2, 7.3)
-	_bar_stool(18.3, 6.3)
+	_movable_call(19.2, 7.3, func() -> void: _bar_stool(0.0, 0.0))
+	_movable_call(20.2, 7.3, func() -> void: _bar_stool(0.0, 0.0))
+	_movable_call(18.3, 6.3, func() -> void: _bar_stool(0.0, 0.0))
 	_pendant(Vector3(19.7, 2.4, 6.2))
 	_pendant(Vector3(21.0, 2.4, 5.6))
 
@@ -1297,7 +1325,7 @@ func _relax_area() -> void:
 	var wp2 := _prop("kaykit/pillow_B", 17.45, 12.35, -70, 0.4, 0.52)
 	_tint_meshes(wp2, kilim_cols[2])
 	# walnut credenza with honed-marble top on black steel legs
-	_credenza(20.9, 13.42)
+	_movable_call(20.9, 13.42, func() -> void: _credenza(0.0, 0.0))
 	_prop("kaykit/cactus_small_A", 20.5, 13.42, 0, 1.0, 0.74, 0.24)
 	# woven basket + the big biophilic corner plant
 	var bask := MeshInstance3D.new()
