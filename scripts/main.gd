@@ -1057,6 +1057,24 @@ func _build_system_panel(hud: CanvasLayer) -> PanelContainer:
 func _build_settings_panel(hud: CanvasLayer) -> PanelContainer:
 	var p := _side_panel_shell(hud, Vector2(190, 200), Vector2(520, 0))
 	var vb: VBoxContainer = p.get_child(0)
+	# effects volume: the whole foley layer on one slider (persisted)
+	var vrow := HBoxContainer.new()
+	vrow.add_theme_constant_override("separation", 10)
+	var vlab := Label.new()
+	I18n.reg(vlab, "text", "set_sfx")
+	vlab.add_theme_font_size_override("font_size", 14)
+	vrow.add_child(vlab)
+	var vs := HSlider.new()
+	vs.min_value = 0
+	vs.max_value = 100
+	vs.step = 5
+	vs.value = Sfx.master_pct
+	vs.custom_minimum_size = Vector2(220, 24)
+	vs.value_changed.connect(func(v: float) -> void:
+		Sfx.set_master(v)
+		Sfx.play_ui("paper", -8.0))
+	vrow.add_child(vs)
+	vb.add_child(vrow)
 	var title := Label.new()
 	I18n.reg(title, "text", "set_title")
 	title.add_theme_font_size_override("font_size", 18)

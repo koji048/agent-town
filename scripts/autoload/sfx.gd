@@ -16,8 +16,31 @@ const VARIANTS := {
 
 var _streams: Dictionary = {}
 
+## Master effects volume: 100% = authored levels; persisted. Footsteps
+## and typing keep their design, the owner keeps the remote control.
+var master_pct := 60.0
+var _tone: AudioStreamPlayer = null
+var _tone_base := -26.0
+
+
+func master_db() -> float:
+	if master_pct <= 1.0:
+		return -80.0
+	return linear_to_db(master_pct / 100.0)
+
+
+func set_master(pct: float) -> void:
+	master_pct = clampf(pct, 0.0, 100.0)
+	if _tone:
+		_tone.volume_db = _tone_base + master_db()
+	var f := FileAccess.open("user://sfx_vol.txt", FileAccess.WRITE)
+	if f:
+		f.store_string(str(master_pct))
+
 
 func _ready() -> void:
+	if FileAccess.file_exists("user://sfx_vol.txt"):
+		master_pct = clampf(float(FileAccess.get_file_as_string("user://sfx_vol.txt")), 0.0, 100.0)
 	for group in VARIANTS:
 		var list: Array = []
 		for name in VARIANTS[group]:
@@ -34,7 +57,7 @@ func play_at(host: Node, group: String, vol_db: float = 0.0, jitter: float = 0.0
 		return
 	var p := AudioStreamPlayer3D.new()
 	p.stream = list.pick_random()
-	p.volume_db = vol_db
+	p.volume_db = vol_db + master_db()
 	p.pitch_scale = 1.0 + randf_range(-jitter, jitter)
 	p.max_distance = 34.0
 	p.unit_size = 6.0
@@ -50,7 +73,7 @@ func play_ui(group: String, vol_db: float = 0.0) -> void:
 		return
 	var p := AudioStreamPlayer.new()
 	p.stream = list.pick_random()
-	p.volume_db = vol_db
+	p.volume_db = vol_db + master_db()
 	p.finished.connect(p.queue_free)
 	add_child(p)
 	p.play()
@@ -66,6 +89,8 @@ func start_room_tone(host: Node, vol_db: float = -24.0) -> void:
 	stream.loop_begin = 0
 	stream.loop_end = stream.data.size() / 2  # 16-bit mono: 2 bytes/frame
 	var p := AudioStreamPlayer.new()
+	_tone = p
+	_tone_base = vol_db
 	p.stream = stream
 	p.volume_db = vol_db
 	host.add_child(p)

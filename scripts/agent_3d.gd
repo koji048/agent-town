@@ -238,8 +238,8 @@ func _ready() -> void:
 	_type_timer.one_shot = true
 	_type_timer.timeout.connect(func() -> void:
 		if state == State.WORKING:
-			Sfx.play_at(self, "key", -10.0, 0.14)
-			_type_timer.start(randf_range(0.10, 0.38)))
+			Sfx.play_at(self, "key", -16.0, 0.14)
+			_type_timer.start(randf_range(0.22, 0.55)))
 	add_child(_type_timer)
 
 	EventBus.stage_started.connect(_on_stage_started)
@@ -293,9 +293,9 @@ func _process(delta: float) -> void:
 		_target_yaw = atan2(to_target.x, to_target.z)
 		# footsteps: one tap per stride, sound picked by floor material
 		_step_accum += step
-		if _step_accum >= 0.55:
+		if _step_accum >= 0.75:
 			_step_accum = 0.0
-			Sfx.play_at(self, _floor_step_group(), -14.0, 0.10)
+			Sfx.play_at(self, _floor_step_group(), -20.0, 0.10)
 
 
 ## The overhead bar: short stage name + live % from the job registry,
