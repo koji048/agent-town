@@ -159,7 +159,7 @@ func _ready() -> void:
 		# the ONE loud moment (reserved juice): chime + confetti + a slow
 		# 4-second push-in on the celebration, then ease back
 		Sfx.play_ui("chime", -6.0)
-		_confetti(office.grid_to_world(Vector2i(12, 9)) + Vector3(0, 2.2, 0))
+		_confetti(office.grid_to_world(office.celebration_grid()) + Vector3(0, 2.2, 0))
 		var base_fov := _cam.fov
 		var tw := _cam.create_tween()
 		tw.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)

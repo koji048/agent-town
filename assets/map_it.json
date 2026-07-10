@@ -2,27 +2,28 @@
  "tile_w": 16,
  "tile_h": 16,
  "rows": [
-  "cwwWWwwwwwwwwwwWwwWWwWww",
-  "vrrrrHrrrrrrHPPPPPP,rrrr",
-  "vrrrrHrrrrrrHPPPPPP,rrrr",
-  "vrrrrHrrrrrrHPPPPPP,rrrr",
-  "vrrrrHrrrrrrHPPPPPP,rrrr",
-  "vGG,GGrrrrrrHPPPPPP,rrrr",
-  "v,,,,,GGG,GGG,,,,,,,,,,,",
-  "v,,,,,,,,,,,,,,,,,,,,,,,",
-  "v,,,,,,,,,,,,,,,,,,,,,,,",
-  "vGGGGG,GGGGGG,,,,,,,,,,,",
-  "gggggggggggggHrrrrrHrrrr",
-  "gggggggggggggHrrrrrHrrrr",
-  "gggggggggggggHrrrrrHrrrr",
-  "gggggggggggggHrrrrrHrrrr",
-  "g###########g,,,,,,GG,GG",
-  "gggggggggggggHrrrrr,rrrr",
-  "gggggggggggggHrrrrr,rrrr",
-  "gggggggggggggHrrrrr,rrrr",
-  "gggggggggggggHrrrrr,rrrr",
-  "gggggggggggggHrrrrr,rrrr",
-  "gggggggggggggGGGGG,GGGGG"
+  "cwwWWwwwwwwwwwwWwwwWwwww",
+  "vrrrrrrrHPPPPPPHrrrrrrrg",
+  "vrrrrrrrHPPPPPPHrrrrrrrg",
+  "Vrrrrrrr,PPPPPP,rrrrrrrg",
+  "vrrrrrrrHPPPPPPHrrrrrrrg",
+  "vrrrrrrrHPPPPPPHrrrrrrrg",
+  "VGGG,GGGGGG,,GGGGGG,GGGg",
+  "vrrrrrrrHgg##ggHrrrrrrrg",
+  "vrrrrrrrHgg##ggHrrrrrrrg",
+  "VrrrrrrrHgg##ggHrrrrrrrg",
+  "vrrrrrrr,gg##gg,rrrrrrrg",
+  "vrrrrrrrHgg##ggHrrrrrrrg",
+  "VrrrrrrrHgg##ggHrrrrrrrg",
+  "vGGG,GGGHgg##ggHGGG,GGGg",
+  "vrrrrrrrHgg##ggHrrrrrrrg",
+  "VrrrrrrrHgg##ggHrrrrrrrg",
+  "vrrrrrrr,gg##ggHrrrrrrrg",
+  "vrrrrrrrHgg##gg,rrrrrrrg",
+  "VrrrrrrrHgg##ggHrrrrrrrg",
+  "vrrrrrrrHgg##ggHrrrrrrrg",
+  "vGGG,GGGggg##gggGGG,GGGg",
+  "ggggggggggg##ggggggggggg"
  ],
  "blocked_chars": "~tdlcwWMvVGH",
  "buildings": {
@@ -34,56 +35,56 @@
    "role": "editor",
    "name": "Security Ops",
    "workstation": [
-    2,
+    3,
     3
    ]
   },
   "noc": {
    "anchor": [
-    13,
+    8,
     1
    ],
    "role": "researcher",
    "name": "NOC",
    "workstation": [
-    15,
+    11,
     3
-   ]
-  },
-  "infra": {
-   "anchor": [
-    20,
-    1
-   ],
-   "role": "writer",
-   "name": "IT Support",
-   "workstation": [
-    16,
-    16
-   ]
-  },
-  "data_lab": {
-   "anchor": [
-    14,
-    10
-   ],
-   "role": "publisher",
-   "name": "Data & AI Lab",
-   "workstation": [
-    16,
-    12
    ]
   },
   "war_room": {
    "anchor": [
-    20,
-    10
+    16,
+    1
    ],
    "role": "director",
    "name": "ERP War Room",
    "workstation": [
-    21,
-    12
+    19,
+    3
+   ]
+  },
+  "data_lab": {
+   "anchor": [
+    16,
+    7
+   ],
+   "role": "publisher",
+   "name": "Data & AI Lab",
+   "workstation": [
+    19,
+    9
+   ]
+  },
+  "dev": {
+   "anchor": [
+    16,
+    14
+   ],
+   "role": "writer",
+   "name": "Dev Bench",
+   "workstation": [
+    19,
+    15
    ]
   }
  }
