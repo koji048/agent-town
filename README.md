@@ -10,11 +10,13 @@ the Writer a hooded Rogue, the Editor a Rogue and the Publisher a Barbarian —
 with real walk / work / cheer animations (KayKit Adventurers, CC0). Design rationale in
 [docs/ISOMETRIC_STUDY.md](docs/ISOMETRIC_STUDY.md).
 
-Drop a request file into a folder — the **Director** picks it up, writes a brief,
-and cascades the work through **Researcher → Scriptwriter → Editor → Publisher**,
-each powered by a live **Claude API** call. Agents walk to their workstations,
-work at their desks, chat in speech bubbles, and the finished reel package lands
-on your disk. No clicking required. You just watch the office live.
+Type an idea, pin a topic, or AirDrop a clip — the **Director triages it
+first** (one Claude call that reads your intent and picks the *minimal*
+crew the job needs), then dispatches **Researcher → Scriptwriter → Editor →
+Publisher** as required: a caption-only ask runs the Publisher alone, a full
+reel runs the whole line. Agents walk to their workstations, work at their
+desks, chat in speech bubbles, and the finished package lands on your disk.
+No clicking required. You just watch the office live.
 
 ![Agent Town — 3D isometric office](docs/screenshot_3d.png)
 
@@ -37,27 +39,50 @@ from [BagIdea Office](https://github.com/bagidea/bagidea-office)
 
 ```mermaid
 flowchart LR
-    Q[queue/pending/*.json] --> D1[Director\nplan]
-    D1 --> R[Researcher\nhooks and facts]
-    R --> W[Scriptwriter\ntimecoded script]
-    W --> E[Editor\nSRT captions]
-    E --> P[Publisher\ntitles and hashtags]
-    P --> D2[Director\nfinal review]
-    D2 --> O[output/timestamp_slug/]
+    Q[chat / idea / clip<br/>queue/pending/*.json] --> T{Director<br/>TRIAGE<br/>intent + stages + briefs}
+    T -->|caption-only| P[Publisher]
+    T -->|script-only| W
+    T -->|full reel| D1[Director plan]
+    D1 --> R[Researcher] --> W[Scriptwriter] --> E[Editor] --> A{{Approval desk<br/>Y / N / 45s auto}}
+    A --> P
+    P --> V{Director review<br/>GO or FIX stage}
+    V -->|FIX once| W
+    V -->|GO| O[output/…/<br/>1_สคริปต์.md · 2_แคปชั่น.srt · 3_โพสต์.txt]
 ```
+
+**Orchestrator, not assembly line** (the Anthropic multi-agent pattern):
+the Director's triage returns strict JSON — intent, the stage subset, and a
+one-line brief per specialist — and each stage's prompt is built from the
+request plus the *actual upstream results*, never a blind chain. The final
+review has authority: `FIX script: …` re-runs exactly that stage once
+(bounded), then ships.
+
+**Reliability** (learned the hard way when a quota outage shipped an empty
+package): every stage output passes a length/format gate — placeholders can
+never ship. CLI failures are classified; `session limit resets 12:50pm`
+trips a circuit breaker that pauses intake, **parks** running jobs with
+their finished stages as checkpoints, and resumes *from the parked stage*
+when the quota returns. Feedback like "the files are empty" is detected as
+an ops complaint, not content notes — the Director apologises and requeues
+the original brief fresh. A supervisor script (`run_town.sh`) revives the
+town in 3 s if the engine itself crashes.
 
 Every stage is a real Claude call — through the **Claude Code CLI** (your
 login, no separate API key) when installed, else the Anthropic API, else
-canned demo text. The pipeline waits for each agent to physically walk to its workstation
-before the call fires — the town state is the pipeline state.
+canned demo text. The pipeline waits for each agent to physically walk to
+its workstation before the call fires — the town state is the pipeline state.
 
 | Agent | Workstation | Deliverable |
 |---|---|---|
-| Director | Glass office under the mural (north) | `00_plan.md`, `05_review.md` |
-| Researcher | Research library (west quiet band) | `01_research.md` |
-| Scriptwriter | Writers' room (pinned pages + a HIRING desk) | `02_script.md` |
-| Editor | Enclosed edit bay (acoustic partition, 3 monitors) | `03_captions.srt` |
-| Publisher | Publishing, beside the green-screen studio | `04_publish.md` |
+| Director | Glass office under the mural (north) | triage + `_เบื้องหลัง/แผนงานผู้กำกับ.md`, `รีวิวก่อนส่ง.md` |
+| Researcher | Research library (west quiet band) | `_เบื้องหลัง/ข้อมูลค้นคว้า.md` |
+| Scriptwriter | Writers' room (pinned pages + a HIRING desk) | `1_สคริปต์.md` |
+| Editor | Enclosed edit bay (acoustic partition, 3 monitors) | `2_แคปชั่น.srt` |
+| Publisher | Publishing, beside the green-screen studio | `3_โพสต์.txt` (paste-ready) |
+
+Clips get their own intake questions (subs only? burn into the video?
+write the Reel caption too?) and a **Caption Review Studio** — filmstrip +
+audio scrub + font/size/colour — before anything is burned.
 
 The Editor follows the same caption rules as the `reels-pipeline` workflow:
 ~32 chars per caption, no mid-word breaks (Thai-aware), phrase-boundary
