@@ -20,6 +20,8 @@ func _ready() -> void:
 ## Called by main once the office exists — rebuilds past memorials.
 func attach_office(office: Node3D) -> void:
 	_office = office
+	if Config.office_branch != "studio":
+		return   # the episode memorial wall is the STUDIO's trophy case
 	for n in episodes:
 		_spawn_memorial(n + 1, "", false)
 
@@ -46,6 +48,8 @@ func _on_shipped(request: Dictionary, _out_dir: String) -> void:
 
 ## A framed EP poster on the north wall + a skyline block on the stage.
 func _spawn_memorial(n: int, _topic: String, animate: bool) -> void:
+	if Config.office_branch != "studio" or _office == null:
+		return
 	if _office == null:
 		return
 	var palette := [Color(0.26, 0.52, 0.96), Color(0.92, 0.26, 0.21),
