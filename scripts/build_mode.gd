@@ -105,6 +105,18 @@ const CATALOG := [
 		[{"th": "เครื่องชงกาแฟ", "en": "Coffee machine"}, "glb", {"model": "kitchenCoffeeMachine", "y": 0.9}],
 		[{"th": "ตู้เย็นเล็ก", "en": "Small fridge"}, "glb", {"model": "kitchenFridgeSmall"}],
 	]],
+	["cat_special", [
+		[{"th": "เตียงนอน", "en": "Double bed"}, "special", {"id": "bed"}],
+		[{"th": "แกรนด์เปียโน", "en": "Grand piano"}, "special", {"id": "piano"}],
+		[{"th": "เตาผิง", "en": "Fireplace"}, "special", {"id": "fireplace"}],
+		[{"th": "ตู้ปลา", "en": "Aquarium"}, "special", {"id": "aquarium"}],
+		[{"th": "โคมลาวา", "en": "Lava lamp"}, "special", {"id": "lava", "y": 0.74}],
+		[{"th": "ทีวีย้อนยุค", "en": "Retro TV"}, "special", {"id": "crt"}],
+		[{"th": "โต๊ะพูล", "en": "Pool table"}, "special", {"id": "pool"}],
+		[{"th": "ตู้เพลง", "en": "Jukebox"}, "special", {"id": "jukebox"}],
+		[{"th": "ชิงช้า", "en": "Swing set"}, "special", {"id": "swing"}],
+		[{"th": "อ่างน้ำร้อน", "en": "Hot tub"}, "special", {"id": "hottub"}],
+	]],
 	["cat_floor", [
 		[{"th": "ไม้เด็ค", "en": "Wood deck"}, "floor", {"tex": "deck"}],
 		[{"th": "คอนกรีต", "en": "Concrete"}, "floor", {"tex": "concrete"}],
@@ -358,7 +370,204 @@ func _spawn(kind: String, params: Dictionary, at: Vector3) -> Node3D:
 			return _spawn_glb(params, at)
 		"wall":
 			return _spawn_wall(params, at)
+		"special":
+			return _spawn_special(str(params.get("id", "")), params, at)
 	return null
+
+
+# ------------------------------- Sims-inspired originals (procedural)
+
+func _cyl(rt: float, rb: float, h: float, pos: Vector3, m: Material,
+		parent: Node3D, rot := Vector3.ZERO) -> MeshInstance3D:
+	var mi := MeshInstance3D.new()
+	var c := CylinderMesh.new()
+	c.top_radius = rt
+	c.bottom_radius = rb
+	c.height = h
+	mi.mesh = c
+	mi.material_override = m
+	mi.position = pos
+	mi.rotation_degrees = rot
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	parent.add_child(mi)
+	return mi
+
+
+func _sph(r: float, pos: Vector3, m: Material, parent: Node3D) -> MeshInstance3D:
+	var mi := MeshInstance3D.new()
+	var s := SphereMesh.new()
+	s.radius = r
+	s.height = r * 2.0
+	mi.mesh = s
+	mi.material_override = m
+	mi.position = pos
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	parent.add_child(mi)
+	return mi
+
+
+func _emat(col: Color, energy := 1.5) -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.albedo_color = col
+	m.emission_enabled = true
+	m.emission = col
+	m.emission_energy_multiplier = energy
+	return m
+
+
+func _glass_mat(col := Color(0.72, 0.84, 0.90, 0.26)) -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.albedo_color = col
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.cull_mode = BaseMaterial3D.CULL_DISABLED
+	m.roughness = 0.05
+	return m
+
+
+func _omni(pos: Vector3, col: Color, energy: float, rng: float, parent: Node3D) -> void:
+	var l := OmniLight3D.new()
+	l.position = pos
+	l.light_color = col
+	l.light_energy = energy
+	l.omni_range = rng
+	l.shadow_enabled = false
+	parent.add_child(l)
+
+
+func _spawn_special(id: String, params: Dictionary, at: Vector3) -> Node3D:
+	var root := Node3D.new()
+	root.position = Vector3(at.x, float(params.get("y", 0.0)), at.z)
+	office.add_child(root)
+	office._movable(root)
+	var wood: StandardMaterial3D = office._mat("sp_wood", Color(0.55, 0.42, 0.30))
+	var dwood: StandardMaterial3D = office._mat("sp_dwood", Color(0.33, 0.25, 0.19))
+	var metal: StandardMaterial3D = office._mat("sp_metal", Color(0.46, 0.47, 0.50))
+	var white: StandardMaterial3D = office._mat("sp_white", Color(0.94, 0.93, 0.90))
+	var black: StandardMaterial3D = office._mat("sp_black", Color(0.10, 0.10, 0.12))
+	match id:
+		"bed":
+			office._box(Vector3(1.65, 0.25, 2.10), Vector3(0, 0.25, 0), dwood, root, false)
+			office._box(Vector3(1.65, 0.72, 0.08), Vector3(0, 0.60, -1.01), dwood, root, false)
+			office._box(Vector3(1.55, 0.16, 1.95), Vector3(0, 0.455, 0.02), white, root, false)
+			office._box(Vector3(1.57, 0.07, 1.15), Vector3(0, 0.57, 0.42),
+				office._mat("sp_blanket", Color(0.42, 0.52, 0.65)), root, false)
+			for px in [-0.40, 0.40]:
+				office._box(Vector3(0.55, 0.11, 0.35), Vector3(px, 0.585, -0.70), white, root, false)
+		"piano":
+			for leg in [Vector3(-0.60, 0.35, 0.35), Vector3(0.60, 0.35, 0.35), Vector3(0, 0.35, -0.40)]:
+				_cyl(0.045, 0.045, 0.70, leg, black, root)
+			office._box(Vector3(1.40, 0.30, 0.95), Vector3(0, 0.85, 0), black, root, false)
+			office._box(Vector3(0.90, 0.06, 0.24), Vector3(0, 0.82, 0.58), white, root, false)
+			office._box(Vector3(0.90, 0.02, 0.10), Vector3(0, 0.86, 0.52), black, root, false)
+			var lid: MeshInstance3D = office._box(Vector3(1.30, 0.03, 0.85), Vector3(0, 1.12, -0.12), black, root, false)
+			lid.rotation_degrees = Vector3(-18, 0, 0)
+			office._box(Vector3(0.50, 0.06, 0.30), Vector3(0, 0.45, 0.95), dwood, root, false)
+			for bl in [Vector3(-0.2, 0.21, 0.95), Vector3(0.2, 0.21, 0.95)]:
+				office._box(Vector3(0.05, 0.42, 0.26), bl, dwood, root, false)
+		"fireplace":
+			var stone: StandardMaterial3D = office._mat("sp_stone", Color(0.58, 0.56, 0.53))
+			office._box(Vector3(1.40, 0.15, 0.50), Vector3(0, 0.075, 0), stone, root, false)
+			for sx in [-0.575, 0.575]:
+				office._box(Vector3(0.25, 1.05, 0.45), Vector3(sx, 0.675, 0), stone, root, false)
+			office._box(Vector3(1.40, 0.22, 0.45), Vector3(0, 1.31, 0), stone, root, false)
+			office._box(Vector3(1.52, 0.06, 0.52), Vector3(0, 1.45, 0), dwood, root, false)
+			office._box(Vector3(0.90, 1.0, 0.06), Vector3(0, 0.65, -0.19), black, root, false)
+			for lg in [Vector3(-0.1, 0.22, 0.02), Vector3(0.12, 0.20, -0.06)]:
+				_cyl(0.05, 0.05, 0.5, lg, dwood, root, Vector3(0, 0, 90))
+			_sph(0.13, Vector3(-0.08, 0.32, -0.02), _emat(Color(1.0, 0.45, 0.10), 2.2), root)
+			_sph(0.10, Vector3(0.10, 0.30, 0.0), _emat(Color(1.0, 0.62, 0.15), 2.2), root)
+			_sph(0.07, Vector3(0.0, 0.42, -0.02), _emat(Color(1.0, 0.80, 0.30), 2.4), root)
+			_omni(Vector3(0, 0.55, 0.3), Color(1.0, 0.60, 0.25), 1.3, 3.2, root)
+		"aquarium":
+			office._box(Vector3(0.95, 0.55, 0.50), Vector3(0, 0.275, 0), dwood, root, false)
+			office._box(Vector3(0.90, 0.50, 0.42), Vector3(0, 0.80, 0), _glass_mat(), root, false)
+			office._box(Vector3(0.86, 0.42, 0.38), Vector3(0, 0.78, 0),
+				_glass_mat(Color(0.25, 0.55, 0.75, 0.45)), root, false)
+			office._box(Vector3(0.86, 0.05, 0.38), Vector3(0, 0.585, 0),
+				office._mat("sp_gravel", Color(0.72, 0.66, 0.55)), root, false)
+			var fish := [[Color(1.0, 0.55, 0.15), Vector3(-0.2, 0.75, 0.05)],
+				[Color(0.25, 0.75, 0.80), Vector3(0.15, 0.88, -0.05)],
+				[Color(0.95, 0.80, 0.25), Vector3(0.05, 0.68, 0.08)]]
+			for f in fish:
+				var fm := _emat(f[0], 0.6)
+				var fb: MeshInstance3D = office._box(Vector3(0.09, 0.045, 0.02), f[1], fm, root, false)
+				fb.rotation_degrees = Vector3(0, randf_range(-40, 40), 0)
+			office._box(Vector3(0.94, 0.06, 0.46), Vector3(0, 1.08, 0), black, root, false)
+			_omni(Vector3(0, 0.95, 0), Color(0.55, 0.85, 1.0), 0.7, 1.6, root)
+		"lava":
+			_cyl(0.05, 0.095, 0.13, Vector3(0, 0.065, 0), metal, root)
+			_cyl(0.048, 0.078, 0.30, Vector3(0, 0.28, 0),
+				_glass_mat(Color(0.55, 0.25, 0.65, 0.40)), root)
+			_sph(0.038, Vector3(0.008, 0.20, 0), _emat(Color(1.0, 0.25, 0.55), 2.4), root)
+			_sph(0.028, Vector3(-0.01, 0.33, 0), _emat(Color(1.0, 0.35, 0.45), 2.4), root)
+			_sph(0.018, Vector3(0.012, 0.40, 0), _emat(Color(1.0, 0.45, 0.40), 2.2), root)
+			_cyl(0.03, 0.05, 0.07, Vector3(0, 0.465, 0), metal, root)
+			_omni(Vector3(0, 0.30, 0), Color(1.0, 0.35, 0.55), 0.65, 1.4, root)
+		"crt":
+			for lx in [-0.24, 0.24]:
+				for lz in [-0.16, 0.16]:
+					_cyl(0.018, 0.025, 0.25, Vector3(lx, 0.125, lz), dwood, root)
+			office._box(Vector3(0.62, 0.50, 0.45), Vector3(0, 0.50, 0), wood, root, false)
+			office._box(Vector3(0.44, 0.34, 0.03), Vector3(-0.05, 0.52, 0.225),
+				_emat(Color(0.35, 0.85, 0.80), 1.1), root, false)
+			for dy in [0.62, 0.50, 0.38]:
+				_cyl(0.028, 0.028, 0.03, Vector3(0.24, dy, 0.225), black, root, Vector3(90, 0, 0))
+		"pool":
+			for lx in [-0.95, 0.95]:
+				for lz in [-0.45, 0.45]:
+					office._box(Vector3(0.13, 0.76, 0.13), Vector3(lx, 0.38, lz), dwood, root, false)
+			office._box(Vector3(2.20, 0.20, 1.20), Vector3(0, 0.80, 0), dwood, root, false)
+			var felt: StandardMaterial3D = office._mat("sp_felt", Color(0.15, 0.45, 0.28))
+			office._box(Vector3(2.02, 0.03, 1.02), Vector3(0, 0.915, 0), felt, root, false)
+			for rz in [-0.56, 0.56]:
+				office._box(Vector3(2.20, 0.07, 0.09), Vector3(0, 0.945, rz), wood, root, false)
+			for rx in [-1.06, 1.06]:
+				office._box(Vector3(0.09, 0.07, 1.20), Vector3(rx, 0.945, 0), wood, root, false)
+			for pk in [Vector3(-1.02, 0.93, -0.52), Vector3(1.02, 0.93, -0.52), Vector3(-1.02, 0.93, 0.52),
+					Vector3(1.02, 0.93, 0.52), Vector3(0, 0.93, -0.56), Vector3(0, 0.93, 0.56)]:
+				_cyl(0.055, 0.055, 0.04, pk, black, root)
+			var ball_cols := [Color(0.9, 0.2, 0.2), Color(0.95, 0.75, 0.2), Color(0.25, 0.35, 0.8),
+				Color(0.2, 0.55, 0.3), Color(0.55, 0.25, 0.6)]
+			for i in ball_cols.size():
+				_sph(0.030, Vector3(0.25 + (i % 3) * 0.07, 0.955, -0.10 + (i / 3) * 0.07),
+					office._mat("sp_ball%d" % i, ball_cols[i]), root)
+			_sph(0.030, Vector3(-0.55, 0.955, 0.12), white, root)
+			var cue: MeshInstance3D = office._box(Vector3(1.40, 0.022, 0.022), Vector3(-0.2, 0.96, 0.30), wood, root, false)
+			cue.rotation_degrees = Vector3(0, 14, 0)
+		"jukebox":
+			var body: StandardMaterial3D = office._mat("sp_juke", Color(0.48, 0.16, 0.14))
+			office._box(Vector3(0.85, 1.35, 0.55), Vector3(0, 0.675, 0), body, root, false)
+			_cyl(0.425, 0.425, 0.55, Vector3(0, 1.35, 0), body, root, Vector3(90, 0, 0))
+			office._box(Vector3(0.52, 0.30, 0.03), Vector3(0, 1.32, 0.27),
+				_emat(Color(1.0, 0.75, 0.35), 1.3), root, false)
+			office._box(Vector3(0.55, 0.50, 0.03), Vector3(0, 0.55, 0.27), black, root, false)
+			for nx in [-0.37, 0.37]:
+				office._box(Vector3(0.06, 1.05, 0.03), Vector3(nx, 0.70, 0.27),
+					_emat(Color(1.0, 0.30, 0.65), 1.6), root, false)
+			_omni(Vector3(0, 1.1, 0.5), Color(1.0, 0.45, 0.70), 0.8, 2.2, root)
+		"swing":
+			for sx in [-1.15, 1.15]:
+				_cyl(0.04, 0.04, 2.35, Vector3(sx - 0.25, 1.08, 0), metal, root, Vector3(0, 0, 13))
+				_cyl(0.04, 0.04, 2.35, Vector3(sx + 0.25, 1.08, 0), metal, root, Vector3(0, 0, -13))
+			_cyl(0.045, 0.045, 2.45, Vector3(0, 2.16, 0), metal, root, Vector3(0, 0, 90))
+			for swx in [-0.50, 0.50]:
+				for rp in [-0.18, 0.18]:
+					office._box(Vector3(0.02, 0.86, 0.02), Vector3(swx + rp, 1.70, 0), metal, root, false)
+				office._box(Vector3(0.46, 0.04, 0.20), Vector3(swx, 1.26, 0), wood, root, false)
+		"hottub":
+			_cyl(0.95, 0.95, 0.72, Vector3(0, 0.36, 0),
+				office._mat("sp_tubwood", Color(0.50, 0.36, 0.26)), root)
+			_cyl(0.97, 0.97, 0.07, Vector3(0, 0.735, 0), dwood, root)
+			_cyl(0.82, 0.82, 0.05, Vector3(0, 0.70, 0), _emat(Color(0.45, 0.80, 0.90), 0.8), root)
+			for b in [Vector3(0.3, 0.73, 0.2), Vector3(-0.25, 0.73, -0.3),
+					Vector3(-0.1, 0.73, 0.35), Vector3(0.2, 0.73, -0.15)]:
+				_sph(0.035, b, white, root)
+			office._box(Vector3(0.55, 0.18, 0.32), Vector3(0, 0.09, 1.10), wood, root, false)
+			_omni(Vector3(0, 0.9, 0), Color(0.55, 0.85, 1.0), 0.6, 2.0, root)
+		_:
+			root.queue_free()
+			return null
+	return root
 
 
 ## Native-scale model (Kenney/KayKit kits are true-to-life meters) with
