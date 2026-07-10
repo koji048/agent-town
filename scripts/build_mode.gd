@@ -7,7 +7,11 @@
 class_name BuildMode
 extends Node
 
-const SAVE_PATH := "user://furniture_layout.json"
+## Layouts are PER OFFICE BRANCH — studio edits never leak into the
+## factory floor and vice versa (the legacy shared file becomes the
+## studio's on first load).
+func _save_path() -> String:
+	return "user://furniture_layout_%s.json" % Config.office_branch
 const SNAP := 0.25
 
 ## kinds: chair/sofa/armchair/shelf = procedural office builders,
@@ -3651,10 +3655,16 @@ func _save_move(piece: Node3D) -> void:
 
 # --------------------------------------------------------- persistence
 
-static func _load_layout() -> Dictionary:
-	if not FileAccess.file_exists(SAVE_PATH):
+func _load_layout() -> Dictionary:
+	var path := _save_path()
+	if not FileAccess.file_exists(path) and Config.office_branch == "studio" \
+			and FileAccess.file_exists("user://furniture_layout.json"):
+		DirAccess.rename_absolute(
+			ProjectSettings.globalize_path("user://furniture_layout.json"),
+			ProjectSettings.globalize_path(path))   # one-time migration
+	if not FileAccess.file_exists(path):
 		return {"moved": {}, "deleted": [], "added": [], "floors": {}}
-	var d: Variant = JSON.parse_string(FileAccess.get_file_as_string(SAVE_PATH))
+	var d: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
 	if not (d is Dictionary):
 		return {"moved": {}, "deleted": [], "added": [], "floors": {}}
 	var dict: Dictionary = d
@@ -3696,8 +3706,8 @@ func _prune_posts(layout: Dictionary) -> void:
 		_write_layout(layout)
 
 
-static func _write_layout(layout: Dictionary) -> void:
-	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+func _write_layout(layout: Dictionary) -> void:
+	var f := FileAccess.open(_save_path(), FileAccess.WRITE)
 	if f:
 		f.store_string(JSON.stringify(layout, "  "))
 

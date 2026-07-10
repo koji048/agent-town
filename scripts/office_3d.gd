@@ -790,13 +790,13 @@ func _furnish_itdata() -> void:
 	var tv := TownTV.new()
 	tv.position = Vector3(15.8, 1.5, 0.55)
 	add_child(tv)
-	for cpos in [Vector2(14.3, 2.4), Vector2(17.2, 2.4), Vector2(14.3, 3.7), Vector2(17.2, 3.7)]:
-		_movable_call(cpos.x, cpos.y, func() -> void: _modern_desk(0.0, 0.0, 1.6))
+	for cpos in [Vector2(14.0, 2.3), Vector2(17.6, 2.3)]:
+		_movable_call(cpos.x, cpos.y, func() -> void: _modern_desk(0.0, 0.0, 1.5))
 		_task_chair(cpos.x, cpos.y + 0.62, _face(Vector2(cpos.x, cpos.y + 0.62), cpos))
 		_prop("computerScreen", cpos.x - 0.3, cpos.y - 0.12, 0, 1.0, DESK_H + 0.18, 0.38)
 		_prop("computerScreen", cpos.x + 0.25, cpos.y - 0.12, 5, 1.0, DESK_H + 0.18, 0.38)
 		_prop("computerKeyboard", cpos.x, cpos.y + 0.18, 0, 0.28, DESK_H + 0.03)
-	_station("researcher", 15.8, 2.4)
+	_station("researcher", 15.8, 4.3)   # own row, 1.4 m clear aisle
 
 	# --- SERVER ROOM (glass, beside NOC with a shared viewing pane):
 	for gy in range(1, 6):
@@ -835,15 +835,16 @@ func _furnish_itdata() -> void:
 	add_child(socl)
 
 	# --- IT SUPPORT (NE corner of the machine band)
-	for dpos in [Vector2(20.9, 1.7), Vector2(22.7, 1.7)]:
-		_movable_call(dpos.x, dpos.y, func() -> void: _modern_desk(0.0, 0.0, 1.5))
-		_task_chair(dpos.x, dpos.y + 0.62, _face(Vector2(dpos.x, dpos.y + 0.62), dpos))
-		_prop("computerScreen", dpos.x, dpos.y - 0.12, 0, 1.0, DESK_H + 0.18, 0.38)
-		_prop("computerKeyboard", dpos.x, dpos.y + 0.18, 0, 0.28, DESK_H + 0.03)
-	_shelving(23.4, 3.6, 270)
-	_rack(20.4, 4.4, 0.0)
-	_prop("cardboardBoxOpen", 22.6, 4.5, 15, 0.5)
-	_prop("cardboardBoxClosed", 23.1, 4.8, 340, 0.55)
+	_movable_call(21.0, 1.7, func() -> void: _modern_desk(0.0, 0.0, 1.5))
+	_task_chair(21.0, 2.32, _face(Vector2(21.0, 2.32), Vector2(21.0, 1.7)))
+	_prop("computerScreen", 21.0, 1.58, 0, 1.0, DESK_H + 0.18, 0.38)
+	_prop("computerKeyboard", 21.0, 1.88, 0, 0.28, DESK_H + 0.03)
+	_movable_call(23.0, 3.9, func() -> void: _modern_desk(0.0, 0.0, 1.5), 270.0)
+	_task_chair(22.38, 3.9, _face(Vector2(22.38, 3.9), Vector2(23.0, 3.9)))
+	_prop("computerScreen", 23.12, 3.9, 270, 1.0, DESK_H + 0.18, 0.38)
+	_shelving(23.3, 1.4, 270)
+	_rack(20.4, 4.6, 0.0)
+	_prop("cardboardBoxOpen", 21.6, 4.7, 15, 0.5)
 
 	# --- SERVICE DESK at the elbow (SPOC faces the entrance path)
 	_box(Vector3(2.6, 1.05, 0.55), Vector3(15.0, 0.53, 7.5), _mat("counter_white", Color(0.82, 0.81, 0.78)))
@@ -853,7 +854,7 @@ func _furnish_itdata() -> void:
 	_prop("pottedPlant", 13.4, 7.6, 0, 1.0, 0.0, 1.15)
 
 	# --- DATA & AI LAB (east wing north — quiet analytical end)
-	for lpos in [Vector2(15.2, 10.9), Vector2(17.4, 10.9)]:
+	for lpos in [Vector2(15.0, 10.8), Vector2(17.7, 10.8)]:
 		_movable_call(lpos.x, lpos.y, func() -> void: _modern_desk(0.0, 0.0, 1.6))
 		_task_chair(lpos.x, lpos.y + 0.62, _face(Vector2(lpos.x, lpos.y + 0.62), lpos))
 		_prop("computerScreen", lpos.x - 0.25, lpos.y - 0.12, 0, 1.0, DESK_H + 0.18, 0.38)
@@ -863,28 +864,31 @@ func _furnish_itdata() -> void:
 			_mat("gpu_body", Color(0.10, 0.10, 0.12)))
 		_box(Vector3(0.02, 0.45, 0.35), Vector3(14.02, 0.30, 11.0 + gpi * 0.6),
 			_mat("gpu_glow", Color(0.5, 0.9, 0.6) * 0.6, "", Color(0.4, 1.0, 0.6)), self, false)
-	_station("publisher", 16.3, 12.9)
+	_station("publisher", 16.3, 13.15)
 
 	# --- ERP WAR ROOM (glass, east wing): everyone faces the table
-	var wt := Vector2(21.6, 11.6)
-	_movable_call(wt.x, wt.y, func() -> void: _round_table(0.0, 0.0, 0.8))
-	for ang in [0.0, 90.0, 180.0, 270.0]:
-		var cp := wt + Vector2(sin(deg_to_rad(ang)), cos(deg_to_rad(ang))) * 1.15
+	var wt := Vector2(21.3, 11.9)
+	_movable_call(wt.x, wt.y, func() -> void: _round_table(0.0, 0.0, 0.75))
+	for ang in [45.0, 135.0, 225.0, 315.0]:
+		var cp := wt + Vector2(sin(deg_to_rad(ang)), cos(deg_to_rad(ang))) * 1.2
 		_shell_chair(cp.x, cp.y, _face(cp, wt),
 			[Color(0.88, 0.87, 0.84), CORAL, Color(0.35, 0.62, 0.62), Color(0.88, 0.87, 0.84)][int(ang / 90.0)])
-	_big_screen(21.6, 10.45, 2.0, Color(0.35, 0.65, 0.95))
-	_station("director", 21.6, 13.3)
+	_big_screen(21.4, 10.4, 1.9, Color(0.35, 0.65, 0.95))
+	_movable_call(23.0, 13.3, func() -> void: _modern_desk(0.0, 0.0, 1.4), 270.0)
+	_task_chair(22.4, 13.3, _face(Vector2(22.4, 13.3), Vector2(23.0, 13.3)))
 
 	# --- DEV BENCH (software, back-to-back pairs facing their desks)
-	for bx in [14.9, 17.5]:
-		_movable_call(bx, 15.9, func() -> void: _modern_desk(0.0, 0.0, 1.5))
-		_task_chair(bx, 15.3, _face(Vector2(bx, 15.3), Vector2(bx, 15.9)))
-		_prop("computerScreen", bx, 16.0, 180, 1.0, DESK_H + 0.18, 0.38)
-		_movable_call(bx, 17.1, func() -> void: _modern_desk(0.0, 0.0, 1.5))
-		_task_chair(bx, 17.7, _face(Vector2(bx, 17.7), Vector2(bx, 17.1)))
-		_prop("computerScreen", bx, 17.0, 0, 1.0, DESK_H + 0.18, 0.38)
-	_station("writer", 16.3, 16.5)
-	_prop("kaykit/cactus_medium_A", 14.3, 18.6, 0, 1.0, 0.0, 0.6)
+	_movable_call(14.8, 15.9, func() -> void: _modern_desk(0.0, 0.0, 1.4))
+	_task_chair(14.8, 15.28, _face(Vector2(14.8, 15.28), Vector2(14.8, 15.9)))
+	_prop("computerScreen", 14.8, 16.0, 180, 1.0, DESK_H + 0.18, 0.38)
+	_movable_call(14.8, 17.7, func() -> void: _modern_desk(0.0, 0.0, 1.4))
+	_task_chair(14.8, 18.32, _face(Vector2(14.8, 18.32), Vector2(14.8, 17.7)))
+	_prop("computerScreen", 14.8, 17.6, 0, 1.0, DESK_H + 0.18, 0.38)
+	_station("writer", 17.6, 16.2)
+	_movable_call(17.6, 18.0, func() -> void: _modern_desk(0.0, 0.0, 1.4))
+	_task_chair(17.6, 18.62, _face(Vector2(17.6, 18.62), Vector2(17.6, 18.0)))
+	_prop("computerScreen", 17.6, 17.88, 0, 1.0, DESK_H + 0.18, 0.38)
+	_prop("kaykit/cactus_medium_A", 14.2, 19.2, 0, 1.0, 0.0, 0.6)
 
 	# --- PANTRY (SE, farthest from the racks — noise gradient)
 	_box(Vector3(0.55, 0.9, 1.6), Vector3(23.35, 0.45, 16.2), _mat("counter_white", Color(0.82, 0.81, 0.78)))
