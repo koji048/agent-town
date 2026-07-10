@@ -35,6 +35,7 @@ const S := {
 	"build_catalog": {"en": "CATALOG", "th": "แคตตาล็อก"},
 	"set_amb": {"en": "Background air-con hum", "th": "เสียงแอร์พื้นหลัง (บรรยากาศ)"},
 	"set_sfx": {"en": "Effects volume", "th": "ระดับเสียงเอฟเฟกต์"},
+	"pick_color": {"en": "Colour:", "th": "สี:"},
 	"hint_walldraw": {"en": "WALL: press on the grid and DRAG along a line — release builds the whole run. Esc = back to select.", "th": "ผนัง: กดค้างบนพื้นแล้วลากเป็นเส้นตรง ปล่อย = สร้างทั้งแนวชิ้นเดียว · Esc กลับโหมดเลือกของ"},
 	"build_keys": {"en": "R rotate · X delete · click place · floors: pick style then click tiles · Esc cancel", "th": "R หมุน · X ลบ · คลิกวาง · พื้น: ลากคลุมพื้นที่แล้วปล่อย = เทสีทั้งผืน · ผนัง: กดแล้วลากเป็นแนว · Esc ยกเลิก"},
 	"cat_seat": {"en": "Seating", "th": "ที่นั่ง"},

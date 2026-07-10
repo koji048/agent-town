@@ -429,12 +429,10 @@ func _expand_catalog() -> void:
 		for it in cat[1]:
 			var params: Dictionary = it[2]
 			if int(params.get("_pal", 0)) == 1:
-				for pc in PALETTE:
-					var np: Dictionary = params.duplicate()
-					np.erase("_pal")
-					np["col"] = pc[1]
-					items.append([{"th": str(it[0]["th"]) + " " + str(pc[0]),
-						"en": str(it[0]["en"]) + " #" + str(pc[1])}, it[1], np])
+				var np: Dictionary = params.duplicate()
+				np.erase("_pal")
+				np["_col_ok"] = 1   # one card; colour comes from the swatches
+				items.append([it[0], it[1], np])
 			else:
 				items.append(it)
 		_cats.append([cat[0], items])
@@ -459,6 +457,7 @@ var _draw_len := 0.0
 var _draw_horiz := true
 var _rect_from := Vector2i(-9999, -9999)
 var _rect_hl: MeshInstance3D = null
+var _swatch_row: HBoxContainer
 var _wall_ok := false            # currently snapped to a wall
 var _orig: Transform3D
 var _ring: MeshInstance3D
@@ -654,6 +653,81 @@ func _wall_snap(p: Vector3) -> Dictionary:
 	return best
 
 
+## Repaint the carried piece: respawn its recipe with the new colour at
+## the same spot/rotation; existing purchases keep their id + saved
+## record, fresh spawns stay fresh. Built-ins without a recipe skip.
+func _recolor(hex: String) -> void:
+	if carrying == null or office == null:
+		return
+	var entry := _carry_entry
+	var keep_id := ""
+	if entry.is_empty():
+		var id := str(carrying.get_meta("piece_id", ""))
+		if not id.begins_with("a"):
+			return
+		for e in _load_layout().get("added", []):
+			if str(e.get("id", "")) == id:
+				entry = {"kind": str(e.get("kind", "")), "params": e.get("params", {})}
+				keep_id = id
+		if entry.is_empty():
+			return
+	elif not _carry_new:
+		keep_id = str(carrying.get_meta("piece_id", ""))
+	var params: Dictionary = (entry.get("params", {}) as Dictionary).duplicate()
+	if not (params.has("col") or params.has("_col_ok")):
+		return
+	params["col"] = hex
+	var pos := carrying.position
+	var rot := carrying.rotation_degrees.y
+	var was_new := _carry_new
+	var was_wall := _carry_wall
+	_drop_ring()
+	carrying.queue_free()
+	var node := _spawn(str(entry.get("kind", "")), params, Vector3(pos.x, 0, pos.z))
+	if node == null:
+		carrying = null
+		return
+	node.position = pos
+	node.rotation_degrees.y = rot
+	carrying = node
+	_carry_new = was_new
+	_carry_wall = was_wall
+	_carry_entry = {"kind": entry.get("kind", ""), "params": params}
+	if was_wall:
+		node.set_meta("wall_item", true)
+	if not keep_id.is_empty():
+		node.set_meta("piece_id", keep_id)
+		var layout := _load_layout()
+		for e in layout.get("added", []):
+			if str(e.get("id", "")) == keep_id:
+				e["params"] = params
+		_write_layout(layout)
+		_carry_new = false
+	_attach_ring()
+	Sfx.play_ui("paper", -12.0)
+
+
+func _colorable() -> bool:
+	if carrying == null:
+		return false
+	if not _carry_entry.is_empty():
+		var pr: Dictionary = _carry_entry.get("params", {})
+		return pr.has("col") or pr.has("_col_ok")
+	var id := str(carrying.get_meta("piece_id", ""))
+	if not id.begins_with("a"):
+		return false
+	for e in _load_layout().get("added", []):
+		if str(e.get("id", "")) == id:
+			var pr2: Dictionary = e.get("params", {})
+			return pr2.has("col") or pr2.has("_col_ok")
+	return false
+
+
+func _update_swatches() -> void:
+	if _swatch_row:
+		_swatch_row.visible = _colorable()
+
+
 # ---------------------------------------------------------------- carry
 
 func _pick(piece: Node3D) -> void:
@@ -666,6 +740,7 @@ func _pick(piece: Node3D) -> void:
 	_orig = piece.transform
 	Sfx.play_ui("paper", -10.0)
 	_attach_ring()
+	_update_swatches()
 
 
 func _place() -> void:
@@ -682,6 +757,7 @@ func _place() -> void:
 	_carry_new = false
 	_carry_entry = {}
 	_carry_snap = ""
+	_update_swatches()
 
 
 func cancel_carry() -> void:
@@ -696,6 +772,7 @@ func cancel_carry() -> void:
 	_carry_new = false
 	_carry_entry = {}
 	_carry_snap = ""
+	_update_swatches()
 
 
 func _delete_carried() -> void:
@@ -725,6 +802,7 @@ func _delete_carried() -> void:
 	_carry_new = false
 	_carry_entry = {}
 	_carry_snap = ""
+	_update_swatches()
 
 
 func _attach_ring() -> void:
@@ -3717,6 +3795,30 @@ func _build_catalog_ui() -> void:
 	_grid.add_theme_constant_override("h_separation", 6)
 	_grid.add_theme_constant_override("v_separation", 6)
 	scroll.add_child(_grid)
+	# THE SIMS DESIGN TOOL: while you hold a colourable piece, this
+	# swatch bar repaints it in place (id, spot and rotation kept)
+	_swatch_row = HBoxContainer.new()
+	_swatch_row.add_theme_constant_override("separation", 4)
+	_swatch_row.visible = false
+	var sl := Label.new()
+	I18n.reg(sl, "text", "pick_color")
+	sl.add_theme_font_size_override("font_size", 12)
+	_swatch_row.add_child(sl)
+	for pc in PALETTE:
+		var sw := Button.new()
+		sw.custom_minimum_size = Vector2(17, 22)
+		sw.focus_mode = Control.FOCUS_NONE
+		var sbx := StyleBoxFlat.new()
+		sbx.bg_color = Color.html(str(pc[1]))
+		sbx.set_corner_radius_all(4)
+		sw.add_theme_stylebox_override("normal", sbx)
+		sw.add_theme_stylebox_override("hover", sbx)
+		sw.add_theme_stylebox_override("pressed", sbx)
+		sw.tooltip_text = str(pc[0])
+		var hex: String = str(pc[1])
+		sw.pressed.connect(func() -> void: _recolor(hex))
+		_swatch_row.add_child(sw)
+	v.add_child(_swatch_row)
 	var hint := Label.new()
 	I18n.reg(hint, "text", "build_keys")
 	hint.add_theme_font_size_override("font_size", 11)
