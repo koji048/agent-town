@@ -331,6 +331,7 @@ func _box(size: Vector3, pos: Vector3, mat: StandardMaterial3D, parent: Node3D =
 ## stable id (creation order is deterministic), so the owner can move
 ## and rotate them Sims-style and the layout persists across boots.
 var _piece_seq := 0
+var floor_tiles := {}   # Vector2i cell -> floor MeshInstance3D (build-mode paint)
 
 
 func _movable(n: Node3D) -> void:
@@ -457,7 +458,7 @@ func _build_floor_cell(gx: int, gy: int) -> void:
 	var m := _mat("floor_" + tex, Color.WHITE, "res://assets/textures/%s.png" % tex)
 	var cx := (gx + 0.5) * CELL
 	var cz := (gy + 0.5) * CELL
-	_box(Vector3(CELL, 0.1, CELL), Vector3(cx, -0.05, cz), m, self, false)
+	floor_tiles[Vector2i(gx, gy)] = _box(Vector3(CELL, 0.1, CELL), Vector3(cx, -0.05, cz), m, self, false)
 	# diorama slab under the floor
 	_box(Vector3(CELL, 0.42, CELL), Vector3(cx, -0.31, cz),
 		_mat("slab", Color(0.55, 0.53, 0.50)), self, false)
