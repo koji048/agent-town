@@ -643,7 +643,14 @@ func _build_glass_runs() -> void:
 			posts["%.1f_%.1f" % [pane_x, zb]] = Vector3(pane_x, 0, zb)
 	for key in posts:
 		var p: Vector3 = posts[key]
-		_box(Vector3(0.09, 2.04, 0.09), Vector3(p.x, 1.02, p.z), steel)
+		var post_root := Node3D.new()
+		post_root.position = Vector3(p.x, 0, p.z)
+		add_child(post_root)
+		post_root.add_to_group("furniture")
+		post_root.set_meta("piece_id", "g%03d" % _gwall_seq)
+		_gwall_seq += 1
+		post_root.set_meta("snap_mode", "corner")
+		_box(Vector3(0.09, 2.04, 0.09), Vector3(0, 1.02, 0), steel, post_root)
 
 
 func _wall_segment(kind: String, pos: Vector3, ne: bool, gx: int, row: String) -> void:
@@ -1080,11 +1087,16 @@ func _credenza(x: float, z: float, w: float = 1.5) -> void:
 ## mesh task chair, trashcan. Tech props stay Kenney (KayKit has none).
 func _station(role: String, sx: float, sz: float) -> void:
 	var steel := _mat("steel", Color(0.42, 0.42, 0.46))
-	_box(Vector3(1.95, 1.25, 0.07), Vector3(sx, 0.72, sz - 0.55), _mat("partition", Color(0.82, 0.81, 0.78)))
-	_box(Vector3(1.95, 0.06, 0.10), Vector3(sx, 1.38, sz - 0.55),
-		_mat("trim_coral", CORAL, "", CORAL * 0.4), self, false)
-	_box(Vector3(0.3, 0.06, 0.11), Vector3(sx, 1.44, sz - 0.55),
-		_mat("chip_" + role, ROLE_ACCENT[role], "", (ROLE_ACCENT[role] as Color) * 0.5), self, false)
+	var proot := _movable_call(sx, sz - 0.55, func() -> void:
+		_box(Vector3(1.95, 1.25, 0.07), Vector3(0, 0.72, 0), _mat("partition", Color(0.82, 0.81, 0.78)))
+		_box(Vector3(1.95, 0.06, 0.10), Vector3(0, 1.38, 0),
+			_mat("trim_coral", CORAL, "", CORAL * 0.4), self, false)
+		_box(Vector3(0.3, 0.06, 0.11), Vector3(0, 1.44, 0),
+			_mat("chip_" + role, ROLE_ACCENT[role], "", (ROLE_ACCENT[role] as Color) * 0.5), self, false))
+	proot.set_meta("snap_mode", "edge")
+	proot.set_meta("half_len", 0.975)
+	proot.set_meta("half_t", 0.05)
+	proot.add_to_group("wall_surface")
 	_movable_call(sx, sz, func() -> void: _modern_desk(0.0, 0.0, 1.7))
 	_prop("computerScreen", sx - 0.25, sz - 0.1, 0, 1.0, DESK_H + 0.18, 0.38)
 	_prop("computerScreen", sx + 0.3, sz - 0.1, 5, 1.0, DESK_H + 0.18, 0.38)
@@ -1171,10 +1183,13 @@ func _zone_edit_bay() -> void:
 	var steel := _mat("steel", Color(0.42, 0.42, 0.46))
 	# glass front now comes from the map (G row on the z14.0 tile edge,
 	# door at x8) — coral trim marks the room above the pane
-	_box(Vector3(4.0, 0.06, 0.12), Vector3(6.0, 2.08, 14.0),
-		_mat("trim_coral", CORAL, "", CORAL * 0.4), self, false)
-	_box(Vector3(0.3, 0.06, 0.13), Vector3(6.0, 2.15, 14.0),
-		_mat("chip_editor", ROLE_ACCENT["editor"], "", (ROLE_ACCENT["editor"] as Color) * 0.5), self, false)
+	var troot := _movable_call(6.0, 14.0, func() -> void:
+		_box(Vector3(4.0, 0.06, 0.12), Vector3(0, 2.08, 0),
+			_mat("trim_coral", CORAL, "", CORAL * 0.4), self, false)
+		_box(Vector3(0.3, 0.06, 0.13), Vector3(0, 2.15, 0),
+			_mat("chip_editor", ROLE_ACCENT["editor"], "", (ROLE_ACCENT["editor"] as Color) * 0.5), self, false))
+	troot.set_meta("snap_mode", "edge")
+	troot.set_meta("half_len", 2.0)
 	# the editor's desk: triple monitors, waveform glow
 	_movable_call(6.0, 16.0, func() -> void: _modern_desk(0.0, 0.0, 1.8))
 	var glow_cols := [Color(0.55, 0.47, 1.0), Color(0.35, 0.86, 0.86), Color(1.0, 0.59, 0.7)]
