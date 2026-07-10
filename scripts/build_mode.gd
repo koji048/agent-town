@@ -57,6 +57,11 @@ var _grid: GridContainer
 var _cat_bar: HFlowContainer
 var _cur_cat := 0
 var _added_seq := 0
+var _icon_cache := {}            # kind+params -> Texture2D (rendered once)
+var _icon_gen := 0               # cancels stale async icon fills
+var _vp: SubViewport
+var _vp_cam: Camera3D
+var _vp_root: Node3D
 
 signal mode_changed(on: bool)
 
@@ -71,6 +76,8 @@ func toggle() -> void:
 	active = not active
 	if _ui:
 		_ui.visible = active
+	if active:
+		_show_cat(_cur_cat)   # regenerate icons (office exists by now)
 	mode_changed.emit(active)
 
 
@@ -404,6 +411,7 @@ func _show_cat(idx: int) -> void:
 	for i in _cat_bar.get_child_count():
 		(_cat_bar.get_child(i) as Button).button_pressed = (i == idx)
 	for c in _grid.get_children():
+		_grid.remove_child(c)
 		c.queue_free()
 	var items: Array = CATALOG[idx][1]
 	for it in items:
@@ -411,9 +419,100 @@ func _show_cat(idx: int) -> void:
 		var kind: String = it[1]
 		var params: Dictionary = it[2]
 		var b := Button.new()
-		b.text = str(names.get(I18n.lang, names.get("th", "?")))
-		b.add_theme_font_size_override("font_size", 12)
-		b.custom_minimum_size = Vector2(115, 34)
+		b.custom_minimum_size = Vector2(115, 112)
 		b.focus_mode = Control.FOCUS_NONE
 		b.pressed.connect(func() -> void: _catalog_pick(kind, params))
+		var v := VBoxContainer.new()
+		v.set_anchors_preset(Control.PRESET_FULL_RECT)
+		v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		v.add_theme_constant_override("separation", 2)
+		b.add_child(v)
+		var tr := TextureRect.new()
+		tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		tr.custom_minimum_size = Vector2(0, 76)
+		tr.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		v.add_child(tr)
+		var lb := Label.new()
+		lb.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		lb.text = str(names.get(I18n.lang, names.get("th", "?")))
+		lb.add_theme_font_size_override("font_size", 11)
+		lb.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		lb.clip_text = true
+		v.add_child(lb)
+		b.set_meta("icon_rect", tr)
 		_grid.add_child(b)
+	_icon_gen += 1
+	_fill_icons(idx, _icon_gen)
+
+
+## The Sims sells with pictures: render each piece once from a 3/4
+## angle into a tiny viewport, cache the texture, drop it on the card.
+func _fill_icons(idx: int, gen: int) -> void:
+	var items: Array = CATALOG[idx][1]
+	for i in items.size():
+		if gen != _icon_gen:
+			return
+		var it: Array = items[i]
+		var tex: Texture2D = await _item_icon(str(it[1]), it[2])
+		if gen != _icon_gen or tex == null or i >= _grid.get_child_count():
+			continue
+		var b := _grid.get_child(i) as Button
+		var tr := b.get_meta("icon_rect") as TextureRect
+		if tr:
+			tr.texture = tex
+
+
+func _item_icon(kind: String, params: Dictionary) -> Texture2D:
+	var key := kind + JSON.stringify(params)
+	if _icon_cache.has(key):
+		return _icon_cache[key]
+	if office == null:
+		return null
+	_ensure_vp()
+	var seq: int = office._piece_seq
+	var node := _spawn(kind, params, Vector3.ZERO)
+	office._piece_seq = seq          # icon models must not eat piece ids
+	if node == null:
+		return null
+	node.remove_from_group("furniture")
+	node.get_parent().remove_child(node)
+	_vp_root.add_child(node)
+	node.position = Vector3.ZERO
+	node.rotation_degrees = Vector3.ZERO
+	var aabb: AABB = office._combined_aabb(node, Transform3D.IDENTITY)
+	var c := aabb.get_center()
+	var r: float = maxf(aabb.size.length() * 0.5, 0.18)
+	_vp_cam.look_at_from_position(c + Vector3(1.0, 0.85, 1.0).normalized() * r * 2.7, c)
+	_vp.render_target_update_mode = SubViewport.UPDATE_ONCE
+	await RenderingServer.frame_post_draw
+	var img := _vp.get_texture().get_image()
+	node.queue_free()
+	var tex := ImageTexture.create_from_image(img)
+	_icon_cache[key] = tex
+	return tex
+
+
+func _ensure_vp() -> void:
+	if _vp:
+		return
+	_vp = SubViewport.new()
+	_vp.size = Vector2i(112, 112)
+	_vp.own_world_3d = true
+	_vp.transparent_bg = true
+	_vp.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	add_child(_vp)
+	_vp_cam = Camera3D.new()
+	_vp_cam.fov = 30.0
+	_vp.add_child(_vp_cam)
+	var sun := DirectionalLight3D.new()
+	sun.rotation_degrees = Vector3(-48, -32, 0)
+	sun.light_energy = 1.25
+	_vp.add_child(sun)
+	var fill := DirectionalLight3D.new()
+	fill.rotation_degrees = Vector3(-18, 142, 0)
+	fill.light_energy = 0.55
+	_vp.add_child(fill)
+	_vp_root = Node3D.new()
+	_vp.add_child(_vp_root)
