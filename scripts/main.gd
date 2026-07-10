@@ -16,6 +16,7 @@ var _costume_panel: CostumePanel
 var _approval_panel: PanelContainer
 var _approval_text: Label
 var _studio: CaptionStudio
+var _build: BuildMode
 var _awaiting_approval := false
 var _sun: DirectionalLight3D
 var _env: Environment
@@ -208,6 +209,12 @@ func _ready() -> void:
 	EventBus.approval_resolved.connect(func(_a: bool) -> void:
 		_awaiting_approval = false
 		_approval_panel.visible = false)
+	# Sims-style build mode, phase 1: move/rotate the existing furniture
+	_build = BuildMode.new()
+	_build.cam = _cam
+	add_child(_build)
+	BuildMode.apply_saved(get_tree())
+
 	# the Caption Review Studio: pre-burn gate for clips (CapCut moment)
 	var studio_layer := CanvasLayer.new()
 	studio_layer.layer = 7
@@ -544,6 +551,8 @@ func _process(delta: float) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	# physical keycodes: layout-proof (works on Thai keyboards too)
 	if event is InputEventKey and event.pressed and not event.echo:
+		if _build and _build.handle_key(event.keycode):
+			return
 		if event.physical_keycode == KEY_C or event.keycode == KEY_C:
 			_costume_panel.visible = not _costume_panel.visible
 		elif _awaiting_approval and (event.physical_keycode == KEY_Y or event.keycode == KEY_Y):
@@ -568,7 +577,10 @@ func _on_view_input(event: InputEvent) -> void:
 			MOUSE_BUTTON_WHEEL_DOWN:
 				_cam.fov = clampf(_cam.fov * 1.08, 12.0, 55.0)
 			MOUSE_BUTTON_LEFT:
-				_pick_agent(event.position)
+				if _build and _build.handle_click(event.position):
+					pass  # build mode consumed the click
+				else:
+					_pick_agent(event.position)
 	elif event is InputEventMouseMotion and \
 			event.button_mask & (MOUSE_BUTTON_MASK_RIGHT | MOUSE_BUTTON_MASK_MIDDLE):
 		var right := _cam.global_transform.basis.x
@@ -831,7 +843,7 @@ func _build_sidebar(hud: CanvasLayer, board_panel: Control, feed: Control) -> vo
 	rail.position = Vector2(16, 200)
 	var vb := VBoxContainer.new()
 	vb.add_theme_constant_override("separation", 4)
-	for key in ["side_board", "side_chat", "side_team", "side_system", "side_done", "side_settings"]:
+	for key in ["side_board", "side_chat", "side_team", "side_system", "side_build", "side_done", "side_settings"]:
 		var b := Button.new()
 		I18n.reg(b, "text", key)
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
@@ -849,6 +861,15 @@ func _build_sidebar(hud: CanvasLayer, board_panel: Control, feed: Control) -> vo
 func _side_toggle(key: String) -> void:
 	if key == "side_done":
 		OS.shell_open(ProjectSettings.globalize_path("res://output"))
+		return
+	if key == "side_build":
+		_build.toggle()
+		var bb := _side_buttons[key] as Button
+		if _build.active:
+			bb.add_theme_color_override("font_color", Color(1.0, 0.78, 0.32))
+			EventBus.log_line.emit(I18n.t("build_hint"))
+		else:
+			bb.remove_theme_color_override("font_color")
 		return
 	var target: Control = _side_panels.get(key)
 	if target == null:

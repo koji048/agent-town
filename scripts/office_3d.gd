@@ -327,12 +327,25 @@ func _box(size: Vector3, pos: Vector3, mat: StandardMaterial3D, parent: Node3D =
 ## Load a Kenney model, normalized: scaled so its footprint is `fit`
 ## metres (or, when `fit_h` > 0, so its HEIGHT is `fit_h` metres),
 ## grounded at y=0, centered on origin. Falls back to a box if missing.
+## Build-mode identity: rooted pieces join the "furniture" group with a
+## stable id (creation order is deterministic), so the owner can move
+## and rotate them Sims-style and the layout persists across boots.
+var _piece_seq := 0
+
+
+func _movable(n: Node3D) -> void:
+	n.add_to_group("furniture")
+	n.set_meta("piece_id", "p%03d" % _piece_seq)
+	_piece_seq += 1
+
+
 func _prop(model: String, x: float, z: float, rot_deg: float = 0.0, fit: float = 1.0,
 		y: float = 0.0, fit_h: float = 0.0) -> Node3D:
 	var root := Node3D.new()
 	root.position = Vector3(x, y, z)
 	root.rotation_degrees = Vector3(0, rot_deg, 0)
 	add_child(root)
+	_movable(root)
 	var node := _instantiate_glb(model)
 	if node == null:
 		_box(Vector3(fit, fit * 0.8, fit * 0.8), Vector3(0, fit * 0.4, 0),
@@ -764,6 +777,7 @@ func _task_chair(x: float, z: float, rot_deg: float) -> void:
 	root.position = Vector3(x, 0, z)
 	root.rotation_degrees = Vector3(0, rot_deg, 0)
 	add_child(root)
+	_movable(root)
 	var steel := _mat("steel", Color(0.42, 0.42, 0.46))
 	var mesh := _mat("chair_mesh", Color(0.20, 0.21, 0.24))
 	var seatm := _mat("chair_seat", Color(0.26, 0.27, 0.30))
@@ -857,6 +871,7 @@ func _shelving(x: float, z: float, rot_deg: float, w: float = 1.1, h: float = 1.
 	root.position = Vector3(x, 0, z)
 	root.rotation_degrees = Vector3(0, rot_deg, 0)
 	add_child(root)
+	_movable(root)
 	var frame := _mat("black_frame", Color(0.13, 0.13, 0.14))
 	var oak := _mat("oak", Color.WHITE, "res://assets/textures/deck.png")
 	var spine_cols := [Color(0.77, 0.30, 0.30), Color(0.30, 0.48, 0.68),
@@ -884,6 +899,7 @@ func _modern_sofa(x: float, z: float, rot_deg: float, col: Color, w: float = 1.7
 	root.position = Vector3(x, 0, z)
 	root.rotation_degrees = Vector3(0, rot_deg, 0)
 	add_child(root)
+	_movable(root)
 	var steel := _mat("steel", Color(0.42, 0.42, 0.46))
 	var fab := _mat("sofa_%02x%02x" % [int(col.r * 255), int(col.g * 255)], col)
 	for lx in [-w / 2.0 + 0.08, w / 2.0 - 0.08]:
@@ -908,6 +924,7 @@ func _modern_armchair(x: float, z: float, rot_deg: float, col: Color) -> void:
 	root.position = Vector3(x, 0, z)
 	root.rotation_degrees = Vector3(0, rot_deg, 0)
 	add_child(root)
+	_movable(root)
 	var steel := _mat("steel", Color(0.42, 0.42, 0.46))
 	var fab := _mat("sofa_%02x%02x" % [int(col.r * 255), int(col.g * 255)], col)
 	for lx in [-0.32, 0.32]:

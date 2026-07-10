@@ -30,6 +30,8 @@ const S := {
 	"side_chat": {"en": "  Team chat", "th": "  แชททีม"},
 	"side_team": {"en": "  Team", "th": "  ทีมงาน"},
 	"side_system": {"en": "  System", "th": "  ระบบ"},
+	"side_build": {"en": "  Build mode", "th": "  จัดห้อง"},
+	"build_hint": {"en": "BUILD: click a piece to pick it up · move mouse · R rotate · click to set down · Esc cancel", "th": "จัดห้อง: คลิกของเพื่อหยิบ · เลื่อนเมาส์ · R หมุน · คลิกวาง · Esc คืนที่เดิม"},
 	"side_done": {"en": "  Deliverables", "th": "  งานที่เสร็จ"},
 	"side_settings": {"en": "  Settings", "th": "  ตั้งค่า"},
 	"team_panel_title": {"en": "TEAM — grow your people", "th": "ทีมงาน — ดูแลและพัฒนาทีม"},
