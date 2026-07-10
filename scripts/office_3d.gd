@@ -554,7 +554,11 @@ func _build_glass_runs() -> void:
 				xb = _col_hpane_x(gx)
 			elif PERIMETER.contains(e_ch):
 				xb += CELL - WALL_T
-			_box(Vector3(xb - xa, 2.0, 0.07), Vector3((xa + xb) / 2.0, 1.0, pane_z), glass, self, false)
+			var gpane := _box(Vector3(xb - xa, 2.0, 0.07), Vector3((xa + xb) / 2.0, 1.0, pane_z), glass, self, false)
+			gpane.add_to_group("wall_surface")
+			gpane.set_meta("horiz", true)
+			gpane.set_meta("half_len", (xb - xa) / 2.0)
+			gpane.set_meta("half_t", 0.05)
 			_box(Vector3(xb - xa + 0.06, 0.05, 0.06), Vector3((xa + xb) / 2.0, 2.02, pane_z), steel, self, false)
 			posts["%.1f_%.1f" % [xa, pane_z]] = Vector3(xa, 0, pane_z)
 			posts["%.1f_%.1f" % [xb, pane_z]] = Vector3(xb, 0, pane_z)
@@ -581,7 +585,11 @@ func _build_glass_runs() -> void:
 				zb = _row_gpane_z(gy)
 			elif PERIMETER.contains(s_ch):
 				zb += CELL - WALL_T
-			_box(Vector3(0.07, 2.0, zb - za), Vector3(pane_x, 1.0, (za + zb) / 2.0), glass, self, false)
+			var vpane := _box(Vector3(0.07, 2.0, zb - za), Vector3(pane_x, 1.0, (za + zb) / 2.0), glass, self, false)
+			vpane.add_to_group("wall_surface")
+			vpane.set_meta("horiz", false)
+			vpane.set_meta("half_len", (zb - za) / 2.0)
+			vpane.set_meta("half_t", 0.05)
 			_box(Vector3(0.06, 0.05, zb - za + 0.06), Vector3(pane_x, 2.02, (za + zb) / 2.0), steel, self, false)
 			posts["%.1f_%.1f" % [pane_x, za]] = Vector3(pane_x, 0, za)
 			posts["%.1f_%.1f" % [pane_x, zb]] = Vector3(pane_x, 0, zb)
@@ -594,7 +602,11 @@ func _wall_segment(kind: String, pos: Vector3, ne: bool, gx: int, row: String) -
 	var size := Vector3(CELL, WALL_H, WALL_T) if ne else Vector3(WALL_T, WALL_H, CELL)
 	var wallmat := _mat("wall_face", Color(0.80, 0.79, 0.76))
 	if kind == "w" or kind == "v" or kind == "M":
-		_box(size, pos + Vector3(0, WALL_H / 2.0, 0), wallmat)
+		var wseg := _box(size, pos + Vector3(0, WALL_H / 2.0, 0), wallmat)
+		wseg.add_to_group("wall_surface")
+		wseg.set_meta("horiz", ne)
+		wseg.set_meta("half_len", CELL / 2.0)
+		wseg.set_meta("half_t", WALL_T / 2.0)
 		var bb := Vector3(CELL, 0.12, 0.05) if ne else Vector3(0.05, 0.12, CELL)
 		var bb_off := Vector3(0, 0.06, WALL_T / 2.0 + 0.03) if ne else Vector3(WALL_T / 2.0 + 0.03, 0.06, 0)
 		_box(bb, pos + bb_off, _mat("baseboard", Color(0.72, 0.68, 0.62)), self, false)

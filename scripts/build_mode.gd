@@ -115,7 +115,7 @@ const CATALOG := [
 		[{"th": "ตู้เสื้อผ้าขาว", "en": "Wardrobe white"}, "special", {"id": "wardrobe", "col": "f0ede6"}],
 		[{"th": "ตู้เสื้อผ้าไม้", "en": "Wardrobe wood"}, "special", {"id": "wardrobe", "col": "b08a5e"}],
 		[{"th": "ตู้เซฟ", "en": "Safe"}, "special", {"id": "safe"}],
-		[{"th": "ชั้นลอยติดผนัง", "en": "Wall shelf"}, "special", {"id": "shelf_wall", "y": 1.4}],
+		[{"th": "ชั้นลอยติดผนัง", "en": "Wall shelf"}, "special", {"id": "shelf_wall", "y": 1.4, "wall": 1}],
 		[{"th": "กองลังไม้", "en": "Crate stack"}, "special", {"id": "crate_stack"}],
 		[{"th": "ชั้นพิงผนังไม้", "en": "Ladder shelf wood"}, "special", {"id": "shelf_ladder", "col": "b08a5e"}],
 		[{"th": "ชั้นพิงผนังดำ", "en": "Ladder shelf black"}, "special", {"id": "shelf_ladder", "col": "26272b"}],
@@ -171,7 +171,7 @@ const CATALOG := [
 		[{"th": "แจกันดอกไม้เหลือง", "en": "Vase yellow"}, "special", {"id": "vase", "col": "e8c93f", "y": 0.74}],
 		[{"th": "แจกันดอกไม้ฟ้า", "en": "Vase blue"}, "special", {"id": "vase", "col": "7da7c9", "y": 0.74}],
 		[{"th": "สมุนไพรครัว", "en": "Herb set"}, "special", {"id": "herbs", "y": 0.74}],
-		[{"th": "สวนแนวตั้ง", "en": "Green wall"}, "special", {"id": "mosswall", "y": 1.2}],
+		[{"th": "สวนแนวตั้ง", "en": "Green wall"}, "special", {"id": "mosswall", "y": 1.2, "wall": 1}],
 		[{"th": "กระบองเพชรยักษ์", "en": "Saguaro"}, "special", {"id": "saguaro"}],
 		[{"th": "หญ้าแพมพาส", "en": "Pampas"}, "special", {"id": "pampas"}],
 		[{"th": "พลูด่างกระถาง", "en": "Pothos"}, "special", {"id": "pothos", "y": 0.74}],
@@ -199,6 +199,26 @@ const CATALOG := [
 		[{"th": "ลำโพงตั้งพื้น", "en": "Speaker"}, "glb", {"model": "speaker"}],
 		[{"th": "เครื่องชงกาแฟ", "en": "Coffee machine"}, "glb", {"model": "kitchenCoffeeMachine", "y": 0.9}],
 		[{"th": "ตู้เย็นเล็ก", "en": "Small fridge"}, "glb", {"model": "kitchenFridgeSmall"}],
+		[{"th": "จอคู่", "en": "Dual monitors"}, "special", {"id": "dual_mon", "y": 0.74}],
+		[{"th": "จอโค้งอัลตร้าไวด์", "en": "Ultrawide"}, "special", {"id": "monitor_uw", "y": 0.74}],
+		[{"th": "คอมออลอินวัน", "en": "All-in-one"}, "special", {"id": "aio", "y": 0.74}],
+		[{"th": "เคส PC ไฟ RGB", "en": "RGB tower"}, "special", {"id": "pc_rgb"}],
+		[{"th": "แล็ปท็อปบนแท่น", "en": "Laptop stand"}, "special", {"id": "laptop_stand", "y": 0.74}],
+		[{"th": "คีย์บอร์ด RGB", "en": "RGB keyboard"}, "special", {"id": "kb_rgb", "y": 0.74}],
+		[{"th": "เมาส์+แผ่นรอง", "en": "Mouse & pad"}, "special", {"id": "mouse_pad", "y": 0.74}],
+		[{"th": "ไมค์พอดแคสต์", "en": "Podcast mic"}, "special", {"id": "mic", "y": 0.74}],
+		[{"th": "แท่นวางหูฟัง", "en": "Headphones"}, "special", {"id": "headphone_stand", "y": 0.74}],
+		[{"th": "เว็บแคมขาตั้ง", "en": "Webcam"}, "special", {"id": "webcam", "y": 0.74}],
+		[{"th": "กล้องขาตั้งสูง", "en": "Camera tripod"}, "special", {"id": "tripod_cam"}],
+		[{"th": "สตรีมเด็ค", "en": "Stream deck"}, "special", {"id": "streamdeck", "y": 0.74}],
+		[{"th": "เมาส์ปากกา", "en": "Pen tablet"}, "special", {"id": "pen_tablet", "y": 0.74}],
+		[{"th": "เครื่องพิมพ์ 3D", "en": "3D printer"}, "special", {"id": "printer3d", "y": 0.74}],
+		[{"th": "โปรเจกเตอร์", "en": "Projector"}, "special", {"id": "projector", "y": 0.74}],
+		[{"th": "จอโปรเจกเตอร์", "en": "Screen"}, "special", {"id": "proj_screen"}],
+		[{"th": "เราเตอร์ WiFi", "en": "Router"}, "special", {"id": "router", "y": 0.74}],
+		[{"th": "แท่นชาร์จมือถือ", "en": "Charging dock"}, "special", {"id": "charging_dock", "y": 0.74}],
+		[{"th": "เครื่องเกมคอนโซล", "en": "Game console"}, "special", {"id": "console", "y": 0.5}],
+		[{"th": "ลำโพงบูมบ็อกซ์", "en": "Boombox"}, "special", {"id": "boombox", "y": 0.74}],
 	]],
 	["cat_office", [
 		[{"th": "โต๊ะปรับยืน", "en": "Standing desk"}, "special", {"id": "desk_stand"}],
@@ -219,7 +239,7 @@ const CATALOG := [
 		[{"th": "ตู้ลิ้นชัก 7 ชั้น", "en": "7-drawer unit"}, "special", {"id": "drawer7"}],
 		[{"th": "เก้าอี้หมุนไม้อ่อน", "en": "Swivel chair"}, "special", {"id": "chair_scandi"}],
 		[{"th": "ไซด์บอร์ดขาว", "en": "Sideboard"}, "special", {"id": "sideboard"}],
-		[{"th": "นาฬิกาแขวน", "en": "Wall clock"}, "special", {"id": "wallclock", "y": 1.45}],
+		[{"th": "นาฬิกาแขวน", "en": "Wall clock"}, "special", {"id": "wallclock", "y": 1.45, "wall": 1}],
 		[{"th": "กระดานดำกรอบไม้", "en": "Chalkboard"}, "special", {"id": "chalkboard"}],
 		[{"th": "บอร์ดหมุดโน้ต", "en": "Pinboard"}, "special", {"id": "corkboard"}],
 		[{"th": "นาฬิกา Flip", "en": "Flip clock"}, "special", {"id": "flipclock", "y": 0.74}],
@@ -234,8 +254,8 @@ const CATALOG := [
 		[{"th": "เก้าอี้คาเฟ่ส้ม", "en": "Cafe chair orange"}, "special", {"id": "cafe_chair", "col": "d96c33"}],
 		[{"th": "เก้าอี้คาเฟ่เทียล", "en": "Cafe chair teal"}, "special", {"id": "cafe_chair", "col": "2a7f86"}],
 		[{"th": "ฉากกั้นตะแกรง", "en": "Grid divider"}, "special", {"id": "griddiv"}],
-		[{"th": "โปสเตอร์เทียล", "en": "Poster teal"}, "special", {"id": "poster", "col": "2a9d8f", "y": 1.25}],
-		[{"th": "โปสเตอร์ครีม", "en": "Poster tan"}, "special", {"id": "poster", "col": "c9a074", "y": 1.25}],
+		[{"th": "โปสเตอร์เทียล", "en": "Poster teal"}, "special", {"id": "poster", "col": "2a9d8f", "y": 1.25, "wall": 1}],
+		[{"th": "โปสเตอร์ครีม", "en": "Poster tan"}, "special", {"id": "poster", "col": "c9a074", "y": 1.25, "wall": 1}],
 		[{"th": "โต๊ะข้างทรงกลอง", "en": "Drum table"}, "special", {"id": "drumtable"}],
 	]],
 	["cat_special", [
@@ -318,6 +338,8 @@ var carrying: Node3D = null
 var _carry_new := false          # spawned from catalog, not placed yet
 var _carry_entry := {}           # pending catalog entry {kind, params}
 var _paint := {}                 # active floor style ({} = off)
+var _carry_wall := false         # carried piece is wall-mounted
+var _wall_ok := false            # currently snapped to a wall
 var _orig: Transform3D
 var _ring: MeshInstance3D
 var _ui: CanvasLayer
@@ -398,8 +420,55 @@ func _process(_delta: float) -> void:
 	if not active or carrying == null or cam == null:
 		return
 	var p := _floor_point(get_viewport().get_mouse_position())
+	if _carry_wall:
+		# The Sims rule: wall-mounted pieces live ON walls only — glue
+		# to the nearest wall face and turn to face the room.
+		var sn := _wall_snap(p)
+		_wall_ok = not sn.is_empty()
+		if _wall_ok:
+			carrying.position.x = sn.pos.x
+			carrying.position.z = sn.pos.z
+			carrying.rotation_degrees.y = sn.rot
+			return
 	carrying.position.x = snappedf(p.x, SNAP)
 	carrying.position.z = snappedf(p.z, SNAP)
+
+
+## Nearest wall face within reach of the cursor: office walls, window
+## glass runs and owner-placed partitions all count as surfaces.
+func _wall_snap(p: Vector3) -> Dictionary:
+	var best := {}
+	var bd := 1.3
+	for wn in get_tree().get_nodes_in_group("wall_surface"):
+		var n3 := wn as Node3D
+		if n3 == null or not is_instance_valid(n3):
+			continue
+		if carrying and (n3 == carrying or carrying.is_ancestor_of(n3)):
+			continue
+		var along: Vector3
+		var nrm: Vector3
+		if n3.has_meta("horiz"):
+			along = Vector3(1, 0, 0) if bool(n3.get_meta("horiz")) else Vector3(0, 0, 1)
+			nrm = Vector3(0, 0, 1) if bool(n3.get_meta("horiz")) else Vector3(1, 0, 0)
+		else:
+			along = n3.global_transform.basis.x.normalized()
+			nrm = n3.global_transform.basis.z.normalized()
+		var wp := n3.global_position
+		var d := p - wp
+		var u := d.dot(along)
+		var v := d.dot(nrm)
+		var hl := float(n3.get_meta("half_len", 0.5))
+		if absf(u) > hl or absf(v) > bd:
+			continue
+		bd = absf(v)
+		var side := 1.0 if v >= 0.0 else -1.0
+		var out := nrm * side
+		best = {
+			"pos": Vector3(wp.x, 0, wp.z) + along * u
+				+ out * (float(n3.get_meta("half_t", 0.08)) + 0.02),
+			"rot": rad_to_deg(atan2(out.x, out.z)),
+		}
+	return best
 
 
 # ---------------------------------------------------------------- carry
@@ -408,12 +477,17 @@ func _pick(piece: Node3D) -> void:
 	carrying = piece
 	_carry_new = false
 	_carry_entry = {}
+	_carry_wall = bool(piece.get_meta("wall_item", false))
+	_wall_ok = not _carry_wall
 	_orig = piece.transform
 	Sfx.play_ui("paper", -10.0)
 	_attach_ring()
 
 
 func _place() -> void:
+	if _carry_wall and not _wall_ok:
+		Sfx.play_ui("error", -10.0)   # Sims rule: needs a wall
+		return
 	if _carry_new:
 		_record_added(carrying, _carry_entry)
 	else:
@@ -1531,6 +1605,178 @@ func _spawn_extra(id: String, params: Dictionary, root: Node3D) -> bool:
 			for i in 5:
 				office._box(Vector3(0.05, 0.90, 0.05), Vector3(-0.80 + i * 0.40, 0.45, 0),
 					pm, root, false)
+		# ----------------------------------------------- gadgets & tech
+		"dual_mon":
+			office._box(Vector3(0.22, 0.03, 0.16), Vector3(0, 0.015, 0), black, root, false)
+			_cyl(0.025, 0.025, 0.32, Vector3(0, 0.18, -0.03), black, root)
+			for mx in [[-0.26, 14.0], [0.26, -14.0]]:
+				var mo: MeshInstance3D = office._box(Vector3(0.50, 0.30, 0.02),
+					Vector3(mx[0], 0.34, 0), _emat(Color(0.16, 0.28, 0.42), 0.7), root, false)
+				mo.rotation_degrees = Vector3(0, mx[1], 0)
+		"monitor_uw":
+			office._box(Vector3(0.26, 0.03, 0.18), Vector3(0, 0.015, 0), black, root, false)
+			_cyl(0.03, 0.03, 0.22, Vector3(0, 0.13, -0.04), black, root)
+			office._box(Vector3(0.88, 0.36, 0.025), Vector3(0, 0.42, 0),
+				_emat(Color(0.20, 0.32, 0.30), 0.8), root, false)
+			for wx2 in [[-0.42, 18.0], [0.42, -18.0]]:
+				var uw: MeshInstance3D = office._box(Vector3(0.16, 0.36, 0.025),
+					Vector3(wx2[0], 0.42, 0.03), _emat(Color(0.20, 0.32, 0.30), 0.8), root, false)
+				uw.rotation_degrees = Vector3(0, wx2[1], 0)
+		"aio":
+			office._box(Vector3(0.30, 0.02, 0.18), Vector3(0, 0.01, 0), white, root, false)
+			var an: MeshInstance3D = office._box(Vector3(0.05, 0.20, 0.02),
+				Vector3(0, 0.12, -0.04), white, root, false)
+			an.rotation_degrees = Vector3(-12, 0, 0)
+			office._box(Vector3(0.62, 0.40, 0.03), Vector3(0, 0.42, 0), white, root, false)
+			office._box(Vector3(0.58, 0.32, 0.01), Vector3(0, 0.45, 0.016),
+				_emat(Color(0.25, 0.38, 0.52), 0.8), root, false)
+		"pc_rgb":
+			office._box(Vector3(0.24, 0.48, 0.46), Vector3(0, 0.26, 0), black, root, false)
+			office._box(Vector3(0.01, 0.42, 0.40), Vector3(0.125, 0.26, 0),
+				_glass_mat(Color(0.5, 0.6, 0.7, 0.25)), root, false)
+			var rgbc := [Color(1.0, 0.3, 0.5), Color(0.3, 0.8, 1.0), Color(0.6, 0.4, 1.0)]
+			for i in 3:
+				var fan: MeshInstance3D = _cyl(0.055, 0.055, 0.02,
+					Vector3(0.11, 0.12 + i * 0.14, -0.12), _emat(rgbc[i], 1.8), root,
+					Vector3(0, 0, 90))
+				fan.scale = Vector3(1, 0.5, 1)
+			_omni(Vector3(0.2, 0.3, 0), Color(0.6, 0.5, 1.0), 0.5, 1.2, root)
+		"laptop_stand":
+			var lst: MeshInstance3D = office._box(Vector3(0.28, 0.015, 0.24),
+				Vector3(0, 0.10, 0), metal, root, false)
+			lst.rotation_degrees = Vector3(-16, 0, 0)
+			for slx in [-0.12, 0.12]:
+				var sll: MeshInstance3D = office._box(Vector3(0.02, 0.13, 0.02),
+					Vector3(slx, 0.05, 0.06), metal, root, false)
+				sll.rotation_degrees = Vector3(20, 0, 0)
+			var lsc: MeshInstance3D = office._box(Vector3(0.26, 0.17, 0.008),
+				Vector3(0, 0.20, -0.09), _emat(Color(0.22, 0.32, 0.42), 0.7), root, false)
+			lsc.rotation_degrees = Vector3(-8, 0, 0)
+			var lkb: MeshInstance3D = office._box(Vector3(0.26, 0.008, 0.17),
+				Vector3(0, 0.125, 0.02), office._mat("sp_alu", Color(0.75, 0.76, 0.78)), root, false)
+			lkb.rotation_degrees = Vector3(-16, 0, 0)
+		"kb_rgb":
+			office._box(Vector3(0.36, 0.025, 0.13), Vector3(0, 0.015, 0), black, root, false)
+			office._box(Vector3(0.34, 0.008, 0.11), Vector3(0, 0.03, 0),
+				office._mat("sp_keys", Color(0.28, 0.29, 0.32)), root, false)
+			office._box(Vector3(0.37, 0.006, 0.14), Vector3(0, 0.006, 0),
+				_emat(Color(0.5, 0.3, 1.0), 1.6), root, false)
+			_omni(Vector3(0, 0.05, 0.1), Color(0.55, 0.35, 1.0), 0.35, 0.7, root)
+		"mouse_pad":
+			office._box(Vector3(0.42, 0.005, 0.32), Vector3(0, 0.003, 0),
+				office._mat("sp_deskmat", Color(0.16, 0.17, 0.20)), root, false)
+			var ms := _sph(0.035, Vector3(0.08, 0.02, 0.02), black, root)
+			ms.scale = Vector3(0.85, 0.6, 1.3)
+		"mic":
+			_cyl(0.07, 0.09, 0.025, Vector3(0, 0.012, 0), black, root)
+			var ma1: MeshInstance3D = office._box(Vector3(0.02, 0.30, 0.02),
+				Vector3(0, 0.15, 0.03), black, root, false)
+			ma1.rotation_degrees = Vector3(14, 0, 0)
+			var ma2: MeshInstance3D = office._box(Vector3(0.02, 0.24, 0.02),
+				Vector3(0, 0.37, -0.03), black, root, false)
+			ma2.rotation_degrees = Vector3(-38, 0, 0)
+			var mcap: MeshInstance3D = _cyl(0.045, 0.045, 0.12, Vector3(0, 0.46, 0.08),
+				office._mat("sp_micbody", Color(0.22, 0.23, 0.26)), root, Vector3(0, 0, 90))
+			mcap.rotation_degrees = Vector3(90, 0, 0)
+			_cyl(0.05, 0.05, 0.005, Vector3(0, 0.46, 0.16), black, root, Vector3(90, 0, 0))
+		"headphone_stand":
+			_cyl(0.07, 0.09, 0.02, Vector3(0, 0.01, 0), metal, root)
+			_cyl(0.015, 0.015, 0.26, Vector3(0, 0.15, 0), metal, root)
+			office._box(Vector3(0.16, 0.03, 0.05), Vector3(0, 0.29, 0), metal, root, false)
+			var hb := _sph(0.09, Vector3(0, 0.26, 0), black, root)
+			hb.scale = Vector3(1, 0.55, 1)
+			for hx2 in [-0.085, 0.085]:
+				var cup := _sph(0.045, Vector3(hx2, 0.19, 0), black, root)
+				cup.scale = Vector3(0.6, 1, 1)
+		"webcam":
+			for i in 3:
+				var ang := i * TAU / 3.0
+				var wl: MeshInstance3D = _cyl(0.008, 0.008, 0.14,
+					Vector3(cos(ang) * 0.05, 0.07, sin(ang) * 0.05), black, root)
+				wl.rotation_degrees = Vector3(sin(ang) * 20.0, 0, cos(ang) * -20.0)
+			office._box(Vector3(0.09, 0.06, 0.05), Vector3(0, 0.17, 0), black, root, false)
+			_cyl(0.018, 0.018, 0.01, Vector3(0, 0.17, 0.028), _emat(Color(0.2, 0.5, 0.9), 0.8),
+				root, Vector3(90, 0, 0))
+			_sph(0.006, Vector3(0.03, 0.19, 0.026), _emat(Color(0.3, 0.9, 0.4), 2.0), root)
+		"streamdeck":
+			var sd: MeshInstance3D = office._box(Vector3(0.13, 0.09, 0.02),
+				Vector3(0, 0.05, 0), black, root, false)
+			sd.rotation_degrees = Vector3(-30, 0, 0)
+			var sdc := [Color(0.9, 0.4, 0.4), Color(0.4, 0.8, 0.5), Color(0.4, 0.55, 0.95),
+				Color(0.95, 0.75, 0.3), Color(0.7, 0.45, 0.9), Color(0.35, 0.8, 0.8)]
+			for i in 6:
+				var kx := -0.035 + (i % 3) * 0.035
+				var ky := 0.055 + (i / 3) * 0.032
+				var sk: MeshInstance3D = office._box(Vector3(0.026, 0.026, 0.005),
+					Vector3(kx, ky, 0.014 - (i / 3) * 0.018), _emat(sdc[i], 1.2), root, false)
+				sk.rotation_degrees = Vector3(-30, 0, 0)
+		"pen_tablet":
+			office._box(Vector3(0.34, 0.012, 0.24), Vector3(0, 0.006, 0), black, root, false)
+			office._box(Vector3(0.26, 0.004, 0.17), Vector3(0.02, 0.014, 0),
+				office._mat("sp_keys", Color(0.28, 0.29, 0.32)), root, false)
+			var pen: MeshInstance3D = _cyl(0.006, 0.008, 0.15, Vector3(-0.20, 0.02, 0.04),
+				black, root, Vector3(0, 0, 78))
+			pen.rotation_degrees = Vector3(0, 25, 90)
+		"printer3d":
+			for cpx in [-0.18, 0.18]:
+				office._box(Vector3(0.04, 0.42, 0.04), Vector3(cpx, 0.21, -0.14), black, root, false)
+			office._box(Vector3(0.44, 0.05, 0.05), Vector3(0, 0.44, -0.14), black, root, false)
+			office._box(Vector3(0.40, 0.03, 0.34), Vector3(0, 0.015, 0), black, root, false)
+			office._box(Vector3(0.30, 0.015, 0.24), Vector3(0, 0.04, 0.01), metal, root, false)
+			_sph(0.035, Vector3(0, 0.075, 0.01), _emat(Color(0.95, 0.55, 0.25), 1.0), root)
+			office._box(Vector3(0.05, 0.08, 0.05), Vector3(0, 0.38, -0.02), metal, root, false)
+		"projector":
+			office._box(Vector3(0.30, 0.10, 0.24), Vector3(0, 0.06, 0), white, root, false)
+			_cyl(0.035, 0.04, 0.03, Vector3(-0.07, 0.07, 0.13),
+				_emat(Color(0.85, 0.90, 1.0), 1.2), root, Vector3(90, 0, 0))
+			_cyl(0.02, 0.02, 0.008, Vector3(0.08, 0.115, 0.04), black, root)
+		"proj_screen":
+			for slx2 in [-0.5, 0.5]:
+				for sa in [22.0, -22.0]:
+					var psl: MeshInstance3D = office._box(Vector3(0.035, 0.5, 0.035),
+						Vector3(slx2, 0.12, 0), black, root, false)
+					psl.rotation_degrees = Vector3(sa, 0, 0)
+			_cyl(0.04, 0.04, 1.4, Vector3(0, 0.26, 0), black, root, Vector3(0, 0, 90))
+			office._box(Vector3(1.30, 1.35, 0.02), Vector3(0, 1.02, 0),
+				_emat(Color(0.96, 0.96, 0.94), 0.35), root, false)
+			office._box(Vector3(1.34, 0.05, 0.04), Vector3(0, 1.72, 0), black, root, false)
+		"router":
+			office._box(Vector3(0.26, 0.05, 0.18), Vector3(0, 0.03, 0), black, root, false)
+			for ax in [-0.09, 0.0, 0.09]:
+				var ant: MeshInstance3D = office._box(Vector3(0.015, 0.16, 0.015),
+					Vector3(ax, 0.13, -0.07), black, root, false)
+				ant.rotation_degrees = Vector3(-14, 0, ax * 100.0)
+			for i in 3:
+				_sph(0.006, Vector3(-0.06 + i * 0.06, 0.058, 0.09),
+					_emat(Color(0.3, 0.9, 0.4), 2.0), root)
+		"charging_dock":
+			office._box(Vector3(0.26, 0.03, 0.12), Vector3(0, 0.015, 0), white, root, false)
+			for phx in [[-0.06, "26272b"], [0.06, "3a4a6b"]]:
+				var ph: MeshInstance3D = office._box(Vector3(0.075, 0.15, 0.008),
+					Vector3(phx[0], 0.10, -0.01),
+					office._mat("sp_ph_" + str(phx[1]), Color.html(str(phx[1]))), root, false)
+				ph.rotation_degrees = Vector3(-12, 0, 0)
+			_sph(0.005, Vector3(0.11, 0.035, 0.05), _emat(Color(0.3, 0.9, 0.4), 2.0), root)
+		"console":
+			var cs: MeshInstance3D = office._box(Vector3(0.09, 0.30, 0.26),
+				Vector3(0, 0.16, 0), white, root, false)
+			cs.rotation_degrees = Vector3(0, 0, -4)
+			office._box(Vector3(0.02, 0.28, 0.24), Vector3(-0.055, 0.16, 0), black, root, false)
+			for cx2 in [0.12, 0.22]:
+				var pad := _sph(0.035, Vector3(cx2, 0.025, 0.08), black, root)
+				pad.scale = Vector3(1.4, 0.5, 1)
+			_sph(0.005, Vector3(0.035, 0.29, 0.09), _emat(Color(0.35, 0.65, 1.0), 2.0), root)
+		"boombox":
+			office._box(Vector3(0.42, 0.20, 0.14), Vector3(0, 0.11, 0),
+				office._mat("sp_boom", Color(0.85, 0.83, 0.78)), root, false)
+			for bxp in [-0.13, 0.13]:
+				_cyl(0.065, 0.065, 0.01, Vector3(bxp, 0.11, 0.072), black, root, Vector3(90, 0, 0))
+				_cyl(0.03, 0.03, 0.012, Vector3(bxp, 0.11, 0.074),
+					office._mat("sp_alu", Color(0.75, 0.76, 0.78)), root, Vector3(90, 0, 0))
+			office._box(Vector3(0.10, 0.05, 0.10), Vector3(0, 0.235, 0),
+				office._mat("sp_boom", Color(0.85, 0.83, 0.78)), root, false)
+			office._box(Vector3(0.08, 0.025, 0.005), Vector3(0, 0.13, 0.073),
+				_emat(Color(0.3, 0.8, 0.9), 0.9), root, false)
 		_:
 			return false
 	return true
@@ -1570,7 +1816,10 @@ func _spawn_wall(params: Dictionary, at: Vector3) -> Node3D:
 	root.position = Vector3(at.x, 0, at.z)
 	office.add_child(root)
 	office._movable(root)
+	root.add_to_group("wall_surface")
+	root.set_meta("half_t", 0.06)
 	var w := float(params.get("w", 2.0))
+	root.set_meta("half_len", w / 2.0)
 	var h := 1.15 if params.has("half") else 2.55
 	var m: StandardMaterial3D
 	if params.has("glass"):
@@ -1605,6 +1854,10 @@ func _catalog_pick(kind: String, params: Dictionary) -> void:
 	carrying = node
 	_carry_new = true
 	_carry_entry = {"kind": kind, "params": params}
+	_carry_wall = int(params.get("wall", 0)) == 1
+	_wall_ok = not _carry_wall
+	if _carry_wall:
+		node.set_meta("wall_item", true)
 	Sfx.play_ui("paper", -10.0)
 	_attach_ring()
 
@@ -1694,6 +1947,8 @@ func apply_layout() -> void:
 		if node:
 			node.rotation_degrees.y = float(e.get("rot", 0.0))
 			node.set_meta("piece_id", str(e.get("id", "")))
+			if int(e.get("params", {}).get("wall", 0)) == 1:
+				node.set_meta("wall_item", true)
 			var n := int(str(e.get("id", "a0")).substr(1))
 			_added_seq = maxi(_added_seq, n + 1)
 	var floors: Dictionary = layout.get("floors", {})
