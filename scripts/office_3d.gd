@@ -1296,8 +1296,12 @@ func _relax_area() -> void:
 	# oval rug under the seating group
 	_prop("kaykit/rug_oval_A", 19.5, 11.4, 0, 2.6)
 	# diagonal wood-slat screens (north edge, semi-enclosure from coffee)
-	_slat_screen(Vector3(18.45, 0, 9.42), 1.8)
-	_slat_screen(Vector3(20.3, 0, 9.42), 1.8)
+	for sxp in [18.45, 20.3]:
+		var sroot := _movable_call(sxp, 9.42, func() -> void: _slat_screen(Vector3(0, 0, 0), 1.8))
+		sroot.set_meta("snap_mode", "edge")
+		sroot.set_meta("half_len", 0.9)
+		sroot.set_meta("half_t", 0.06)
+		sroot.add_to_group("wall_surface")
 	# modern sofa with throw pillows, back to the screens
 	_modern_sofa(19.5, 10.15, 0, Color(0.55, 0.54, 0.53))
 	var kilim_cols := [Color(0.80, 0.35, 0.28), Color(0.85, 0.66, 0.30), Color(0.30, 0.36, 0.55)]

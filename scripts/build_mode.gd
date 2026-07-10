@@ -468,11 +468,22 @@ func handle_click(mpos: Vector2) -> bool:
 	var best: Node3D = null
 	var bd := 0.9
 	for f in get_tree().get_nodes_in_group("furniture"):
-		var fp := (f as Node3D).global_position
-		var d := Vector2(fp.x - p.x, fp.z - p.z).length()
+		if not is_instance_valid(f):
+			continue
+		var n3 := f as Node3D
+		var d: float
+		if n3.has_meta("half_len"):
+			# long pieces (walls, glass runs, slat screens): distance to
+			# the SEGMENT, so clicking anywhere along the run picks it
+			var lp: Vector3 = n3.global_transform.affine_inverse() * p
+			var dx := maxf(absf(lp.x) - float(n3.get_meta("half_len")), 0.0)
+			d = Vector2(dx, lp.z).length()
+		else:
+			var fp := n3.global_position
+			d = Vector2(fp.x - p.x, fp.z - p.z).length()
 		if d < bd:
 			bd = d
-			best = f
+			best = n3
 	if best:
 		_pick(best)
 	return true
