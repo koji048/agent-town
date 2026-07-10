@@ -14,6 +14,8 @@ const ROLE_COLOR := {
 }
 
 const STAGE_PIC := {
+	"1_สคริปต์.md": "writer", "2_แคปชั่น.srt": "editor", "3_แผนโพสต์.md": "publisher",
+	# legacy package names (pre folder-contract)
 	"00_plan.md": "director", "01_research.md": "researcher",
 	"02_script.md": "writer", "03_captions.srt": "editor",
 	"04_publish.md": "publisher", "05_review.md": "director",
@@ -382,10 +384,12 @@ func _refresh() -> void:
 ## request.json ("YYYYMMDD_HHMMSS_slug" digits told the owner nothing).
 func _package_title(d: String) -> Array:
 	var topic := ""
-	var meta: Variant = JSON.parse_string(
-		FileAccess.get_file_as_string("res://output/" + d + "/request.json"))
-	if meta is Dictionary:
-		topic = str((meta as Dictionary).get("topic", "")).strip_edges()
+	for rel in ["/_เบื้องหลัง/request.json", "/request.json"]:
+		var meta: Variant = JSON.parse_string(
+			FileAccess.get_file_as_string("res://output/" + d + rel))
+		if meta is Dictionary:
+			topic = str((meta as Dictionary).get("topic", "")).strip_edges()
+			break
 	if topic.is_empty():
 		topic = d.get_slice("_", 2).replace("-", " ")
 	if topic.strip_edges().is_empty():

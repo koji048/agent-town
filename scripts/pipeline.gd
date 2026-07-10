@@ -33,6 +33,22 @@ func _run(request: Dictionary) -> void:
 	var niche := str(request.get("niche", Config.niche))
 	var brief := _describe(request)
 
+	# INTENT PASS (owner's ask): before anyone works, the Director
+	# distills what the human actually MEANS — core message, angle,
+	# must-haves — announces it (correctable), and it steers the plan.
+	if Config.provider_resolved != "simulate":
+		var intent: String = await Claude.complete(
+			"You are the Director of a Reels production office. The owner typed a raw idea. " +
+			"Distill their UNDERLYING INTENT in the same language they used: " +
+			"1) core message to communicate, 2) angle/tone, 3) must-not-miss points. " +
+			"Max 3 short lines, no preamble.",
+			"Owner's raw words:\n%s" % brief, "plan")
+		if not intent.is_empty():
+			request["intent"] = intent
+			brief += "\n\nDIRECTOR'S READING OF THE OWNER'S INTENT:\n" + intent
+			EventBus.agent_say.emit("director", I18n.f("say_intent", [intent.left(140)]))
+			EventBus.log_line.emit("🎯 Intent: %s" % intent.left(80))
+
 	var plan := await _stage("plan", "director", request,
 		Prompts.director_plan(lang, niche),
 		"Content request:\n%s" % brief, results)

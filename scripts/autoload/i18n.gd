@@ -119,6 +119,7 @@ const S := {
 	"say_lost": {"en": "Sorry %s — lost my train of thought there.", "th": "ขอโทษครับ %s — เมื่อกี้หลุดโฟกัสไปแป๊บ"},
 	"say_greet": {"en": "Morning, %s! Good to have you in the office.", "th": "สวัสดีครับ %s! ดีใจที่เข้ามาที่ออฟฟิศนะครับ"},
 	"say_meeting": {"en": "Team huddle! New job: '%s'", "th": "ประชุมด่วน! งานใหม่: '%s'"},
+	"say_intent": {"en": "My reading of your brief: %s — correct me if I'm off!", "th": "ผมตีความโจทย์ว่า: %s — ถ้าคลาดเคลื่อนทักมาได้เลยครับ"},
 	"say_overdue": {"en": "'%s' is taking longer than usual — on it, sorry!", "th": "งาน '%s' ช้ากว่าปกติ กำลังเร่งอยู่ครับ ขอโทษด้วย!"},
 	# short stage names for the overhead status chip
 	"stg_plan": {"en": "brief", "th": "บรีฟ"},
