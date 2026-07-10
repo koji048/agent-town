@@ -462,6 +462,10 @@ var _draw_horiz := true
 var _rect_from := Vector2i(-9999, -9999)
 var _rect_hl: MeshInstance3D = null
 var _swatch_row: HBoxContainer
+# PRE-LOCATE (The Sims footprint): a translucent tile-strip that always
+# shows exactly where the carried piece / wall run will land.
+var _foot: MeshInstance3D = null
+var _foot_size := Vector2.ZERO
 var _wall_ok := false            # currently snapped to a wall
 var _orig: Transform3D
 var _ring: MeshInstance3D
@@ -491,6 +495,7 @@ func toggle() -> void:
 	_wall_draw = {}
 	_cancel_draw()
 	_end_rect(false)
+	_foot_hide()
 	active = not active
 	if _ui:
 		_ui.visible = active
@@ -544,6 +549,7 @@ func handle_key(keycode: int) -> bool:
 	if keycode == KEY_ESCAPE and not _wall_draw.is_empty():
 		_cancel_draw()
 		_wall_draw = {}
+		_foot_hide()
 		return true
 	if keycode == KEY_ESCAPE and not _paint.is_empty():
 		_paint = {}
@@ -569,6 +575,16 @@ func _process(_delta: float) -> void:
 	var lmb := Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)
 	# WALL DRAWING (The Sims): press a corner, drag along an axis — live
 	# preview grows in whole tiles; release builds the run as one piece
+	if not _wall_draw.is_empty() and _draw_from == Vector3.INF and carrying == null \
+			and get_viewport().gui_get_hovered_control() == null:
+		# hover pre-locate: show the edge-snapped start tile before the press
+		var hp := _floor_point(get_viewport().get_mouse_position())
+		var fx2 := absf(hp.x - roundf(hp.x))
+		var fz2 := absf(hp.z - roundf(hp.z))
+		var hov_h := fz2 <= fx2
+		var hpos := Vector3(snappedf(hp.x, 0.5), 0, roundf(hp.z)) if hov_h \
+			else Vector3(roundf(hp.x), 0, snappedf(hp.z, 0.5))
+		_foot_show(hpos, Vector2(1.08, 0.22), 0.0 if hov_h else 90.0)
 	if not _wall_draw.is_empty() and _draw_from != Vector3.INF:
 		var fp := _floor_point(get_viewport().get_mouse_position())
 		var ex := roundf(fp.x)
@@ -580,8 +596,12 @@ func _process(_delta: float) -> void:
 		if lmb:
 			if ln != _draw_len or horiz != _draw_horiz:
 				_update_draw_preview(ln, horiz, signf(dx if horiz else dz))
+			if _draw_preview:
+				_foot_show(_draw_preview.position, Vector2(ln + 0.12, 0.26),
+					_draw_preview.rotation_degrees.y)
 			return
 		_finish_draw()
+		_foot_hide()
 		return
 	# FLOOR RECT FILL: drag a rectangle, release pours the style
 	if not _paint.is_empty() and _rect_from.x > -9000:
@@ -615,9 +635,12 @@ func _process(_delta: float) -> void:
 			carrying.position.x = sn.pos.x
 			carrying.position.z = sn.pos.z
 			carrying.rotation_degrees.y = sn.rot
+			_foot_show(carrying.position, _foot_size, carrying.rotation_degrees.y)
 			return
 	carrying.position.x = snappedf(p.x, SNAP)
 	carrying.position.z = snappedf(p.z, SNAP)
+	_foot_show(carrying.position, _foot_size, carrying.rotation_degrees.y,
+		_carry_wall and not _wall_ok)
 
 
 ## Nearest wall face within reach of the cursor: office walls, window
@@ -742,6 +765,8 @@ func _pick(piece: Node3D) -> void:
 	_carry_snap = str(piece.get_meta("snap_mode", ""))
 	_wall_ok = not _carry_wall
 	_orig = piece.transform
+	var ab: AABB = office._combined_aabb(piece, Transform3D.IDENTITY)
+	_foot_size = Vector2(maxf(ab.size.x, 0.3) + 0.12, maxf(ab.size.z, 0.3) + 0.12)
 	Sfx.play_ui("paper", -10.0)
 	_attach_ring()
 	_update_swatches()
@@ -761,6 +786,7 @@ func _place() -> void:
 	_carry_new = false
 	_carry_entry = {}
 	_carry_snap = ""
+	_foot_hide()
 	_update_swatches()
 
 
@@ -776,6 +802,7 @@ func cancel_carry() -> void:
 	_carry_new = false
 	_carry_entry = {}
 	_carry_snap = ""
+	_foot_hide()
 	_update_swatches()
 
 
@@ -806,6 +833,7 @@ func _delete_carried() -> void:
 	_carry_new = false
 	_carry_entry = {}
 	_carry_snap = ""
+	_foot_hide()
 	_update_swatches()
 
 
@@ -837,6 +865,34 @@ func _floor_point(mpos: Vector2) -> Vector3:
 		return from
 	var t := -from.y / dir.y
 	return from + dir * t
+
+
+func _ensure_foot() -> MeshInstance3D:
+	if _foot == null or not is_instance_valid(_foot):
+		_foot = MeshInstance3D.new()
+		_foot.mesh = BoxMesh.new()
+		var m := StandardMaterial3D.new()
+		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		m.albedo_color = Color(1.0, 0.78, 0.32, 0.35)
+		_foot.material_override = m
+		office.add_child(_foot)
+	return _foot
+
+
+func _foot_show(pos: Vector3, size: Vector2, yrot: float, bad: bool = false) -> void:
+	var ft := _ensure_foot()
+	(ft.mesh as BoxMesh).size = Vector3(size.x, 0.015, size.y)
+	ft.position = Vector3(pos.x, 0.025, pos.z)
+	ft.rotation_degrees = Vector3(0, yrot, 0)
+	(ft.material_override as StandardMaterial3D).albedo_color = \
+		Color(0.95, 0.35, 0.30, 0.42) if bad else Color(1.0, 0.78, 0.32, 0.35)
+
+
+func _foot_hide() -> void:
+	if _foot and is_instance_valid(_foot):
+		_foot.queue_free()
+	_foot = null
 
 
 # ------------------------------------------------ drawing gestures
@@ -3611,6 +3667,8 @@ func _catalog_pick(kind: String, params: Dictionary) -> void:
 		_carry_snap = "corner"
 	if not _carry_snap.is_empty():
 		node.set_meta("snap_mode", _carry_snap)
+	var ab2: AABB = office._combined_aabb(node, Transform3D.IDENTITY)
+	_foot_size = Vector2(maxf(ab2.size.x, 0.3) + 0.12, maxf(ab2.size.z, 0.3) + 0.12)
 	Sfx.play_ui("paper", -10.0)
 	_attach_ring()
 	_update_swatches()
