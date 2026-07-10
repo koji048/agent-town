@@ -466,6 +466,7 @@ var _swatch_row: HBoxContainer
 # shows exactly where the carried piece / wall run will land.
 var _foot: MeshInstance3D = null
 var _foot_size := Vector2.ZERO
+var _hov_h := true               # last hover orientation for 1-click walls
 var _wall_ok := false            # currently snapped to a wall
 var _orig: Transform3D
 var _ring: MeshInstance3D
@@ -514,6 +515,7 @@ func handle_click(mpos: Vector2) -> bool:
 	var p := _floor_point(mpos)
 	if not _wall_draw.is_empty():
 		_draw_from = Vector3(roundf(p.x), 0, roundf(p.z))
+		_foot_hide()
 		return true
 	if not _paint.is_empty():
 		var c := office.CELL as float
@@ -575,16 +577,15 @@ func _process(_delta: float) -> void:
 	var lmb := Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)
 	# WALL DRAWING (The Sims): press a corner, drag along an axis — live
 	# preview grows in whole tiles; release builds the run as one piece
-	if not _wall_draw.is_empty() and _draw_from == Vector3.INF and carrying == null \
-			and get_viewport().gui_get_hovered_control() == null:
+	if not _wall_draw.is_empty() and _draw_from == Vector3.INF and carrying == null:
 		# hover pre-locate: show the edge-snapped start tile before the press
 		var hp := _floor_point(get_viewport().get_mouse_position())
 		var fx2 := absf(hp.x - roundf(hp.x))
 		var fz2 := absf(hp.z - roundf(hp.z))
-		var hov_h := fz2 <= fx2
-		var hpos := Vector3(snappedf(hp.x, 0.5), 0, roundf(hp.z)) if hov_h \
+		_hov_h = fz2 <= fx2
+		var hpos := Vector3(snappedf(hp.x, 0.5), 0, roundf(hp.z)) if _hov_h \
 			else Vector3(roundf(hp.x), 0, snappedf(hp.z, 0.5))
-		_foot_show(hpos, Vector2(1.08, 0.22), 0.0 if hov_h else 90.0)
+		_foot_show(hpos, Vector2(1.08, 0.22), 0.0 if _hov_h else 90.0)
 	if not _wall_draw.is_empty() and _draw_from != Vector3.INF:
 		var fp := _floor_point(get_viewport().get_mouse_position())
 		var ex := roundf(fp.x)
@@ -911,6 +912,9 @@ func _update_draw_preview(ln: float, horiz: bool, dir: float) -> void:
 
 
 func _finish_draw() -> void:
+	if _draw_preview == null and _draw_from != Vector3.INF:
+		# click without drag: place one segment, oriented like the hover
+		_update_draw_preview(1.0, _hov_h, 1.0)
 	if _draw_preview:
 		var params: Dictionary = (_wall_draw["params"] as Dictionary).duplicate()
 		params["w"] = _draw_len
