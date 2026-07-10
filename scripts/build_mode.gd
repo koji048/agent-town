@@ -489,6 +489,21 @@ func _ready() -> void:
 	_build_catalog_ui()
 
 
+func devtest_walls() -> void:
+	var before := get_tree().get_nodes_in_group("furniture").size()
+	_catalog_pick("wall", {"w": 2.0, "glass": 1})
+	_draw_from = Vector3(9, 0, 17)
+	_update_draw_preview(3.0, true, 1.0)
+	_finish_draw()
+	_catalog_pick("special", {"id": "gwall", "w": 2.0})
+	_draw_from = Vector3(9, 0, 18)
+	_update_draw_preview(2.0, true, 1.0)
+	_finish_draw()
+	var after := get_tree().get_nodes_in_group("furniture").size()
+	print("[walltest] pieces before=%d after=%d (+%d expected 2) added_records=%d" % [
+		before, after, after - before, (_load_layout().get("added", []) as Array).size()])
+
+
 func toggle() -> void:
 	if active and carrying:
 		cancel_carry()
@@ -3665,7 +3680,7 @@ func _catalog_pick(kind: String, params: Dictionary) -> void:
 	# The Sims wall convention: wall runs live ON tile edges, columns on
 	# corners — so pieces join cleanly and corners always meet
 	_carry_snap = ""
-	if kind == "wall" or str(params.get("id", "")) in ["slatwall", "glassframe", "fence"]:
+	if kind == "wall" or str(params.get("id", "")) in ["slatwall", "glassframe", "fence", "gwall"]:
 		_carry_snap = "edge"
 	elif str(params.get("id", "")) == "column_p":
 		_carry_snap = "corner"

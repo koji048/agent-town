@@ -225,6 +225,11 @@ func _ready() -> void:
 	_build.apply_layout()
 	if OS.get_environment("AGENT_TOWN_BUILD") != "":  # dev: shot with catalog open
 		_build.toggle()
+	if OS.get_environment("AGENT_TOWN_TESTWALL") != "":  # dev: e2e wall draw
+		if not _build.active:
+			_build.toggle()
+		get_tree().create_timer(3.0).timeout.connect(func() -> void:
+			_build.devtest_walls())
 
 	# the Caption Review Studio: pre-burn gate for clips (CapCut moment)
 	var studio_layer := CanvasLayer.new()
