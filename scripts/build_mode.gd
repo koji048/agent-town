@@ -16,6 +16,14 @@ const SNAP := 0.25
 ## original packs. params._pal expands into the 12-colour PALETTE.
 const CATALOG := [
 	["cat_seat", [
+		[{"th": "เก้าอี้เกมมิ่งแดง", "en": "Racing gaming chair"}, "special", {"id": "gaming_chair", "col": "c14b3f"}],
+		[{"th": "เก้าอี้เกมมิ่งฟ้า", "en": "Racing gaming chair blue"}, "special", {"id": "gaming_chair", "col": "3fb8d9"}],
+		[{"th": "เก้าอี้ผู้บริหารตาข่าย", "en": "High-back mesh chair"}, "special", {"id": "mesh_chair"}],
+		[{"th": "เก้าอี้โยกไม้", "en": "Rocking chair"}, "special", {"id": "rocking_chair"}],
+		[{"th": "เก้าอี้ไข่แขวน", "en": "Hanging egg chair"}, "special", {"id": "egg_swing"}],
+		[{"th": "โซฟาเบด", "en": "Sofa bed"}, "special", {"id": "sofa_bed", "col": "55575c"}],
+		[{"th": "เตียงสองชั้น", "en": "Bunk bed"}, "special", {"id": "bunk_bed"}],
+		[{"th": "ม้านั่งเก็บของ", "en": "Storage bench"}, "special", {"id": "storage_bench"}],
 		[{"th": "เก้าอี้ทำงาน", "en": "Task chair"}, "chair", {}],
 		[{"th": "เลานจ์แชร์", "en": "Lounge chair"}, "glb", {"model": "loungeChair"}],
 		[{"th": "โซฟาเลานจ์", "en": "Lounge sofa"}, "glb", {"model": "loungeSofa"}],
@@ -48,6 +56,11 @@ const CATALOG := [
 		[{"th": "โซฟาตัว L", "en": "L-sofa"}, "special", {"id": "sofa_l", "_pal": 1}],
 	]],
 	["cat_table", [
+		[{"th": "โต๊ะข้างใบไม้", "en": "Leaf side table"}, "special", {"id": "leaf_table"}],
+		[{"th": "โต๊ะขาหยั่ง", "en": "Trestle desk"}, "special", {"id": "trestle_desk"}],
+		[{"th": "โต๊ะเกมมิ่ง RGB", "en": "RGB gaming desk"}, "special", {"id": "gaming_desk"}],
+		[{"th": "โต๊ะเครื่องแป้งไฟฮอลลีวูด", "en": "Hollywood vanity"}, "special", {"id": "vanity", "col": "e0b4b8"}],
+		[{"th": "โต๊ะกินข้าววงรีขยาย", "en": "Extendable oval table"}, "special", {"id": "ext_table"}],
 		[{"th": "โต๊ะทำงาน", "en": "Desk"}, "glb", {"model": "desk"}],
 		[{"th": "โต๊ะเข้ามุม", "en": "Corner desk"}, "glb", {"model": "deskCorner"}],
 		[{"th": "โต๊ะอาหาร", "en": "Table"}, "glb", {"model": "table"}],
@@ -88,6 +101,13 @@ const CATALOG := [
 		[{"th": "โต๊ะคิวบ์", "en": "Side cube"}, "special", {"id": "cubeside", "_pal": 1}],
 	]],
 	["cat_store", [
+		[{"th": "ตู้หนังสือสูงเต็มตู้", "en": "Tall bookcase (full)"}, "special", {"id": "billy"}],
+		[{"th": "เพกบอร์ดครบชุด", "en": "Pegboard set"}, "special", {"id": "pegboard", "y": 1.3, "wall": 1}],
+		[{"th": "ตู้กล่องสไลด์เด็ก", "en": "Slide-bin unit"}, "special", {"id": "trofast"}],
+		[{"th": "ชั้นไม้สนสองช่วง", "en": "Pine bay shelving"}, "special", {"id": "ivar"}],
+		[{"th": "ชั้นลวดโครเมียม", "en": "Chrome wire rack"}, "special", {"id": "wire_rack"}],
+		[{"th": "ราวเสื้อ+ไม้แขวน", "en": "Clothes rail"}, "special", {"id": "clothes_rack"}],
+		[{"th": "กล่องติดผนังสามใบ", "en": "Wall cube trio"}, "special", {"id": "eket_cubes", "y": 1.35, "wall": 1}],
 		[{"th": "ชั้นหนังสือ", "en": "Bookshelf"}, "shelf", {}],
 		[{"th": "ตู้หนังสือทึบ", "en": "Closed bookcase"}, "glb", {"model": "bookcaseClosedWide"}],
 		[{"th": "ตู้หนังสือโปร่ง", "en": "Open bookcase"}, "glb", {"model": "bookcaseOpen"}],
@@ -125,6 +145,11 @@ const CATALOG := [
 		[{"th": "ชั้นตาราง", "en": "Grid shelf"}, "special", {"id": "kallax", "_pal": 1}],
 	]],
 	["cat_light", [
+		[{"th": "โคมโดมยักษ์", "en": "Grand dome lamp"}, "special", {"id": "dome_lamp"}],
+		[{"th": "เสาไฟอัพไลท์", "en": "Uplight pole"}, "special", {"id": "uplight"}],
+		[{"th": "ไฟห้อยหวายถัก", "en": "Woven pendant"}, "special", {"id": "weave_pendant"}],
+		[{"th": "แชนเดอเลียร์ 6 แขน", "en": "Chandelier"}, "special", {"id": "chandelier"}],
+		[{"th": "แถบไฟส่องผนัง", "en": "LED wall washer"}, "special", {"id": "cove_bar", "col": "8f5bff"}],
 		[{"th": "โคมตั้งพื้นกลม", "en": "Floor lamp"}, "glb", {"model": "lampRoundFloor", "light": 1.4}],
 		[{"th": "โคมตั้งพื้นสูง", "en": "Standing lamp"}, "glb", {"model": "kaykit/lamp_standing", "light": 1.5}],
 		[{"th": "โคมโต๊ะเหลี่ยม", "en": "Table lamp"}, "glb", {"model": "lampSquareTable", "light": 0.5, "y": 0.74}],
@@ -149,6 +174,10 @@ const CATALOG := [
 		[{"th": "โคมเห็ด", "en": "Mushroom lamp"}, "special", {"id": "lamp_mushroom", "y": 0.74, "_pal": 1}],
 	]],
 	["cat_plant", [
+		[{"th": "มาคราเม่แขวนสามกระถาง", "en": "Macrame trio"}, "special", {"id": "macrame_trio"}],
+		[{"th": "มะกอกในตะกร้าหวาย", "en": "Olive in basket"}, "special", {"id": "olive_basket"}],
+		[{"th": "บันไดสมุนไพร", "en": "Herb ladder"}, "special", {"id": "herb_ladder"}],
+		[{"th": "สวนโหลแก้วครอบ", "en": "Glass cloche"}, "special", {"id": "cloche", "y": 0.74}],
 		[{"th": "ต้นไม้กระถาง", "en": "Potted plant"}, "prop", {"model": "pottedPlant", "fit_h": 1.15}],
 		[{"th": "ไม้กระถางเล็ก 1", "en": "Small plant 1"}, "glb", {"model": "plantSmall1"}],
 		[{"th": "ไม้กระถางเล็ก 2", "en": "Small plant 2"}, "glb", {"model": "plantSmall2"}],
@@ -178,6 +207,11 @@ const CATALOG := [
 		[{"th": "ไทรกระถางสี", "en": "Ficus pot"}, "special", {"id": "ficus", "_pal": 1}],
 	]],
 	["cat_decor", [
+		[{"th": "หิ้งรูปภาพพิง", "en": "Gallery ledge"}, "special", {"id": "gallery_ledge", "y": 1.45, "wall": 1}],
+		[{"th": "ผ้าแขวนผนังทอ", "en": "Woven tapestry"}, "special", {"id": "tapestry", "y": 1.5, "wall": 1}],
+		[{"th": "ลูกโลกบาร์วินเทจ", "en": "Globe bar"}, "special", {"id": "globe_bar"}],
+		[{"th": "ป้ายนีออนหลอด", "en": "Neon tube sign"}, "special", {"id": "neon_open", "y": 1.6, "wall": 1}],
+		[{"th": "ตู้ปลาทรงเสา", "en": "Column aquarium"}, "special", {"id": "column_aquarium"}],
 		[{"th": "พรมผืนใหญ่", "en": "Area rug"}, "glb", {"model": "rugRectangle"}],
 		[{"th": "พรมกลม", "en": "Round rug"}, "glb", {"model": "rugRound"}],
 		[{"th": "พรมเหลี่ยม", "en": "Square rug"}, "glb", {"model": "rugSquare"}],
@@ -218,6 +252,17 @@ const CATALOG := [
 		[{"th": "แจกันพื้นสูง", "en": "Floor vase"}, "special", {"id": "vase_floor", "_pal": 1}],
 	]],
 	["cat_gear", [
+		[{"th": "ทีวี 75 นิ้ว+ซาวด์บาร์", "en": "TV 75in + soundbar"}, "special", {"id": "tv_wall", "y": 1.35, "wall": 1}],
+		[{"th": "เครื่องเล่นแผ่นเสียง+แผ่น", "en": "Turntable set"}, "special", {"id": "turntable_set"}],
+		[{"th": "ลำโพงปาร์ตี้ RGB", "en": "Party speaker"}, "special", {"id": "party_speaker"}],
+		[{"th": "หุ่นยนต์ดูดฝุ่น+แท่น", "en": "Robot vacuum"}, "special", {"id": "robot_vac"}],
+		[{"th": "โดรน+แท่นจอด", "en": "Drone pad"}, "special", {"id": "drone_pad", "y": 0.74}],
+		[{"th": "มุม VR ครบชุด", "en": "VR station"}, "special", {"id": "vr_station"}],
+		[{"th": "หม้อหุงข้าว", "en": "Rice cooker"}, "special", {"id": "rice_cooker", "y": 0.9}],
+		[{"th": "หม้อทอดไร้น้ำมัน", "en": "Air fryer"}, "special", {"id": "air_fryer", "y": 0.9}],
+		[{"th": "พัดลมตั้งพื้น", "en": "Stand fan"}, "special", {"id": "stand_fan"}],
+		[{"th": "แอร์ติดผนัง", "en": "Wall air-con"}, "special", {"id": "aircon", "y": 2.05, "wall": 1}],
+		[{"th": "ตู้แช่เครื่องดื่ม", "en": "Display drink fridge"}, "special", {"id": "drink_fridge"}],
 		[{"th": "แล็ปท็อป", "en": "Laptop"}, "prop", {"model": "laptop", "fit": 0.32, "y": 0.74}],
 		[{"th": "จอคอม", "en": "Monitor"}, "prop", {"model": "computerScreen", "fit_h": 0.38, "y": 0.74}],
 		[{"th": "คีย์บอร์ด", "en": "Keyboard"}, "prop", {"model": "computerKeyboard", "fit": 0.28, "y": 0.74}],
@@ -254,6 +299,10 @@ const CATALOG := [
 		[{"th": "คีย์บอร์ดเรืองแสง", "en": "RGB keyboard"}, "special", {"id": "kb_rgb", "y": 0.74, "_pal": 1}],
 	]],
 	["cat_office", [
+		[{"th": "เคาน์เตอร์แคชเชียร์ POS", "en": "POS counter"}, "special", {"id": "pos_counter"}],
+		[{"th": "ชั้นสินค้าสองหน้า", "en": "Gondola shelf"}, "special", {"id": "gondola"}],
+		[{"th": "เสากั้นคิว+สาย", "en": "Queue barrier"}, "special", {"id": "queue_barrier"}],
+		[{"th": "ครัวมินิ ซิงค์+เตา", "en": "Kitchenette"}, "special", {"id": "kitchenette"}],
 		[{"th": "บูธเงียบ", "en": "Focus booth"}, "special", {"id": "booth"}],
 		[{"th": "ตู้กดน้ำ", "en": "Water cooler"}, "special", {"id": "cooler"}],
 		[{"th": "ตู้ขายของ", "en": "Vending machine"}, "special", {"id": "vending"}],
@@ -283,6 +332,10 @@ const CATALOG := [
 		[{"th": "ซับเสียง", "en": "Acoustic"}, "special", {"id": "acoustic", "y": 1.5, "wall": 1, "_pal": 1}],
 	]],
 	["cat_fun", [
+		[{"th": "โต๊ะแอร์ฮอกกี้", "en": "Air hockey"}, "special", {"id": "air_hockey"}],
+		[{"th": "กรีนพัตต์กอล์ฟ", "en": "Putting green"}, "special", {"id": "putting_green"}],
+		[{"th": "กระสอบทรายตั้งพื้น", "en": "Punching bag"}, "special", {"id": "punching_bag"}],
+		[{"th": "อ่างสปาขาสิงห์", "en": "Clawfoot spa tub"}, "special", {"id": "clawfoot_tub"}],
 		[{"th": "โต๊ะปิงปอง", "en": "Ping-pong table"}, "special", {"id": "pingpong"}],
 		[{"th": "แกรนด์เปียโน", "en": "Grand piano"}, "special", {"id": "piano"}],
 		[{"th": "ตู้เพลง", "en": "Jukebox"}, "special", {"id": "jukebox"}],
@@ -2723,6 +2776,650 @@ func _spawn_extra(id: String, params: Dictionary, root: Node3D) -> bool:
 			office._box(Vector3(3.0, 0.02, 1.2), Vector3(0, 0.012, 0.65), chroma, root, false)
 			office._box(Vector3(3.1, 0.06, 0.12), Vector3(0, 2.23, 0),
 				office._mat("sp_black", Color(0.10, 0.10, 0.12)), root, false)
+		# ============ RESEARCHED ORIGINALS WAVE (IKEA archetypes + real
+		# electronics-store shelves) — every id below is a NEW silhouette
+		"gaming_chair":
+			for i in 5:
+				var ang := i * TAU / 5.0
+				var gcl: MeshInstance3D = office._box(Vector3(0.30, 0.035, 0.05),
+					Vector3(cos(ang) * 0.15, 0.03, sin(ang) * 0.15), black, root, false)
+				gcl.rotation_degrees = Vector3(0, -rad_to_deg(ang), 0)
+				_sph(0.03, Vector3(cos(ang) * 0.28, 0.03, sin(ang) * 0.28), black, root)
+			_cyl(0.045, 0.045, 0.25, Vector3(0, 0.18, 0), metal, root)
+			office._box(Vector3(0.52, 0.09, 0.50), Vector3(0, 0.36, 0), pm, root, false)
+			for wx in [-0.24, 0.24]:
+				var gw2: MeshInstance3D = office._box(Vector3(0.07, 0.13, 0.42),
+					Vector3(wx, 0.42, 0.02), black, root, false)
+				gw2.rotation_degrees = Vector3(0, 0, wx * -35.0)
+				office._box(Vector3(0.05, 0.22, 0.05), Vector3(wx, 0.52, 0.18), black, root, false)
+				office._box(Vector3(0.14, 0.03, 0.20), Vector3(wx, 0.63, 0.14), black, root, false)
+			var gbk: MeshInstance3D = office._box(Vector3(0.50, 0.85, 0.10),
+				Vector3(0, 0.80, -0.24), pm, root, false)
+			gbk.rotation_degrees = Vector3(-12, 0, 0)
+			for wy in [0.62, 1.05]:
+				var gwing: MeshInstance3D = office._box(Vector3(0.60, 0.16, 0.09),
+					Vector3(0, wy, -0.27 - (wy - 0.62) * 0.09), black, root, false)
+				gwing.rotation_degrees = Vector3(-12, 0, 0)
+			var ghd: MeshInstance3D = office._box(Vector3(0.26, 0.12, 0.08),
+				Vector3(0, 1.18, -0.335), black, root, false)
+			ghd.rotation_degrees = Vector3(-12, 0, 0)
+		"mesh_chair":
+			for i in 5:
+				var ang := i * TAU / 5.0
+				var mcl: MeshInstance3D = office._box(Vector3(0.28, 0.03, 0.05),
+					Vector3(cos(ang) * 0.14, 0.025, sin(ang) * 0.14), metal, root, false)
+				mcl.rotation_degrees = Vector3(0, -rad_to_deg(ang), 0)
+			_cyl(0.04, 0.04, 0.28, Vector3(0, 0.2, 0), metal, root)
+			office._box(Vector3(0.48, 0.07, 0.46), Vector3(0, 0.40, 0), black, root, false)
+			var msb: MeshInstance3D = office._box(Vector3(0.46, 0.72, 0.035),
+				Vector3(0, 0.78, -0.22), office._mat("sp_mesh", Color(0.25, 0.27, 0.30)), root, false)
+			msb.rotation_degrees = Vector3(-8, 0, 0)
+			office._box(Vector3(0.40, 0.05, 0.02), Vector3(0, 0.55, -0.185),
+				office._mat("sp_lumbar", Color(0.45, 0.48, 0.52)), root, false)
+			var mhd: MeshInstance3D = office._box(Vector3(0.30, 0.14, 0.05),
+				Vector3(0, 1.22, -0.28), black, root, false)
+			mhd.rotation_degrees = Vector3(-14, 0, 0)
+			for ax in [-0.26, 0.26]:
+				office._box(Vector3(0.04, 0.16, 0.04), Vector3(ax, 0.48, 0.02), black, root, false)
+				office._box(Vector3(0.09, 0.03, 0.24), Vector3(ax, 0.57, 0.02), black, root, false)
+		"rocking_chair":
+			for rx in [-0.26, 0.26]:
+				for seg in [[-0.28, 10.0], [0.0, 0.0], [0.28, -10.0]]:
+					var run: MeshInstance3D = office._box(Vector3(0.04, 0.03, 0.34),
+						Vector3(rx, 0.045 + absf(seg[1]) * 0.004, seg[0]), wood, root, false)
+					run.rotation_degrees = Vector3(seg[1], 0, 0)
+				office._box(Vector3(0.04, 0.30, 0.04), Vector3(rx, 0.24, 0.16), wood, root, false)
+				office._box(Vector3(0.04, 0.62, 0.04), Vector3(rx, 0.40, -0.20), wood, root, false)
+			office._box(Vector3(0.55, 0.04, 0.45), Vector3(0, 0.40, 0), wood, root, false)
+			for i in 4:
+				var slat2: MeshInstance3D = office._box(Vector3(0.50, 0.09, 0.025),
+					Vector3(0, 0.52 + i * 0.13, -0.21 - i * 0.025), wood, root, false)
+				slat2.rotation_degrees = Vector3(-10, 0, 0)
+			office._box(Vector3(0.50, 0.05, 0.40), Vector3(0, 0.445, 0.02),
+				office._mat("sp_c_9eab91", Color.html("9eab91")), root, false)
+		"egg_swing":
+			_cyl(0.30, 0.34, 0.04, Vector3(0, 0.02, -0.25), metal, root)
+			var arm3: MeshInstance3D = _cyl(0.03, 0.035, 1.9, Vector3(0, 0.95, -0.35), metal, root)
+			arm3.rotation_degrees = Vector3(14, 0, 0)
+			_cyl(0.03, 0.03, 0.55, Vector3(0, 1.86, -0.02), metal, root, Vector3(76, 0, 0))
+			_cyl(0.008, 0.008, 0.22, Vector3(0, 1.62, 0.18), black, root)
+			var eggb := _sph(0.42, Vector3(0, 1.12, 0.18),
+				office._mat("sp_rattan", Color(0.72, 0.58, 0.40)), root)
+			eggb.scale = Vector3(1, 1.25, 0.95)
+			var eggi := _sph(0.36, Vector3(0, 1.10, 0.26), white, root)
+			eggi.scale = Vector3(0.95, 1.1, 0.6)
+			office._box(Vector3(0.5, 0.10, 0.42), Vector3(0, 0.82, 0.20),
+				office._mat("sp_c_e0b4b8", Color.html("e0b4b8")), root, false)
+		"sofa_bed":
+			office._box(Vector3(2.00, 0.35, 0.90), Vector3(0, 0.28, 0), pm, root, false)
+			office._box(Vector3(0.80, 0.35, 0.75), Vector3(0.60, 0.28, 0.825), pm, root, false)
+			office._box(Vector3(2.00, 0.50, 0.18), Vector3(0, 0.70, -0.36), pm, root, false)
+			office._box(Vector3(1.96, 0.02, 0.86), Vector3(0, 0.465, 0), black, root, false)
+			office._box(Vector3(0.02, 0.34, 0.86), Vector3(0.19, 0.28, 0), black, root, false)
+			for px in [-0.60, 0.60]:
+				office._box(Vector3(0.42, 0.14, 0.12), Vector3(px, 0.56, -0.26), white, root, false)
+		"bunk_bed":
+			for cx in [-0.95, 0.95]:
+				for cz in [-0.45, 0.45]:
+					office._box(Vector3(0.07, 1.75, 0.07), Vector3(cx, 0.87, cz), wood, root, false)
+			for deck in [0.35, 1.25]:
+				office._box(Vector3(1.95, 0.09, 0.95), Vector3(0, deck, 0), wood, root, false)
+				office._box(Vector3(1.85, 0.10, 0.85), Vector3(0, deck + 0.09, 0), white, root, false)
+				office._box(Vector3(0.5, 0.08, 0.3), Vector3(-0.6, deck + 0.17, -0.2), white, root, false)
+			office._box(Vector3(1.90, 0.05, 0.04), Vector3(0, 1.62, 0.44), wood, root, false)
+			for i in 4:
+				var lr2: MeshInstance3D = office._box(Vector3(0.32, 0.035, 0.035),
+					Vector3(0.80, 0.35 + i * 0.30, 0.49), wood, root, false)
+				lr2.rotation_degrees = Vector3(0, 0, 0)
+			for lx2 in [0.66, 0.94]:
+				var lp2: MeshInstance3D = office._box(Vector3(0.04, 1.35, 0.04),
+					Vector3(lx2, 0.72, 0.49), wood, root, false)
+				lp2.rotation_degrees = Vector3(8, 0, 0)
+			office._box(Vector3(0.55, 0.10, 0.30), Vector3(0.55, 0.52, 0.30),
+				office._mat("sp_c_33415e", Color.html("33415e")), root, false)
+		"storage_bench":
+			office._box(Vector3(1.30, 0.06, 0.42), Vector3(0, 0.45, 0), ply, root, false)
+			office._box(Vector3(1.30, 0.05, 0.42), Vector3(0, 0.08, 0), ply, root, false)
+			for sx in [-0.63, -0.21, 0.21, 0.63]:
+				office._box(Vector3(0.04, 0.36, 0.40), Vector3(sx, 0.26, 0), ply, root, false)
+			var bin_c := [Color(0.62, 0.67, 0.57), Color(0.80, 0.51, 0.40), Color(0.35, 0.37, 0.40)]
+			for i in 3:
+				office._box(Vector3(0.32, 0.26, 0.32), Vector3(-0.42 + i * 0.42, 0.245, 0.01),
+					office._mat("sp_bb%d" % i, bin_c[i]), root, false)
+			office._box(Vector3(1.26, 0.04, 0.38), Vector3(0, 0.50, 0),
+				office._mat("sp_c_9eab91", Color.html("9eab91")), root, false)
+		"leaf_table":
+			var leaf := _sph(0.30, Vector3(0, 0.45, 0), office._mat("sp_leaftop", Color(0.55, 0.30, 0.25)), root)
+			leaf.scale = Vector3(1.25, 0.055, 0.85)
+			var tip: MeshInstance3D = office._box(Vector3(0.10, 0.016, 0.10),
+				Vector3(0.36, 0.45, 0), office._mat("sp_leaftop", Color(0.55, 0.30, 0.25)), root, false)
+			tip.rotation_degrees = Vector3(0, 45, 0)
+			for i in 3:
+				var ang := i * TAU / 3.0 + 0.5
+				var ll2: MeshInstance3D = _cyl(0.015, 0.015, 0.45,
+					Vector3(cos(ang) * 0.16, 0.22, sin(ang) * 0.13), black, root)
+				ll2.rotation_degrees = Vector3(sin(ang) * 12.0, 0, cos(ang) * -12.0)
+		"trestle_desk":
+			office._box(Vector3(1.50, 0.035, 0.70), Vector3(0, 0.72, 0), white, root, false)
+			for tx in [-0.55, 0.55]:
+				for ta2 in [16.0, -16.0]:
+					var tl2: MeshInstance3D = office._box(Vector3(0.045, 0.72, 0.045),
+						Vector3(tx, 0.35, 0), metal, root, false)
+					tl2.rotation_degrees = Vector3(ta2, 0, 0)
+				office._box(Vector3(0.045, 0.04, 0.50), Vector3(tx, 0.35, 0), metal, root, false)
+		"gaming_desk":
+			office._box(Vector3(1.60, 0.04, 0.75), Vector3(0, 0.73, 0),
+				office._mat("sp_carbon", Color(0.14, 0.15, 0.17)), root, false)
+			office._box(Vector3(1.60, 0.015, 0.02), Vector3(0, 0.755, 0.37),
+				_emat(Color(0.35, 0.85, 0.95), 1.8), root, false)
+			for lx in [-0.72, 0.72]:
+				office._box(Vector3(0.10, 0.71, 0.55), Vector3(lx, 0.36, 0), black, root, false)
+			office._box(Vector3(0.60, 0.035, 0.24), Vector3(0, 0.83, -0.20), black, root, false)
+			var hk: MeshInstance3D = _cyl(0.012, 0.012, 0.10, Vector3(-0.80, 0.62, 0.1),
+				black, root, Vector3(0, 0, 90))
+			hk.rotation_degrees = Vector3(0, 0, 90)
+			_omni(Vector3(0, 0.8, 0.3), Color(0.35, 0.85, 0.95), 0.5, 1.4, root)
+		"vanity":
+			office._box(Vector3(1.10, 0.05, 0.45), Vector3(0, 0.72, 0), white, root, false)
+			for lx in [-0.48, 0.48]:
+				office._box(Vector3(0.05, 0.70, 0.40), Vector3(lx, 0.36, 0), white, root, false)
+			office._box(Vector3(0.35, 0.12, 0.35), Vector3(0.25, 0.66, 0), white, root, false)
+			_cyl(0.26, 0.26, 0.025, Vector3(0, 1.25, -0.19),
+				office._mat("sp_mirror", Color(0.72, 0.80, 0.84)), root, Vector3(90, 0, 0))
+			_cyl(0.29, 0.29, 0.015, Vector3(0, 1.25, -0.20), white, root, Vector3(90, 0, 0))
+			for i in 6:
+				var ang := PI * 0.15 + i * PI * 0.14
+				_sph(0.022, Vector3(cos(ang) * 0.33, 1.25 + sin(ang) * 0.33, -0.18),
+					_emat(Color(1.0, 0.92, 0.78), 1.6), root)
+			_cyl(0.16, 0.16, 0.06, Vector3(-0.15, 0.42, 0.45), pm, root)
+			for i in 3:
+				var ang2 := i * TAU / 3.0
+				var vst: MeshInstance3D = office._box(Vector3(0.03, 0.40, 0.03),
+					Vector3(-0.15 + cos(ang2) * 0.10, 0.20, 0.45 + sin(ang2) * 0.10), wood, root, false)
+				vst.rotation_degrees = Vector3(sin(ang2) * 8.0, 0, cos(ang2) * -8.0)
+			_omni(Vector3(0, 1.25, 0.2), Color(1.0, 0.92, 0.78), 0.7, 1.6, root)
+		"ext_table":
+			var ext := _cyl(0.62, 0.62, 0.05, Vector3(0, 0.72, 0), white, root)
+			ext.scale = Vector3(1.3, 1, 1)
+			office._box(Vector3(0.03, 0.05, 1.20), Vector3(0, 0.725, 0),
+				office._mat("sp_seam", Color(0.78, 0.78, 0.76)), root, false)
+			for lx in [-0.62, 0.62]:
+				for lz in [-0.40, 0.40]:
+					_cyl(0.035, 0.045, 0.70, Vector3(lx, 0.35, lz), white, root)
+		"billy":
+			office._box(Vector3(0.80, 2.02, 0.30), Vector3(0, 1.01, 0), white, root, false)
+			office._box(Vector3(0.72, 1.90, 0.02), Vector3(0, 1.01, -0.13), white, root, false)
+			var spine_c := [Color(0.42, 0.52, 0.65), Color(0.80, 0.51, 0.40), Color(0.62, 0.67, 0.57),
+				Color(0.85, 0.78, 0.55), Color(0.35, 0.35, 0.40), Color(0.60, 0.42, 0.55)]
+			for sh in 5:
+				office._box(Vector3(0.72, 0.025, 0.26), Vector3(0, 0.30 + sh * 0.36, 0), white, root, false)
+				var bx := -0.30
+				var kk := 0
+				while bx < 0.28:
+					var bw := 0.045 + (kk % 3) * 0.012
+					office._box(Vector3(bw, 0.26 - (kk % 4) * 0.02, 0.18),
+						Vector3(bx, 0.30 + sh * 0.36 + 0.145, 0),
+						office._mat("sp_bl%d" % ((sh + kk) % 6), spine_c[(sh + kk) % 6]), root, false)
+					bx += bw + 0.012
+					kk += 1
+		"pegboard":
+			office._box(Vector3(0.76, 0.56, 0.03), Vector3(0, 0.1, 0), white, root, false)
+			for hy in 4:
+				for hx in 6:
+					office._box(Vector3(0.018, 0.018, 0.012),
+						Vector3(-0.30 + hx * 0.12, -0.11 + hy * 0.14, 0.017),
+						office._mat("sp_seam", Color(0.78, 0.78, 0.76)), root, false)
+			office._box(Vector3(0.30, 0.02, 0.10), Vector3(-0.15, 0.13, 0.06), white, root, false)
+			_cyl(0.028, 0.028, 0.09, Vector3(-0.20, 0.19, 0.05), white, root)
+			_sph(0.035, Vector3(0.18, 0.10, 0.05), green, root)
+			for hkx in [0.05, 0.24]:
+				_cyl(0.006, 0.006, 0.06, Vector3(hkx, -0.06, 0.04), metal, root, Vector3(60, 0, 0))
+			office._box(Vector3(0.05, 0.14, 0.012), Vector3(0.05, -0.14, 0.045),
+				office._mat("sp_c_c17a5f", Color.html("c17a5f")), root, false)
+		"trofast":
+			for sx in [-0.48, 0.48]:
+				office._box(Vector3(0.05, 0.95, 0.45), Vector3(sx, 0.48, 0), ply, root, false)
+			office._box(Vector3(1.00, 0.05, 0.45), Vector3(0, 0.95, 0), ply, root, false)
+			var tro := [Color(0.80, 0.51, 0.40), Color(0.42, 0.52, 0.65), Color(0.62, 0.67, 0.57),
+				Color(0.95, 0.85, 0.55), Color(0.35, 0.37, 0.40), Color(0.60, 0.42, 0.55)]
+			for row in 3:
+				for cx2 in [-0.235, 0.235]:
+					office._box(Vector3(0.40, 0.20, 0.40),
+						Vector3(cx2, 0.18 + row * 0.28, 0.01),
+						office._mat("sp_tro%d" % ((row * 2 + int(cx2 > 0.0)) % 6),
+						tro[(row * 2 + int(cx2 > 0.0)) % 6]), root, false)
+		"ivar":
+			for px in [-0.6, 0.0, 0.6]:
+				for pz in [-0.16, 0.16]:
+					office._box(Vector3(0.04, 1.55, 0.04), Vector3(px, 0.78, pz), wood, root, false)
+				for py in [0.25, 0.75, 1.25]:
+					office._box(Vector3(0.03, 0.03, 0.32), Vector3(px, py, 0), wood, root, false)
+			for sh2 in [0.28, 0.78, 1.28]:
+				office._box(Vector3(1.24, 0.03, 0.34), Vector3(0, sh2, 0), wood, root, false)
+			office._box(Vector3(0.25, 0.30, 0.25), Vector3(-0.3, 0.45, 0), white, root, false)
+			_sph(0.08, Vector3(0.35, 0.86, 0), green, root)
+		"wire_rack":
+			for px in [-0.42, 0.42]:
+				for pz in [-0.20, 0.20]:
+					_cyl(0.014, 0.014, 1.55, Vector3(px, 0.78, pz), metal, root)
+			for sh3 in 4:
+				office._box(Vector3(0.90, 0.02, 0.44), Vector3(0, 0.14 + sh3 * 0.45, 0), metal, root, false)
+				for wl in 5:
+					office._box(Vector3(0.88, 0.008, 0.012),
+						Vector3(0, 0.155 + sh3 * 0.45, -0.18 + wl * 0.09), metal, root, false)
+			office._box(Vector3(0.30, 0.22, 0.30), Vector3(-0.25, 0.72, 0),
+				office._mat("sp_c_7da7c9", Color.html("7da7c9")), root, false)
+		"clothes_rack":
+			for px in [-0.55, 0.55]:
+				_cyl(0.02, 0.025, 1.45, Vector3(px, 0.72, 0), metal, root)
+				office._box(Vector3(0.06, 0.04, 0.45), Vector3(px, 0.02, 0), metal, root, false)
+			_cyl(0.018, 0.018, 1.15, Vector3(0, 1.43, 0), metal, root, Vector3(0, 0, 90))
+			var shirt_c := [Color(0.42, 0.52, 0.65), Color(0.92, 0.90, 0.86), Color(0.80, 0.51, 0.40)]
+			for i in 3:
+				var hx2 := -0.28 + i * 0.28
+				_cyl(0.005, 0.005, 0.10, Vector3(hx2, 1.38, 0), metal, root)
+				office._box(Vector3(0.26, 0.34, 0.03), Vector3(hx2, 1.13, 0),
+					office._mat("sp_sh%d" % i, shirt_c[i]), root, false)
+				office._box(Vector3(0.10, 0.06, 0.035), Vector3(hx2, 1.32, 0),
+					office._mat("sp_sh%d" % i, shirt_c[i]), root, false)
+		"eket_cubes":
+			var ek := [[Vector3(-0.28, 0.14, 0), Color(0.62, 0.67, 0.57)],
+				[Vector3(0.10, -0.10, 0), Color(0.92, 0.90, 0.86)],
+				[Vector3(0.34, 0.22, 0), Color(0.80, 0.51, 0.40)]]
+			for e2 in ek:
+				office._box(Vector3(0.34, 0.34, 0.24), e2[0],
+					office._mat("sp_ek%02x" % int((e2[1] as Color).r * 99), e2[1]), root, false)
+				office._box(Vector3(0.28, 0.28, 0.20), (e2[0] as Vector3) + Vector3(0, 0, 0.03),
+					office._mat("sp_ekin", Color(0.20, 0.21, 0.24)), root, false)
+		"dome_lamp":
+			_cyl(0.14, 0.17, 0.03, Vector3(0, 0.015, 0), black, root)
+			var dpole: MeshInstance3D = _cyl(0.02, 0.02, 1.55, Vector3(0.05, 0.79, 0), black, root)
+			dpole.rotation_degrees = Vector3(0, 0, -6)
+			var dome := _sph(0.24, Vector3(0.22, 1.58, 0), black, root)
+			dome.scale = Vector3(1, 0.72, 1)
+			_cyl(0.16, 0.16, 0.015, Vector3(0.22, 1.47, 0), _emat(Color(1.0, 0.9, 0.72), 1.5), root)
+			_omni(Vector3(0.22, 1.38, 0), Color(1.0, 0.88, 0.68), 0.9, 2.6, root)
+		"uplight":
+			_cyl(0.12, 0.15, 0.03, Vector3(0, 0.015, 0), metal, root)
+			_cyl(0.016, 0.016, 1.65, Vector3(0, 0.85, 0), metal, root)
+			_cyl(0.12, 0.05, 0.14, Vector3(0, 1.74, 0), metal, root)
+			_cyl(0.10, 0.10, 0.01, Vector3(0, 1.81, 0), _emat(Color(1.0, 0.94, 0.80), 1.8), root)
+			_omni(Vector3(0, 1.9, 0), Color(1.0, 0.92, 0.75), 0.9, 2.4, root)
+		"weave_pendant":
+			_cyl(0.008, 0.008, 0.5, Vector3(0, 2.35, 0), black, root)
+			for i in 4:
+				_cyl(0.30 - i * 0.05, 0.34 - i * 0.05, 0.055,
+					Vector3(0, 1.82 + i * 0.075, 0),
+					office._mat("sp_rattan", Color(0.72, 0.58, 0.40)), root)
+			_sph(0.05, Vector3(0, 1.86, 0), _emat(Color(1.0, 0.88, 0.66), 1.8), root)
+			_omni(Vector3(0, 1.8, 0), Color(1.0, 0.86, 0.62), 1.0, 3.0, root)
+		"chandelier":
+			_cyl(0.008, 0.008, 0.45, Vector3(0, 2.42, 0), black, root)
+			_sph(0.06, Vector3(0, 2.16, 0), office._mat("sp_brass", Color(0.80, 0.65, 0.35)), root)
+			for i in 6:
+				var ang := i * TAU / 6.0
+				var carm: MeshInstance3D = _cyl(0.012, 0.012, 0.34,
+					Vector3(cos(ang) * 0.17, 2.10, sin(ang) * 0.17),
+					office._mat("sp_brass", Color(0.80, 0.65, 0.35)), root)
+				carm.rotation_degrees = Vector3(sin(ang) * 75.0, 0, cos(ang) * -75.0)
+				_cyl(0.022, 0.028, 0.05, Vector3(cos(ang) * 0.33, 2.13, sin(ang) * 0.33),
+					office._mat("sp_brass", Color(0.80, 0.65, 0.35)), root)
+				_sph(0.025, Vector3(cos(ang) * 0.33, 2.18, sin(ang) * 0.33),
+					_emat(Color(1.0, 0.85, 0.55), 2.0), root)
+			_omni(Vector3(0, 2.1, 0), Color(1.0, 0.85, 0.55), 1.1, 3.4, root)
+		"cove_bar":
+			var cvb: MeshInstance3D = office._box(Vector3(0.90, 0.05, 0.09),
+				Vector3(0, 0.03, 0), black, root, false)
+			cvb.rotation_degrees = Vector3(0, 0, 0)
+			var cvl: MeshInstance3D = office._box(Vector3(0.86, 0.02, 0.04),
+				Vector3(0, 0.06, -0.01), _emat(Color.html(pchex) if params.has("col") else Color(0.55, 0.35, 1.0), 2.2), root, false)
+			cvl.rotation_degrees = Vector3(-35, 0, 0)
+			_omni(Vector3(0, 0.5, -0.2), Color.html(pchex) if params.has("col") else Color(0.55, 0.35, 1.0), 1.0, 2.6, root)
+		"macrame_trio":
+			_cyl(0.015, 0.015, 1.1, Vector3(0, 1.98, 0), wood, root, Vector3(0, 0, 90))
+			for i in 3:
+				var mx2 := -0.35 + i * 0.35
+				var drop := 0.35 + (i % 2) * 0.18
+				_cyl(0.006, 0.006, drop, Vector3(mx2, 1.98 - drop / 2.0, 0), white, root)
+				_cyl(0.09, 0.06, 0.12, Vector3(mx2, 1.92 - drop, 0),
+					office._mat("sp_macrame", Color(0.90, 0.86, 0.78)), root)
+				_sph(0.09, Vector3(mx2, 2.0 - drop, 0), [green, dgreen, green][i], root)
+				for vn2 in 2:
+					var vine: MeshInstance3D = office._box(Vector3(0.03, 0.22, 0.015),
+						Vector3(mx2 + vn2 * 0.08 - 0.04, 1.86 - drop, 0.05), dgreen, root, false)
+					vine.rotation_degrees = Vector3(18, vn2 * 60.0, 0)
+		"olive_basket":
+			_cyl(0.20, 0.16, 0.26, Vector3(0, 0.13, 0),
+				office._mat("sp_rattan", Color(0.72, 0.58, 0.40)), root)
+			for i in 3:
+				_cyl(0.21 - i * 0.01, 0.21 - i * 0.01, 0.02, Vector3(0, 0.06 + i * 0.09, 0),
+					office._mat("sp_rattan2", Color(0.62, 0.48, 0.32)), root)
+			var otr: MeshInstance3D = _cyl(0.03, 0.045, 0.55, Vector3(0.02, 0.52, 0), dwood, root)
+			otr.rotation_degrees = Vector3(0, 0, 8)
+			for i in 5:
+				var ang := i * TAU / 5.0
+				var ol := _sph(0.14, Vector3(cos(ang) * 0.16 + 0.04, 0.90 + sin(ang * 2.0) * 0.08,
+					sin(ang) * 0.16), office._mat("sp_olive", Color(0.55, 0.62, 0.50)), root)
+				ol.scale = Vector3(1, 0.8, 1)
+		"herb_ladder":
+			for rx2 in [-0.30, 0.30]:
+				var hlr: MeshInstance3D = office._box(Vector3(0.045, 1.45, 0.045),
+					Vector3(rx2, 0.70, -0.02), wood, root, false)
+				hlr.rotation_degrees = Vector3(-14, 0, 0)
+			for i in 4:
+				office._box(Vector3(0.62, 0.03, 0.20 - i * 0.02),
+					Vector3(0, 0.22 + i * 0.36, -0.24 + i * 0.09), wood, root, false)
+				for hp2 in 2:
+					_cyl(0.05, 0.04, 0.09, Vector3(-0.15 + hp2 * 0.30, 0.29 + i * 0.36,
+						-0.24 + i * 0.09), pot, root)
+					_sph(0.055, Vector3(-0.15 + hp2 * 0.30, 0.37 + i * 0.36, -0.24 + i * 0.09),
+						[green, dgreen][(i + hp2) % 2], root)
+		"cloche":
+			_cyl(0.14, 0.15, 0.03, Vector3(0, 0.015, 0), wood, root)
+			var cdome := _sph(0.12, Vector3(0, 0.14, 0), _glass_mat(Color(0.85, 0.92, 0.95, 0.22)), root)
+			cdome.scale = Vector3(1, 1.3, 1)
+			_sph(0.012, Vector3(0, 0.30, 0), _glass_mat(Color(0.85, 0.92, 0.95, 0.4)), root)
+			_sph(0.045, Vector3(-0.03, 0.07, 0.02), green, root)
+			_sph(0.03, Vector3(0.05, 0.055, -0.02), dgreen, root)
+			_cyl(0.02, 0.025, 0.03, Vector3(0.04, 0.045, 0.03),
+				office._mat("sp_gravel", Color(0.72, 0.66, 0.55)), root)
+		"gallery_ledge":
+			office._box(Vector3(0.90, 0.035, 0.09), Vector3(0, 0.0, 0.02), white, root, false)
+			var gfr := [[0.20, 0.26, -0.30, Color(0.10, 0.10, 0.12)],
+				[0.30, 0.22, 0.02, Color(0.55, 0.42, 0.30)],
+				[0.16, 0.20, 0.30, Color(0.10, 0.10, 0.12)]]
+			for g2 in gfr:
+				var fr2: MeshInstance3D = office._box(Vector3(g2[0], g2[1], 0.02),
+					Vector3(g2[2], 0.02 + (g2[1] as float) / 2.0, 0.03),
+					office._mat("sp_fr%02x" % int((g2[3] as Color).r * 99), g2[3]), root, false)
+				fr2.rotation_degrees = Vector3(-7, 0, 0)
+				var inn: MeshInstance3D = office._box(Vector3((g2[0] as float) - 0.05,
+					(g2[1] as float) - 0.05, 0.008), Vector3(g2[2], 0.02 + (g2[1] as float) / 2.0, 0.042),
+					white, root, false)
+				inn.rotation_degrees = Vector3(-7, 0, 0)
+		"tapestry":
+			_cyl(0.012, 0.012, 0.85, Vector3(0, 0.42, 0), wood, root, Vector3(0, 0, 90))
+			office._box(Vector3(0.75, 0.60, 0.015), Vector3(0, 0.08, 0),
+				office._mat("sp_tapes", Color(0.85, 0.78, 0.66)), root, false)
+			office._box(Vector3(0.75, 0.10, 0.018), Vector3(0, 0.18, 0),
+				office._mat("sp_c_c17a5f", Color.html("c17a5f")), root, false)
+			office._box(Vector3(0.75, 0.06, 0.018), Vector3(0, -0.02, 0),
+				office._mat("sp_c_33415e", Color.html("33415e")), root, false)
+			for i in 7:
+				office._box(Vector3(0.02, 0.14, 0.012), Vector3(-0.33 + i * 0.11, -0.28, 0),
+					office._mat("sp_tapes", Color(0.85, 0.78, 0.66)), root, false)
+		"globe_bar":
+			for i in 3:
+				var ang := i * TAU / 3.0
+				var gbl: MeshInstance3D = office._box(Vector3(0.04, 0.55, 0.04),
+					Vector3(cos(ang) * 0.20, 0.27, sin(ang) * 0.20), dwood, root, false)
+				gbl.rotation_degrees = Vector3(sin(ang) * 10.0, 0, cos(ang) * -10.0)
+			var hemi := _sph(0.30, Vector3(0, 0.62, 0), office._mat("sp_globebar", Color(0.45, 0.30, 0.22)), root)
+			hemi.scale = Vector3(1, 0.55, 1)
+			var lid := _sph(0.30, Vector3(0, 0.78, -0.16), office._mat("sp_globebar", Color(0.45, 0.30, 0.22)), root)
+			lid.scale = Vector3(1, 0.55, 1)
+			lid.rotation_degrees = Vector3(-55, 0, 0)
+			_cyl(0.27, 0.27, 0.015, Vector3(0, 0.70, 0),
+				office._mat("sp_brass", Color(0.80, 0.65, 0.35)), root)
+			for i in 3:
+				_cyl(0.025, 0.03, 0.14, Vector3(-0.10 + i * 0.10, 0.78, 0.02),
+					[_glass_mat(Color(0.55, 0.75, 0.45, 0.6)), _glass_mat(Color(0.75, 0.55, 0.30, 0.6)),
+					_glass_mat(Color(0.45, 0.55, 0.75, 0.6))][i], root)
+		"neon_open":
+			office._box(Vector3(0.66, 0.30, 0.03), Vector3(0, 0.1, 0), black, root, false)
+			var segs2 := [[-0.22, 0.0], [-0.075, 0.0], [0.075, 0.0], [0.22, 0.0]]
+			for i in segs2.size():
+				_cyl(0.055, 0.055, 0.02, Vector3(segs2[i][0], 0.1, 0.02),
+					_emat(Color(1.0, 0.35, 0.55) if i % 2 == 0 else Color(0.35, 0.85, 0.95), 2.4),
+					root, Vector3(90, 0, 0))
+				_cyl(0.035, 0.035, 0.025, Vector3(segs2[i][0], 0.1, 0.021), black, root, Vector3(90, 0, 0))
+			_omni(Vector3(0, 0.1, 0.3), Color(0.9, 0.5, 0.75), 0.8, 2.0, root)
+		"column_aquarium":
+			_cyl(0.26, 0.30, 0.14, Vector3(0, 0.07, 0), black, root)
+			_cyl(0.22, 0.22, 1.35, Vector3(0, 0.82, 0), _glass_mat(Color(0.45, 0.70, 0.85, 0.30)), root)
+			_cyl(0.19, 0.19, 1.25, Vector3(0, 0.80, 0), _glass_mat(Color(0.25, 0.55, 0.75, 0.4)), root)
+			_cyl(0.26, 0.26, 0.10, Vector3(0, 1.55, 0), black, root)
+			var aqf := [[Color(1.0, 0.55, 0.15), 0.5], [Color(0.95, 0.80, 0.25), 0.85], [Color(0.35, 0.75, 0.85), 1.15]]
+			for f2 in aqf:
+				var fish2: MeshInstance3D = office._box(Vector3(0.07, 0.035, 0.015),
+					Vector3(randf_range(-0.08, 0.08), f2[1], randf_range(-0.06, 0.06)),
+					_emat(f2[0], 0.6), root, false)
+				fish2.rotation_degrees = Vector3(0, randf_range(0, 360), 0)
+			for i in 4:
+				_sph(0.012, Vector3(randf_range(-0.1, 0.1), 0.4 + i * 0.28, randf_range(-0.08, 0.08)),
+					_glass_mat(Color(0.9, 0.95, 1.0, 0.5)), root)
+			_omni(Vector3(0, 1.45, 0), Color(0.55, 0.85, 1.0), 0.8, 2.0, root)
+		"tv_wall":
+			office._box(Vector3(1.70, 0.95, 0.05), Vector3(0, 0.30, 0), black, root, false)
+			office._box(Vector3(1.62, 0.87, 0.015), Vector3(0, 0.30, 0.028),
+				_emat(Color(0.18, 0.26, 0.38), 0.8), root, false)
+			office._box(Vector3(1.10, 0.09, 0.09), Vector3(0, -0.36, 0.02),
+				office._mat("sp_fabricbar", Color(0.30, 0.31, 0.34)), root, false)
+			_sph(0.008, Vector3(0.50, -0.36, 0.07), _emat(Color(0.95, 0.75, 0.2), 1.6), root)
+		"turntable_set":
+			office._box(Vector3(0.55, 0.35, 0.42), Vector3(0, 0.175, 0), wood, root, false)
+			office._box(Vector3(0.50, 0.06, 0.38), Vector3(0, 0.39, 0), black, root, false)
+			_cyl(0.15, 0.15, 0.015, Vector3(-0.05, 0.435, 0), office._mat("sp_vinyl", Color(0.08, 0.08, 0.09)), root)
+			_cyl(0.05, 0.05, 0.02, Vector3(-0.05, 0.44, 0), office._mat("sp_c_c17a5f", Color.html("c17a5f")), root)
+			var tarm: MeshInstance3D = _cyl(0.008, 0.008, 0.20, Vector3(0.14, 0.45, -0.06), metal, root)
+			tarm.rotation_degrees = Vector3(0, 30, 78)
+			for i in 5:
+				var vin: MeshInstance3D = office._box(Vector3(0.015, 0.30, 0.30),
+					Vector3(0.34 + i * 0.022, 0.15, 0.02),
+					office._mat("sp_vs%d" % i, [Color(0.42, 0.52, 0.65), Color(0.80, 0.51, 0.40),
+					Color(0.15, 0.15, 0.18), Color(0.62, 0.67, 0.57), Color(0.85, 0.78, 0.55)][i]), root, false)
+				vin.rotation_degrees = Vector3(0, 0, i * 2.0 - 4.0)
+		"party_speaker":
+			office._box(Vector3(0.42, 1.05, 0.38), Vector3(0, 0.53, 0), black, root, false)
+			for i in 2:
+				_cyl(0.13 - i * 0.05, 0.13 - i * 0.05, 0.015,
+					Vector3(0, 0.35 + i * 0.45, 0.195), office._mat("sp_alu", Color(0.75, 0.76, 0.78)),
+					root, Vector3(90, 0, 0))
+				var ring2 := MeshInstance3D.new()
+				var rt := TorusMesh.new()
+				rt.inner_radius = 0.13 - i * 0.05
+				rt.outer_radius = 0.16 - i * 0.05
+				ring2.mesh = rt
+				ring2.material_override = _emat([Color(0.35, 0.85, 0.95), Color(1.0, 0.35, 0.55)][i], 2.0)
+				ring2.position = Vector3(0, 0.35 + i * 0.45, 0.19)
+				ring2.rotation_degrees = Vector3(90, 0, 0)
+				root.add_child(ring2)
+			office._box(Vector3(0.30, 0.03, 0.06), Vector3(0, 1.08, 0), metal, root, false)
+			_omni(Vector3(0, 0.6, 0.4), Color(0.7, 0.5, 0.9), 0.7, 2.0, root)
+		"robot_vac":
+			var rv := _cyl(0.17, 0.17, 0.07, Vector3(0.25, 0.035, 0.1), white, root)
+			_cyl(0.05, 0.05, 0.015, Vector3(0.25, 0.075, 0.1), black, root)
+			_sph(0.008, Vector3(0.25, 0.085, 0.1), _emat(Color(0.3, 0.9, 0.4), 2.0), root)
+			office._box(Vector3(0.30, 0.14, 0.10), Vector3(0, 0.07, -0.10), black, root, false)
+			office._box(Vector3(0.26, 0.015, 0.18), Vector3(0, 0.008, 0.0), black, root, false)
+			_sph(0.006, Vector3(-0.08, 0.12, -0.055), _emat(Color(0.35, 0.85, 0.95), 2.0), root)
+		"drone_pad":
+			_cyl(0.30, 0.30, 0.015, Vector3(0, 0.008, 0), office._mat("sp_padh", Color(0.25, 0.27, 0.32)), root)
+			_cyl(0.10, 0.10, 0.005, Vector3(0, 0.02, 0), office._mat("sp_c_e8c93f", Color.html("e8c93f")), root)
+			office._box(Vector3(0.16, 0.05, 0.16), Vector3(0, 0.09, 0),
+				office._mat("sp_dgray", Color(0.55, 0.57, 0.60)), root, false)
+			for ax2 in [-1, 1]:
+				for az in [-1, 1]:
+					var darm: MeshInstance3D = office._box(Vector3(0.16, 0.02, 0.03),
+						Vector3(ax2 * 0.13, 0.10, az * 0.13), black, root, false)
+					darm.rotation_degrees = Vector3(0, 45.0 * ax2 * az, 0)
+					_cyl(0.07, 0.07, 0.008, Vector3(ax2 * 0.20, 0.12, az * 0.20),
+						_glass_mat(Color(0.6, 0.6, 0.65, 0.4)), root)
+			_sph(0.012, Vector3(0, 0.13, 0.09), _emat(Color(0.9, 0.2, 0.2), 2.0), root)
+		"vr_station":
+			office._box(Vector3(0.70, 0.01, 0.70), Vector3(0, 0.006, 0),
+				office._mat("sp_c_33415e", Color.html("33415e")), root, false)
+			_cyl(0.02, 0.02, 1.1, Vector3(0, 0.55, 0), metal, root)
+			_cyl(0.09, 0.11, 0.03, Vector3(0, 0.015, 0), metal, root)
+			var hmd: MeshInstance3D = office._box(Vector3(0.20, 0.10, 0.11),
+				Vector3(0, 1.14, 0.02), white, root, false)
+			hmd.rotation_degrees = Vector3(-10, 0, 0)
+			office._box(Vector3(0.18, 0.03, 0.015), Vector3(0, 1.12, 0.085),
+				_emat(Color(0.35, 0.55, 0.95), 1.2), root, false)
+			for bx3 in [-0.30, 0.30]:
+				_cyl(0.012, 0.012, 0.85, Vector3(bx3, 0.42, -0.28), black, root)
+				office._box(Vector3(0.06, 0.06, 0.06), Vector3(bx3, 0.88, -0.28), black, root, false)
+				_sph(0.008, Vector3(bx3, 0.88, -0.245), _emat(Color(0.3, 0.9, 0.4), 2.2), root)
+		"rice_cooker":
+			_cyl(0.14, 0.15, 0.16, Vector3(0, 0.08, 0), white, root)
+			var rlid := _sph(0.145, Vector3(0, 0.165, 0), white, root)
+			rlid.scale = Vector3(1, 0.45, 1)
+			_cyl(0.02, 0.02, 0.035, Vector3(0, 0.23, 0), metal, root)
+			office._box(Vector3(0.05, 0.025, 0.005), Vector3(0, 0.07, 0.148),
+				_emat(Color(0.95, 0.45, 0.30), 1.4), root, false)
+			office._box(Vector3(0.03, 0.012, 0.03), Vector3(0.12, 0.10, 0.06), black, root, false)
+		"air_fryer":
+			office._box(Vector3(0.24, 0.30, 0.28), Vector3(0, 0.15, 0), black, root, false)
+			var afc: MeshInstance3D = office._box(Vector3(0.22, 0.20, 0.04),
+				Vector3(0, 0.13, 0.145), office._mat("sp_safe", Color(0.25, 0.27, 0.32)), root, false)
+			afc.rotation_degrees = Vector3(-6, 0, 0)
+			office._box(Vector3(0.14, 0.04, 0.02), Vector3(0, 0.075, 0.16), black, root, false)
+			_cyl(0.045, 0.045, 0.008, Vector3(0, 0.27, 0.11),
+				_emat(Color(0.35, 0.75, 0.72), 1.0), root, Vector3(72, 0, 0))
+		"stand_fan":
+			_cyl(0.16, 0.19, 0.03, Vector3(0, 0.015, 0), office._mat("sp_dgray", Color(0.55, 0.57, 0.60)), root)
+			_cyl(0.022, 0.022, 0.95, Vector3(0, 0.50, 0), metal, root)
+			_cyl(0.19, 0.19, 0.045, Vector3(0, 1.06, 0.02),
+				office._mat("sp_dgray", Color(0.55, 0.57, 0.60)), root, Vector3(90, 0, 0))
+			for i in 4:
+				var blade: MeshInstance3D = office._box(Vector3(0.06, 0.14, 0.008),
+					Vector3(cos(i * TAU / 4.0) * 0.09, 1.06 + sin(i * TAU / 4.0) * 0.09, 0.03),
+					_glass_mat(Color(0.8, 0.85, 0.9, 0.5)), root, false)
+				blade.rotation_degrees = Vector3(0, 0, rad_to_deg(i * TAU / 4.0) + 25.0)
+			_sph(0.035, Vector3(0, 1.06, 0.045), metal, root)
+		"aircon":
+			office._box(Vector3(0.95, 0.30, 0.22), Vector3(0, 0.1, 0), white, root, false)
+			office._box(Vector3(0.85, 0.04, 0.02), Vector3(0, -0.03, 0.11),
+				office._mat("sp_seam", Color(0.78, 0.78, 0.76)), root, false)
+			office._box(Vector3(0.16, 0.04, 0.005), Vector3(0.32, 0.16, 0.111), black, root, false)
+			_sph(0.006, Vector3(0.40, 0.02, 0.11), _emat(Color(0.3, 0.9, 0.4), 2.0), root)
+		"drink_fridge":
+			office._box(Vector3(0.75, 1.80, 0.65), Vector3(0, 0.90, 0),
+				office._mat("sp_c_c14b3f", Color.html("c14b3f")), root, false)
+			office._box(Vector3(0.58, 1.45, 0.03), Vector3(-0.03, 0.90, 0.32), _glass_mat(), root, false)
+			var canc := [Color(0.80, 0.20, 0.20), Color(0.30, 0.60, 0.30), Color(0.95, 0.65, 0.15),
+				Color(0.35, 0.45, 0.85)]
+			for sh4 in 4:
+				office._box(Vector3(0.54, 0.02, 0.45), Vector3(-0.03, 0.35 + sh4 * 0.35, 0.05),
+					white, root, false)
+				for cc2 in 4:
+					_cyl(0.035, 0.035, 0.12, Vector3(-0.22 + cc2 * 0.13, 0.43 + sh4 * 0.35, 0.13),
+						office._mat("sp_can%d" % ((sh4 + cc2) % 4), canc[(sh4 + cc2) % 4]), root)
+			office._box(Vector3(0.70, 0.16, 0.02), Vector3(0, 1.72, 0.33),
+				_emat(Color(0.95, 0.92, 0.85), 1.5), root, false)
+			_omni(Vector3(0, 1.0, 0.5), Color(0.85, 0.92, 1.0), 0.7, 1.6, root)
+		"pos_counter":
+			office._box(Vector3(1.30, 0.95, 0.60), Vector3(0, 0.48, 0), white, root, false)
+			office._box(Vector3(1.36, 0.05, 0.66), Vector3(0, 0.98, 0), ply, root, false)
+			var poss: MeshInstance3D = office._box(Vector3(0.30, 0.22, 0.02),
+				Vector3(-0.30, 1.18, 0), _emat(Color(0.30, 0.70, 0.75), 0.9), root, false)
+			poss.rotation_degrees = Vector3(-16, 25, 0)
+			_cyl(0.03, 0.05, 0.14, Vector3(-0.30, 1.07, 0), black, root)
+			office._box(Vector3(0.30, 0.10, 0.35), Vector3(0.30, 1.05, 0), black, root, false)
+			office._box(Vector3(0.10, 0.14, 0.06), Vector3(0.05, 1.08, 0.18), black, root, false)
+			office._box(Vector3(0.28, 0.06, 0.33), Vector3(0.30, 0.94, 0.02), metal, root, false)
+		"gondola":
+			office._box(Vector3(1.40, 0.10, 0.80), Vector3(0, 0.05, 0),
+				office._mat("sp_dgray", Color(0.55, 0.57, 0.60)), root, false)
+			office._box(Vector3(1.40, 1.45, 0.10), Vector3(0, 0.78, 0),
+				office._mat("sp_dgray", Color(0.55, 0.57, 0.60)), root, false)
+			var prod := [Color(0.80, 0.20, 0.20), Color(0.95, 0.65, 0.15), Color(0.35, 0.45, 0.85),
+				Color(0.30, 0.60, 0.30), Color(0.60, 0.42, 0.55), Color(0.95, 0.85, 0.55)]
+			for side in [-1, 1]:
+				for sh5 in 3:
+					office._box(Vector3(1.30, 0.03, 0.28),
+						Vector3(0, 0.45 + sh5 * 0.40, side * 0.24), white, root, false)
+					for i in 6:
+						office._box(Vector3(0.14, 0.20, 0.10),
+							Vector3(-0.55 + i * 0.22, 0.56 + sh5 * 0.40, side * 0.26),
+							office._mat("sp_pr%d" % ((sh5 + i) % 6), prod[(sh5 + i) % 6]), root, false)
+			office._box(Vector3(1.40, 0.14, 0.12), Vector3(0, 1.55, 0),
+				_emat(Color(0.95, 0.92, 0.85), 1.2), root, false)
+		"queue_barrier":
+			for qx in [-0.6, 0.6]:
+				_cyl(0.14, 0.16, 0.02, Vector3(qx, 0.01, 0), metal, root)
+				_cyl(0.025, 0.025, 0.95, Vector3(qx, 0.49, 0), metal, root)
+				_sph(0.035, Vector3(qx, 0.99, 0), metal, root)
+			office._box(Vector3(1.10, 0.06, 0.02), Vector3(0, 0.88, 0),
+				office._mat("sp_c_c14b3f", Color.html("c14b3f")), root, false)
+		"kitchenette":
+			office._box(Vector3(1.60, 0.88, 0.60), Vector3(0, 0.44, 0), white, root, false)
+			office._box(Vector3(1.66, 0.05, 0.64), Vector3(0, 0.91, 0), ply, root, false)
+			office._box(Vector3(0.45, 0.03, 0.35), Vector3(-0.45, 0.925, 0), metal, root, false)
+			office._box(Vector3(0.37, 0.06, 0.27), Vector3(-0.45, 0.91, 0),
+				office._mat("sp_safe", Color(0.25, 0.27, 0.32)), root, false)
+			var fauc: MeshInstance3D = _cyl(0.015, 0.015, 0.25, Vector3(-0.45, 1.05, -0.13), metal, root)
+			fauc.rotation_degrees = Vector3(0, 0, 0)
+			_cyl(0.012, 0.012, 0.14, Vector3(-0.45, 1.16, -0.07), metal, root, Vector3(60, 0, 0))
+			office._box(Vector3(0.50, 0.015, 0.40), Vector3(0.40, 0.945, 0), black, root, false)
+			for i in 2:
+				_cyl(0.09, 0.09, 0.005, Vector3(0.28 + i * 0.24, 0.955, 0),
+					office._mat("sp_dgray", Color(0.55, 0.57, 0.60)), root)
+			office._box(Vector3(0.015, 0.70, 0.60), Vector3(0.0, 0.44, 0.301), white, root, false)
+			for hx3 in [-0.55, 0.25]:
+				office._box(Vector3(0.16, 0.02, 0.02), Vector3(hx3, 0.62, 0.315), metal, root, false)
+		"air_hockey":
+			for lx in [-0.75, 0.75]:
+				for lz in [-0.35, 0.35]:
+					office._box(Vector3(0.14, 0.68, 0.14), Vector3(lx, 0.34, lz), black, root, false)
+			office._box(Vector3(1.80, 0.22, 1.00), Vector3(0, 0.79, 0),
+				office._mat("sp_c_33415e", Color.html("33415e")), root, false)
+			office._box(Vector3(1.66, 0.02, 0.86), Vector3(0, 0.905, 0),
+				_emat(Color(0.92, 0.95, 0.98), 0.7), root, false)
+			office._box(Vector3(0.02, 0.015, 0.86), Vector3(0, 0.915, 0),
+				office._mat("sp_red", Color(0.80, 0.20, 0.20)), root, false)
+			for i in 4:
+				_sph(0.01, Vector3(-0.6 + i * 0.4, 0.915, [-0.25, 0.25][i % 2]),
+					_emat(Color(0.35, 0.85, 0.95), 1.0), root)
+			for mx2 in [-0.5, 0.55]:
+				_cyl(0.05, 0.06, 0.03, Vector3(mx2, 0.93, mx2 * 0.3),
+					office._mat("sp_red", Color(0.80, 0.20, 0.20)), root)
+				_cyl(0.018, 0.018, 0.04, Vector3(mx2, 0.965, mx2 * 0.3),
+					office._mat("sp_red", Color(0.80, 0.20, 0.20)), root)
+			_cyl(0.035, 0.035, 0.012, Vector3(0.1, 0.92, 0.05), black, root)
+			_omni(Vector3(0, 1.2, 0), Color(0.9, 0.95, 1.0), 0.5, 1.8, root)
+		"putting_green":
+			office._box(Vector3(0.70, 0.03, 2.40), Vector3(0, 0.015, 0),
+				office._mat("sp_felt", Color(0.15, 0.45, 0.28)), root, false)
+			office._box(Vector3(0.76, 0.05, 2.46), Vector3(0, 0.008, 0), wood, root, false)
+			_cyl(0.055, 0.055, 0.012, Vector3(0, 0.032, -0.85), black, root)
+			_cyl(0.006, 0.006, 0.5, Vector3(0, 0.28, -0.85), metal, root)
+			office._box(Vector3(0.14, 0.09, 0.005), Vector3(0.07, 0.48, -0.85),
+				office._mat("sp_red", Color(0.80, 0.20, 0.20)), root, false)
+			_sph(0.022, Vector3(0.08, 0.05, 0.75), white, root)
+			var club: MeshInstance3D = _cyl(0.008, 0.008, 0.85, Vector3(-0.30, 0.42, 0.9), metal, root)
+			club.rotation_degrees = Vector3(12, 0, 18)
+		"punching_bag":
+			for i in 4:
+				var ang := i * TAU / 4.0
+				var pbl: MeshInstance3D = office._box(Vector3(0.05, 0.05, 0.75),
+					Vector3(cos(ang) * 0.38, 0.025, sin(ang) * 0.38), black, root, false)
+				pbl.rotation_degrees = Vector3(0, -rad_to_deg(ang), 0)
+			_cyl(0.03, 0.03, 2.2, Vector3(0, 1.1, 0), metal, root)
+			office._box(Vector3(0.55, 0.05, 0.05), Vector3(0.22, 2.18, 0), metal, root, false)
+			_cyl(0.008, 0.008, 0.25, Vector3(0.45, 2.0, 0), black, root)
+			_cyl(0.16, 0.14, 0.85, Vector3(0.45, 1.45, 0),
+				office._mat("sp_c_c14b3f", Color.html("c14b3f")), root)
+			for i in 2:
+				_cyl(0.165, 0.165, 0.02, Vector3(0.45, 1.15 + i * 0.6, 0), black, root)
+		"clawfoot_tub":
+			var tub := _sph(0.42, Vector3(0, 0.42, 0), white, root)
+			tub.scale = Vector3(1.9, 0.75, 1.0)
+			var tin := _sph(0.38, Vector3(0, 0.48, 0), _glass_mat(Color(0.55, 0.80, 0.90, 0.55)), root)
+			tin.scale = Vector3(1.75, 0.45, 0.85)
+			for fx3 in [-0.55, 0.55]:
+				for fz in [-0.22, 0.22]:
+					var claw2 := _sph(0.06, Vector3(fx3, 0.08, fz),
+						office._mat("sp_brass", Color(0.80, 0.65, 0.35)), root)
+					claw2.scale = Vector3(0.7, 1.2, 0.7)
+			_cyl(0.015, 0.015, 0.30, Vector3(-0.80, 0.60, 0), metal, root)
+			_cyl(0.012, 0.012, 0.12, Vector3(-0.76, 0.74, 0), metal, root, Vector3(0, 0, 60))
+			for i in 5:
+				_sph(0.028 - i * 0.003, Vector3(randf_range(-0.5, 0.5), 0.62, randf_range(-0.2, 0.2)),
+					white, root)
+			office._box(Vector3(0.35, 0.02, 0.5), Vector3(0.95, 0.30, 0), wood, root, false)
+			office._box(Vector3(0.28, 0.05, 0.35), Vector3(0.95, 0.34, 0),
+				office._mat("sp_c_e0b4b8", Color.html("e0b4b8")), root, false)
 		_:
 			return false
 	return true
