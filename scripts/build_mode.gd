@@ -33,6 +33,28 @@ const CATALOG := [
 		[{"th": "สตูลไม้", "en": "Wood stool"}, "glb", {"model": "kaykit/chair_stool_wood"}],
 		[{"th": "อาร์มแชร์หมอน", "en": "Pillow armchair"}, "glb", {"model": "kaykit/armchair_pillows"}],
 		[{"th": "โซฟาหมอน", "en": "Pillow couch"}, "glb", {"model": "kaykit/couch_pillows"}],
+		[{"th": "โซฟากรมท่า", "en": "Sofa navy"}, "sofa", {"col": "33415e"}],
+		[{"th": "โซฟามัสตาร์ด", "en": "Sofa mustard"}, "sofa", {"col": "cfa63f"}],
+		[{"th": "โซฟาชมพู", "en": "Sofa blush"}, "sofa", {"col": "e0b4b8"}],
+		[{"th": "โซฟาดำ", "en": "Sofa black"}, "sofa", {"col": "2b2c30"}],
+		[{"th": "อาร์มแชร์เขียว", "en": "Armchair green"}, "armchair", {"col": "5f7a5a"}],
+		[{"th": "อาร์มแชร์เทา", "en": "Armchair gray"}, "armchair", {"col": "8c8a87"}],
+		[{"th": "อาร์มแชร์มัสตาร์ด", "en": "Armchair mustard"}, "armchair", {"col": "cfa63f"}],
+		[{"th": "เก้าอี้คาเฟ่ม่วง", "en": "Cafe chair purple"}, "special", {"id": "cafe_chair", "col": "8f6bb0"}],
+		[{"th": "เก้าอี้คาเฟ่แดง", "en": "Cafe chair red"}, "special", {"id": "cafe_chair", "col": "c14b3f"}],
+		[{"th": "บีนแบ็กเทา", "en": "Beanbag gray"}, "special", {"id": "beanbag", "col": "7d7f83"}],
+		[{"th": "บีนแบ็กเขียว", "en": "Beanbag green"}, "special", {"id": "beanbag", "col": "5f7a5a"}],
+		[{"th": "บีนแบ็กส้ม", "en": "Beanbag orange"}, "special", {"id": "beanbag", "col": "d96c33"}],
+		[{"th": "ออตโตมันครีม", "en": "Ottoman cream"}, "special", {"id": "ottoman", "col": "d9cbb0"}],
+		[{"th": "ออตโตมันเทียล", "en": "Ottoman teal"}, "special", {"id": "ottoman", "col": "2a7f86"}],
+		[{"th": "ออตโตมันชมพู", "en": "Ottoman blush"}, "special", {"id": "ottoman", "col": "e0b4b8"}],
+		[{"th": "ม้านั่งไม้", "en": "Wood bench"}, "special", {"id": "bench_wood"}],
+		[{"th": "โซฟาตัว L เทา", "en": "L-sofa gray"}, "special", {"id": "sofa_l", "col": "8c8a87"}],
+		[{"th": "โซฟาตัว L เขียว", "en": "L-sofa green"}, "special", {"id": "sofa_l", "col": "5f7a5a"}],
+		[{"th": "สตูลกลมชมพู", "en": "Round stool blush"}, "special", {"id": "stool_round", "col": "e0b4b8"}],
+		[{"th": "สตูลกลมดำ", "en": "Round stool black"}, "special", {"id": "stool_round", "col": "2b2c30"}],
+		[{"th": "เก้าอี้ปีกกรมท่า", "en": "Wingback navy"}, "special", {"id": "wing", "col": "33415e"}],
+		[{"th": "เก้าอี้ปีกอิฐ", "en": "Wingback clay"}, "special", {"id": "wing", "col": "b3705c"}],
 	]],
 	["cat_table", [
 		[{"th": "โต๊ะทำงาน", "en": "Desk"}, "glb", {"model": "desk"}],
@@ -48,6 +70,25 @@ const CATALOG := [
 		[{"th": "โต๊ะเล็ก", "en": "Small table"}, "glb", {"model": "kaykit/table_small"}],
 		[{"th": "เคาน์เตอร์บาร์", "en": "Kitchen bar"}, "glb", {"model": "kitchenBar"}],
 		[{"th": "ปลายเคาน์เตอร์", "en": "Bar end"}, "glb", {"model": "kitchenBarEnd"}],
+		[{"th": "โต๊ะไม้โอ๊ค", "en": "Oak table"}, "special", {"id": "table_std", "top": "wood"}],
+		[{"th": "โต๊ะขาว", "en": "White table"}, "special", {"id": "table_std", "top": "white"}],
+		[{"th": "โต๊ะดำ", "en": "Black table"}, "special", {"id": "table_std", "top": "black"}],
+		[{"th": "โต๊ะหินอ่อน", "en": "Marble table"}, "special", {"id": "table_std", "top": "marble"}],
+		[{"th": "โต๊ะประชุมยาว 3 ม.", "en": "Long table 3m"}, "special", {"id": "table_std", "top": "wood", "w": 3.0, "d": 1.1}],
+		[{"th": "โต๊ะคอนโซลผนัง", "en": "Console table"}, "special", {"id": "table_std", "top": "wood", "w": 1.2, "d": 0.35}],
+		[{"th": "โต๊ะสี่เหลี่ยมเล็ก", "en": "Small square"}, "special", {"id": "table_std", "top": "white", "w": 0.8, "d": 0.8}],
+		[{"th": "โต๊ะตัว L ขาว", "en": "L-desk white"}, "special", {"id": "desk_l", "col": "f0ede6"}],
+		[{"th": "โต๊ะตัว L ไม้", "en": "L-desk wood"}, "special", {"id": "desk_l", "col": "b08a5e"}],
+		[{"th": "โต๊ะกระจก", "en": "Glass desk"}, "special", {"id": "desk_glass"}],
+		[{"th": "โต๊ะผู้บริหาร", "en": "Executive desk"}, "special", {"id": "desk_exec"}],
+		[{"th": "โต๊ะปิกนิก", "en": "Picnic table"}, "special", {"id": "picnic"}],
+		[{"th": "โต๊ะบาร์สูงไม้", "en": "Bar table wood"}, "special", {"id": "table_bar", "col": "b08a5e"}],
+		[{"th": "โต๊ะบาร์สูงดำ", "en": "Bar table black"}, "special", {"id": "table_bar", "col": "2b2c30"}],
+		[{"th": "โต๊ะกาแฟวงรีไม้", "en": "Oval coffee wood"}, "special", {"id": "coffee_oval", "col": "b08a5e"}],
+		[{"th": "โต๊ะกาแฟวงรีขาว", "en": "Oval coffee white"}, "special", {"id": "coffee_oval", "col": "f0ede6"}],
+		[{"th": "โต๊ะลูกบาศก์ขาว", "en": "Cube table white"}, "special", {"id": "side_cube", "col": "f0ede6"}],
+		[{"th": "โต๊ะลูกบาศก์ดำ", "en": "Cube table black"}, "special", {"id": "side_cube", "col": "26272b"}],
+		[{"th": "โต๊ะพับ", "en": "Folding table"}, "special", {"id": "folding"}],
 	]],
 	["cat_store", [
 		[{"th": "ชั้นหนังสือ", "en": "Bookshelf"}, "shelf", {}],
@@ -66,12 +107,49 @@ const CATALOG := [
 		[{"th": "กล่องเปิด", "en": "Open box"}, "prop", {"model": "cardboardBoxOpen", "fit": 0.5}],
 		[{"th": "กล่องปิด", "en": "Sealed box"}, "prop", {"model": "cardboardBoxClosed", "fit": 0.55}],
 		[{"th": "ถังขยะ", "en": "Trash can"}, "prop", {"model": "trashcan", "fit_h": 0.35}],
+		[{"th": "ชั้นคิวบ์ 2×2", "en": "Cube shelf 2x2"}, "special", {"id": "shelf_cube", "n": 2}],
+		[{"th": "ชั้นคิวบ์ 4×2", "en": "Cube shelf 4x2"}, "special", {"id": "shelf_cube", "n": 4}],
+		[{"th": "ตู้เอกสาร 2 ลิ้นชัก", "en": "File cabinet 2"}, "special", {"id": "file_cab", "n": 2, "col": "9b9c9a"}],
+		[{"th": "ตู้เอกสาร 4 ลิ้นชัก", "en": "File cabinet 4"}, "special", {"id": "file_cab", "n": 4, "col": "9b9c9a"}],
+		[{"th": "ตู้เอกสารดำ", "en": "File cabinet black"}, "special", {"id": "file_cab", "n": 4, "col": "2b2c30"}],
+		[{"th": "ตู้เสื้อผ้าขาว", "en": "Wardrobe white"}, "special", {"id": "wardrobe", "col": "f0ede6"}],
+		[{"th": "ตู้เสื้อผ้าไม้", "en": "Wardrobe wood"}, "special", {"id": "wardrobe", "col": "b08a5e"}],
+		[{"th": "ตู้เซฟ", "en": "Safe"}, "special", {"id": "safe"}],
+		[{"th": "ชั้นลอยติดผนัง", "en": "Wall shelf"}, "special", {"id": "shelf_wall", "y": 1.4}],
+		[{"th": "กองลังไม้", "en": "Crate stack"}, "special", {"id": "crate_stack"}],
+		[{"th": "ชั้นพิงผนังไม้", "en": "Ladder shelf wood"}, "special", {"id": "shelf_ladder", "col": "b08a5e"}],
+		[{"th": "ชั้นพิงผนังดำ", "en": "Ladder shelf black"}, "special", {"id": "shelf_ladder", "col": "26272b"}],
+		[{"th": "กล่องพลาสติกฟ้า", "en": "Plastic box blue"}, "special", {"id": "box_plastic", "col": "7da7c9"}],
+		[{"th": "กล่องพลาสติกเทา", "en": "Plastic box gray"}, "special", {"id": "box_plastic", "col": "9b9c9a"}],
+		[{"th": "ชั้นท่ออุตสาหกรรม", "en": "Pipe shelf"}, "special", {"id": "shelf_pipe"}],
+		[{"th": "รถเข็นชั้นวาง", "en": "Utility cart"}, "special", {"id": "cart_roll"}],
+		[{"th": "ล็อกเกอร์เขียวเสจ", "en": "Lockers sage"}, "special", {"id": "locker", "col": "9eab91"}],
+		[{"th": "ล็อกเกอร์แดงอิฐ", "en": "Lockers clay"}, "special", {"id": "locker", "col": "b3705c"}],
 	]],
 	["cat_light", [
 		[{"th": "โคมตั้งพื้นกลม", "en": "Floor lamp"}, "glb", {"model": "lampRoundFloor", "light": 1.4}],
 		[{"th": "โคมตั้งพื้นสูง", "en": "Standing lamp"}, "glb", {"model": "kaykit/lamp_standing", "light": 1.5}],
 		[{"th": "โคมโต๊ะเหลี่ยม", "en": "Table lamp"}, "glb", {"model": "lampSquareTable", "light": 0.5, "y": 0.74}],
 		[{"th": "โคมโต๊ะ", "en": "Desk lamp"}, "glb", {"model": "kaykit/lamp_table", "light": 0.5, "y": 0.74}],
+		[{"th": "ไฟห้อยดำ", "en": "Pendant black"}, "special", {"id": "pendant", "col": "26272b"}],
+		[{"th": "ไฟห้อยทอง", "en": "Pendant gold"}, "special", {"id": "pendant", "col": "c9a13b"}],
+		[{"th": "ไฟห้อยขาว", "en": "Pendant white"}, "special", {"id": "pendant", "col": "f0ede6"}],
+		[{"th": "นีออนชมพู", "en": "Neon pink"}, "special", {"id": "neon_strip", "col": "e84393", "y": 1.4}],
+		[{"th": "นีออนฟ้า", "en": "Neon blue"}, "special", {"id": "neon_strip", "col": "3fb8d9", "y": 1.4}],
+		[{"th": "นีออนเหลือง", "en": "Neon yellow"}, "special", {"id": "neon_strip", "col": "e8c93f", "y": 1.4}],
+		[{"th": "ไฟราวเฟสตูน", "en": "String lights"}, "special", {"id": "string_lights"}],
+		[{"th": "โคมโค้งตั้งพื้น", "en": "Arc lamp"}, "special", {"id": "lamp_arc"}],
+		[{"th": "โคมสามขา", "en": "Tripod lamp"}, "special", {"id": "lamp_tripod"}],
+		[{"th": "โคมแขนพับดำ", "en": "Task lamp black"}, "special", {"id": "lamp_arm", "col": "26272b", "y": 0.74}],
+		[{"th": "โคมแขนพับขาว", "en": "Task lamp white"}, "special", {"id": "lamp_arm", "col": "f0ede6", "y": 0.74}],
+		[{"th": "โคมกระดาษเล็ก", "en": "Lantern small"}, "special", {"id": "lantern", "s": 0.16}],
+		[{"th": "โคมกระดาษใหญ่", "en": "Lantern big"}, "special", {"id": "lantern", "s": 0.26}],
+		[{"th": "ซอฟต์บ็อกซ์", "en": "Softbox"}, "special", {"id": "softbox"}],
+		[{"th": "ริงไลท์", "en": "Ring light"}, "special", {"id": "ring_light"}],
+		[{"th": "โคมเห็ดส้ม", "en": "Mushroom orange"}, "special", {"id": "lamp_mushroom", "col": "d96c33", "y": 0.74}],
+		[{"th": "โคมเห็ดเขียว", "en": "Mushroom green"}, "special", {"id": "lamp_mushroom", "col": "5f7a5a", "y": 0.74}],
+		[{"th": "ชุดเทียน", "en": "Candles"}, "special", {"id": "candles", "y": 0.74}],
+		[{"th": "โคมแบงเกอร์", "en": "Banker lamp"}, "special", {"id": "banker", "y": 0.74}],
 	]],
 	["cat_plant", [
 		[{"th": "ต้นไม้กระถาง", "en": "Potted plant"}, "prop", {"model": "pottedPlant", "fit_h": 1.15}],
@@ -80,6 +158,23 @@ const CATALOG := [
 		[{"th": "ไม้แขวน", "en": "Hanging plant"}, "glb", {"model": "plantSmall3"}],
 		[{"th": "กระบองเพชรเล็ก", "en": "Small cactus"}, "prop", {"model": "kaykit/cactus_small_A", "fit_h": 0.42}],
 		[{"th": "กระบองเพชรกลาง", "en": "Cactus"}, "prop", {"model": "kaykit/cactus_medium_A", "fit_h": 0.6}],
+		[{"th": "มอนสเตอร่า", "en": "Monstera"}, "special", {"id": "monstera"}],
+		[{"th": "ปาล์มกระถาง", "en": "Palm"}, "special", {"id": "palm"}],
+		[{"th": "ไทรใบสัก", "en": "Ficus"}, "special", {"id": "ficus"}],
+		[{"th": "ลิ้นมังกร", "en": "Snake plant"}, "special", {"id": "snake_plant"}],
+		[{"th": "เฟิร์นแขวน", "en": "Hanging fern"}, "special", {"id": "fern_hang", "y": 1.9}],
+		[{"th": "ไผ่กวนอิม", "en": "Bamboo"}, "special", {"id": "bamboo"}],
+		[{"th": "ต้นไม้ใหญ่ในอาคาร", "en": "Big indoor tree"}, "special", {"id": "bigtree"}],
+		[{"th": "กระบะต้นไม้ยาว", "en": "Long planter"}, "special", {"id": "planter_long"}],
+		[{"th": "บอนไซ", "en": "Bonsai"}, "special", {"id": "bonsai", "y": 0.74}],
+		[{"th": "แจกันดอกไม้แดง", "en": "Vase red"}, "special", {"id": "vase", "col": "c14b3f", "y": 0.74}],
+		[{"th": "แจกันดอกไม้เหลือง", "en": "Vase yellow"}, "special", {"id": "vase", "col": "e8c93f", "y": 0.74}],
+		[{"th": "แจกันดอกไม้ฟ้า", "en": "Vase blue"}, "special", {"id": "vase", "col": "7da7c9", "y": 0.74}],
+		[{"th": "สมุนไพรครัว", "en": "Herb set"}, "special", {"id": "herbs", "y": 0.74}],
+		[{"th": "สวนแนวตั้ง", "en": "Green wall"}, "special", {"id": "mosswall", "y": 1.2}],
+		[{"th": "กระบองเพชรยักษ์", "en": "Saguaro"}, "special", {"id": "saguaro"}],
+		[{"th": "หญ้าแพมพาส", "en": "Pampas"}, "special", {"id": "pampas"}],
+		[{"th": "พลูด่างกระถาง", "en": "Pothos"}, "special", {"id": "pothos", "y": 0.74}],
 	]],
 	["cat_decor", [
 		[{"th": "พรมผืนใหญ่", "en": "Area rug"}, "glb", {"model": "rugRectangle"}],
@@ -166,6 +261,26 @@ const CATALOG := [
 		[{"th": "พรมแดงอิฐ", "en": "Clay carpet"}, "floor", {"col": "b3705c"}],
 		[{"th": "พรมเขียวเสจ", "en": "Sage carpet"}, "floor", {"col": "8fa287"}],
 		[{"th": "ดำด้าน", "en": "Matte black"}, "floor", {"col": "2b2c30"}],
+		[{"th": "ครีม", "en": "Cream"}, "floor", {"col": "f3ead8"}],
+		[{"th": "เทาอ่อน", "en": "Light gray"}, "floor", {"col": "c9c9c6"}],
+		[{"th": "กรมท่า", "en": "Navy"}, "floor", {"col": "2e3a52"}],
+		[{"th": "เขียวป่า", "en": "Forest"}, "floor", {"col": "2f4f3e"}],
+		[{"th": "มัสตาร์ด", "en": "Mustard"}, "floor", {"col": "c9a13b"}],
+		[{"th": "ชมพูพาสเทล", "en": "Pastel pink"}, "floor", {"col": "e8c4c8"}],
+		[{"th": "ม่วงพาสเทล", "en": "Pastel purple"}, "floor", {"col": "cbb8d9"}],
+		[{"th": "ฟ้าพาสเทล", "en": "Pastel blue"}, "floor", {"col": "b8cfe0"}],
+		[{"th": "อิฐแดง", "en": "Brick red"}, "floor", {"col": "9c4a35"}],
+		[{"th": "ช็อกโกแลต", "en": "Chocolate"}, "floor", {"col": "4a352a"}],
+		[{"th": "ขาวนวล", "en": "Warm white"}, "floor", {"col": "f5f2ea"}],
+		[{"th": "หินชนวน", "en": "Slate"}, "floor", {"col": "3a3d42"}],
+		[{"th": "เทียล", "en": "Teal"}, "floor", {"col": "2a7f86"}],
+		[{"th": "แซลมอน", "en": "Salmon"}, "floor", {"col": "e89a7d"}],
+		[{"th": "ไลม์", "en": "Lime"}, "floor", {"col": "b5c96a"}],
+		[{"th": "เทาเข้ม", "en": "Dark gray"}, "floor", {"col": "6b6d70"}],
+		[{"th": "ทราย", "en": "Sand"}, "floor", {"col": "d9c49a"}],
+		[{"th": "มินต์", "en": "Mint"}, "floor", {"col": "b8d9c8"}],
+		[{"th": "ลาเวนเดอร์", "en": "Lavender"}, "floor", {"col": "b9aed6"}],
+		[{"th": "โกโก้", "en": "Cocoa"}, "floor", {"col": "6e5442"}],
 	]],
 	["cat_wall", [
 		[{"th": "ผนังทึบ 2 ม.", "en": "Wall 2m"}, "wall", {"w": 2.0}],
@@ -173,6 +288,26 @@ const CATALOG := [
 		[{"th": "ผนังครึ่ง 2 ม.", "en": "Half wall 2m"}, "wall", {"w": 2.0, "half": 1}],
 		[{"th": "กระจกกั้น 2 ม.", "en": "Glass 2m"}, "wall", {"w": 2.0, "glass": 1}],
 		[{"th": "กระจกกั้น 1 ม.", "en": "Glass 1m"}, "wall", {"w": 1.0, "glass": 1}],
+		[{"th": "ผนังขาว", "en": "Wall white"}, "wall", {"w": 2.0, "col": "f0ede6"}],
+		[{"th": "ผนังครีม", "en": "Wall cream"}, "wall", {"w": 2.0, "col": "e8dfc9"}],
+		[{"th": "ผนังเทา", "en": "Wall gray"}, "wall", {"w": 2.0, "col": "9b9c9a"}],
+		[{"th": "ผนังดำ", "en": "Wall black"}, "wall", {"w": 2.0, "col": "26272b"}],
+		[{"th": "ผนังเขียวเสจ", "en": "Wall sage"}, "wall", {"w": 2.0, "col": "9eab91"}],
+		[{"th": "ผนังกรมท่า", "en": "Wall navy"}, "wall", {"w": 2.0, "col": "33415e"}],
+		[{"th": "ผนังเทอร์รา", "en": "Wall terracotta"}, "wall", {"w": 2.0, "col": "c17a5f"}],
+		[{"th": "ผนังมัสตาร์ด", "en": "Wall mustard"}, "wall", {"w": 2.0, "col": "cfa63f"}],
+		[{"th": "ผนังอิฐ", "en": "Wall brick"}, "wall", {"w": 2.0, "col": "9c4a35"}],
+		[{"th": "ครึ่งผนังขาว", "en": "Half white"}, "wall", {"w": 2.0, "half": 1, "col": "f0ede6"}],
+		[{"th": "ครึ่งผนังเสจ", "en": "Half sage"}, "wall", {"w": 2.0, "half": 1, "col": "9eab91"}],
+		[{"th": "ครึ่งผนังกรม", "en": "Half navy"}, "wall", {"w": 2.0, "half": 1, "col": "33415e"}],
+		[{"th": "ระแนงไม้", "en": "Wood slats"}, "special", {"id": "slatwall", "col": "b08a5e"}],
+		[{"th": "ระแนงดำ", "en": "Black slats"}, "special", {"id": "slatwall", "col": "26272b"}],
+		[{"th": "กระจกกรอบดำ 2 ม.", "en": "Framed glass 2m"}, "special", {"id": "glassframe", "w": 2.0}],
+		[{"th": "กระจกกรอบดำ 1 ม.", "en": "Framed glass 1m"}, "special", {"id": "glassframe", "w": 1.0}],
+		[{"th": "เสากลมขาว", "en": "Column white"}, "special", {"id": "column_p", "col": "f0ede6"}],
+		[{"th": "เสากลมดำ", "en": "Column black"}, "special", {"id": "column_p", "col": "26272b"}],
+		[{"th": "รั้วเตี้ยขาว", "en": "Low fence white"}, "special", {"id": "fence", "col": "f0ede6"}],
+		[{"th": "รั้วเตี้ยดำ", "en": "Low fence black"}, "special", {"id": "fence", "col": "26272b"}],
 	]],
 ]
 
@@ -692,7 +827,7 @@ func _spawn_special(id: String, params: Dictionary, at: Vector3) -> Node3D:
 			office._box(Vector3(0.10, 0.03, 0.03), Vector3(-0.15, 0.755, 0.06),
 				office._mat("sp_tapred", Color(0.85, 0.25, 0.25)), root, false)
 		"locker":
-			var steelb: StandardMaterial3D = office._mat("sp_locker", Color(0.38, 0.48, 0.62))
+			var steelb: StandardMaterial3D = office._mat("sp_locker_" + str(params.get("col", "617b9e")), Color.html(str(params.get("col", "617b9e"))))
 			office._box(Vector3(1.20, 1.80, 0.50), Vector3(0, 0.90, 0), steelb, root, false)
 			for dx in [-0.20, 0.20]:
 				office._box(Vector3(0.015, 1.70, 0.02), Vector3(dx, 0.90, 0.25), black, root, false)
@@ -935,9 +1070,470 @@ func _spawn_special(id: String, params: Dictionary, at: Vector3) -> Node3D:
 			_cyl(0.20, 0.20, 0.55, Vector3(0, 0.275, 0), white, root)
 			_cyl(0.21, 0.21, 0.02, Vector3(0, 0.56, 0), white, root)
 		_:
-			root.queue_free()
-			return null
+			if not _spawn_extra(id, params, root):
+				root.queue_free()
+				return null
 	return root
+
+
+## Expansion packs (wave 1): seating, tables, storage, lighting, plants,
+## wall structures — all original procedural pieces. Returns false when
+## the id is unknown so the caller can clean up.
+func _spawn_extra(id: String, params: Dictionary, root: Node3D) -> bool:
+	var wood: StandardMaterial3D = office._mat("sp_wood", Color(0.55, 0.42, 0.30))
+	var dwood: StandardMaterial3D = office._mat("sp_dwood", Color(0.33, 0.25, 0.19))
+	var metal: StandardMaterial3D = office._mat("sp_metal", Color(0.46, 0.47, 0.50))
+	var white: StandardMaterial3D = office._mat("sp_white", Color(0.94, 0.93, 0.90))
+	var black: StandardMaterial3D = office._mat("sp_black", Color(0.10, 0.10, 0.12))
+	var green: StandardMaterial3D = office._mat("sp_leaf", Color(0.32, 0.52, 0.30))
+	var dgreen: StandardMaterial3D = office._mat("sp_leafd", Color(0.22, 0.40, 0.24))
+	var pot: StandardMaterial3D = office._mat("sp_pot", Color(0.78, 0.60, 0.48))
+	var pchex := str(params.get("col", "cccccc"))
+	var pm: StandardMaterial3D = office._mat("sp_c_" + pchex, Color.html(pchex))
+	match id:
+		# ------------------------------------------------------ seating
+		"beanbag":
+			var bb := _sph(0.42, Vector3(0, 0.27, 0), pm, root)
+			bb.scale = Vector3(1, 0.62, 1)
+			var bt := _sph(0.24, Vector3(0, 0.46, -0.06), pm, root)
+			bt.scale = Vector3(1, 0.55, 1)
+		"ottoman":
+			office._box(Vector3(0.55, 0.30, 0.55), Vector3(0, 0.19, 0), pm, root, false)
+			office._box(Vector3(0.58, 0.05, 0.58), Vector3(0, 0.36, 0), pm, root, false)
+			for lx in [-0.22, 0.22]:
+				for lz in [-0.22, 0.22]:
+					office._box(Vector3(0.04, 0.08, 0.04), Vector3(lx, 0.04, lz), dwood, root, false)
+		"bench_wood":
+			office._box(Vector3(1.40, 0.06, 0.35), Vector3(0, 0.45, 0), wood, root, false)
+			for lx in [-0.60, 0.60]:
+				for tz in [[0.10, 8.0], [-0.10, -8.0]]:
+					var bl: MeshInstance3D = office._box(Vector3(0.05, 0.46, 0.05),
+						Vector3(lx, 0.22, tz[0]), black, root, false)
+					bl.rotation_degrees = Vector3(tz[1], 0, 0)
+		"sofa_l":
+			office._box(Vector3(2.20, 0.30, 0.85), Vector3(0, 0.27, 0), pm, root, false)
+			office._box(Vector3(0.85, 0.30, 0.85), Vector3(0.675, 0.27, 0.85), pm, root, false)
+			office._box(Vector3(2.20, 0.45, 0.16), Vector3(0, 0.62, -0.35), pm, root, false)
+			office._box(Vector3(0.16, 0.45, 1.70), Vector3(1.02, 0.62, 0.42), pm, root, false)
+			for cx in [-0.65, 0.05]:
+				office._box(Vector3(0.62, 0.10, 0.60), Vector3(cx, 0.47, 0.02), pm, root, false)
+			office._box(Vector3(0.60, 0.10, 0.75), Vector3(0.67, 0.47, 0.80), pm, root, false)
+			office._box(Vector3(0.30, 0.28, 0.10), Vector3(-0.6, 0.55, -0.26), white, root, false)
+		"stool_round":
+			_cyl(0.19, 0.19, 0.09, Vector3(0, 0.42, 0), pm, root)
+			for i in 3:
+				var ang := i * TAU / 3.0
+				var sl: MeshInstance3D = office._box(Vector3(0.04, 0.44, 0.04),
+					Vector3(cos(ang) * 0.12, 0.20, sin(ang) * 0.12), wood, root, false)
+				sl.rotation_degrees = Vector3(cos(ang) * -10.0, 0, sin(ang) * -10.0)
+		"wing":
+			office._box(Vector3(0.72, 0.16, 0.66), Vector3(0, 0.28, 0), pm, root, false)
+			office._box(Vector3(0.60, 0.10, 0.55), Vector3(0, 0.39, 0.02), pm, root, false)
+			office._box(Vector3(0.72, 0.85, 0.15), Vector3(0, 0.70, -0.27), pm, root, false)
+			for wx in [-0.34, 0.34]:
+				var wg: MeshInstance3D = office._box(Vector3(0.10, 0.62, 0.40),
+					Vector3(wx, 0.72, -0.10), pm, root, false)
+				wg.rotation_degrees = Vector3(0, wx * -22.0, 0)
+				office._box(Vector3(0.04, 0.20, 0.04), Vector3(wx, 0.10, 0.24), dwood, root, false)
+				office._box(Vector3(0.04, 0.20, 0.04), Vector3(wx, 0.10, -0.24), dwood, root, false)
+		# ------------------------------------------------------- tables
+		"table_std":
+			var w := float(params.get("w", 1.6))
+			var d := float(params.get("d", 0.9))
+			var tmat: StandardMaterial3D = white
+			match str(params.get("top", "wood")):
+				"wood": tmat = office._mat("sp_ply", Color(0.78, 0.66, 0.48))
+				"black": tmat = black
+				"marble": tmat = office._mat("sp_marble", Color(0.90, 0.89, 0.86))
+			office._box(Vector3(w, 0.05, d), Vector3(0, 0.73, 0), tmat, root, false)
+			for lx in [-w / 2.0 + 0.08, w / 2.0 - 0.08]:
+				for lz in [-d / 2.0 + 0.08, d / 2.0 - 0.08]:
+					_cyl(0.03, 0.03, 0.72, Vector3(lx, 0.36, lz), black, root)
+		"desk_l":
+			office._box(Vector3(1.60, 0.05, 0.70), Vector3(0, 0.72, 0), pm, root, false)
+			office._box(Vector3(0.70, 0.05, 0.90), Vector3(-0.45, 0.72, 0.80), pm, root, false)
+			for lp in [Vector3(-0.72, 0.36, -0.28), Vector3(0.72, 0.36, -0.28), Vector3(0.72, 0.36, 0.28),
+					Vector3(-0.72, 0.36, 1.18), Vector3(-0.18, 0.36, 1.18)]:
+				office._box(Vector3(0.06, 0.70, 0.06), lp, black, root, false)
+		"desk_glass":
+			office._box(Vector3(1.40, 0.03, 0.70), Vector3(0, 0.73, 0), _glass_mat(), root, false)
+			for lx in [-0.64, 0.64]:
+				office._box(Vector3(0.05, 0.72, 0.62), Vector3(lx, 0.36, 0), black, root, false)
+			office._box(Vector3(1.28, 0.10, 0.04), Vector3(0, 0.20, -0.25), black, root, false)
+		"desk_exec":
+			office._box(Vector3(1.80, 0.06, 0.90), Vector3(0, 0.74, 0), dwood, root, false)
+			for px in [-0.72, 0.72]:
+				office._box(Vector3(0.36, 0.68, 0.80), Vector3(px, 0.36, 0), dwood, root, false)
+				for dr in 3:
+					office._box(Vector3(0.30, 0.015, 0.02), Vector3(px, 0.18 + dr * 0.20, 0.41),
+						office._mat("sp_brass", Color(0.80, 0.65, 0.35)), root, false)
+			office._box(Vector3(1.10, 0.55, 0.05), Vector3(0, 0.42, -0.38), dwood, root, false)
+		"picnic":
+			office._box(Vector3(1.80, 0.05, 0.75), Vector3(0, 0.72, 0), wood, root, false)
+			for bz in [-0.62, 0.62]:
+				office._box(Vector3(1.80, 0.04, 0.25), Vector3(0, 0.44, bz), wood, root, false)
+			for lx in [-0.70, 0.70]:
+				for ta in [[22.0, 1], [-22.0, -1]]:
+					var pl: MeshInstance3D = office._box(Vector3(0.06, 0.78, 0.05),
+						Vector3(lx, 0.36, ta[1] * 0.18), wood, root, false)
+					pl.rotation_degrees = Vector3(ta[0], 0, 0)
+		"table_bar":
+			_cyl(0.32, 0.32, 0.04, Vector3(0, 1.04, 0), pm, root)
+			_cyl(0.04, 0.04, 1.02, Vector3(0, 0.52, 0), black, root)
+			_cyl(0.22, 0.26, 0.03, Vector3(0, 0.015, 0), black, root)
+		"coffee_oval":
+			var ct := _cyl(0.42, 0.42, 0.04, Vector3(0, 0.40, 0), pm, root)
+			ct.scale = Vector3(1.35, 1, 0.8)
+			for i in 4:
+				var ang := i * TAU / 4.0 + 0.4
+				var cl: MeshInstance3D = office._box(Vector3(0.035, 0.40, 0.035),
+					Vector3(cos(ang) * 0.40, 0.19, sin(ang) * 0.26), wood, root, false)
+				cl.rotation_degrees = Vector3(cos(ang) * 8.0, 0, sin(ang) * -8.0)
+		"side_cube":
+			office._box(Vector3(0.42, 0.04, 0.42), Vector3(0, 0.40, 0), pm, root, false)
+			office._box(Vector3(0.42, 0.04, 0.42), Vector3(0, 0.02, 0), pm, root, false)
+			for sx in [-0.19, 0.19]:
+				office._box(Vector3(0.04, 0.36, 0.42), Vector3(sx, 0.21, 0), pm, root, false)
+			office._box(Vector3(0.34, 0.36, 0.04), Vector3(0, 0.21, -0.19), pm, root, false)
+		"folding":
+			office._box(Vector3(1.50, 0.035, 0.70), Vector3(0, 0.72, 0), white, root, false)
+			for lx in [-0.60, 0.60]:
+				for xa in [18.0, -18.0]:
+					var fl: MeshInstance3D = office._box(Vector3(0.04, 0.74, 0.04),
+						Vector3(lx, 0.35, 0), metal, root, false)
+					fl.rotation_degrees = Vector3(xa, 0, 0)
+		# ------------------------------------------------------ storage
+		"shelf_cube":
+			var nx := int(params.get("n", 2))
+			var cw := nx * 0.38
+			for r2 in 3:
+				office._box(Vector3(cw, 0.03, 0.38), Vector3(0, 0.02 + r2 * 0.38, 0), white, root, false)
+			for c2 in nx + 1:
+				office._box(Vector3(0.03, 0.79, 0.38), Vector3(-cw / 2.0 + c2 * 0.38, 0.40, 0),
+					white, root, false)
+			office._box(Vector3(0.30, 0.28, 0.30), Vector3(-cw / 2.0 + 0.19, 0.21, 0),
+				office._mat("sp_bin1", Color(0.62, 0.67, 0.57)), root, false)
+			office._box(Vector3(0.30, 0.28, 0.30), Vector3(cw / 2.0 - 0.19, 0.59, 0),
+				office._mat("sp_bin2", Color(0.80, 0.51, 0.40)), root, false)
+		"file_cab":
+			var n := int(params.get("n", 2))
+			office._box(Vector3(0.45, n * 0.33, 0.55), Vector3(0, n * 0.165 + 0.02, 0), pm, root, false)
+			for dr2 in n:
+				office._box(Vector3(0.39, 0.26, 0.02), Vector3(0, 0.17 + dr2 * 0.33, 0.28),
+					pm, root, false)
+				office._box(Vector3(0.16, 0.03, 0.02), Vector3(0, 0.24 + dr2 * 0.33, 0.29),
+					black, root, false)
+		"wardrobe":
+			office._box(Vector3(1.00, 1.90, 0.55), Vector3(0, 0.99, 0), pm, root, false)
+			office._box(Vector3(0.015, 1.78, 0.02), Vector3(0, 0.99, 0.28), black, root, false)
+			for hx in [-0.08, 0.08]:
+				office._box(Vector3(0.03, 0.22, 0.03), Vector3(hx, 1.05, 0.29), black, root, false)
+			for fx in [-0.42, 0.42]:
+				office._box(Vector3(0.06, 0.08, 0.45), Vector3(fx, 0.0, 0), black, root, false)
+		"safe":
+			office._box(Vector3(0.55, 0.60, 0.55), Vector3(0, 0.32, 0),
+				office._mat("sp_safe", Color(0.25, 0.27, 0.32)), root, false)
+			_cyl(0.07, 0.07, 0.04, Vector3(-0.10, 0.38, 0.28), metal, root, Vector3(90, 0, 0))
+			office._box(Vector3(0.04, 0.16, 0.03), Vector3(0.14, 0.34, 0.285), metal, root, false)
+		"shelf_wall":
+			office._box(Vector3(0.90, 0.04, 0.24), Vector3(0, 0.0, 0), wood, root, false)
+			for bx in [-0.32, 0.32]:
+				office._box(Vector3(0.04, 0.16, 0.04), Vector3(bx, -0.09, -0.08), black, root, false)
+			office._box(Vector3(0.10, 0.16, 0.14), Vector3(-0.25, 0.10, 0), white, root, false)
+			office._box(Vector3(0.24, 0.14, 0.03), Vector3(0.20, 0.09, 0),
+				office._mat("sp_bookrow", Color(0.42, 0.52, 0.65)), root, false)
+		"crate_stack":
+			var cpos := [[Vector3(0, 0.15, 0), 0.0], [Vector3(0.05, 0.45, 0.03), 14.0],
+				[Vector3(-0.03, 0.75, -0.02), -8.0]]
+			for cp in cpos:
+				var cr: MeshInstance3D = office._box(Vector3(0.48, 0.30, 0.48), cp[0], wood, root, false)
+				cr.rotation_degrees = Vector3(0, cp[1], 0)
+				var inr: MeshInstance3D = office._box(Vector3(0.40, 0.06, 0.40),
+					cp[0] + Vector3(0, 0.13, 0), dwood, root, false)
+				inr.rotation_degrees = Vector3(0, cp[1], 0)
+		"shelf_ladder":
+			for rx in [-0.38, 0.38]:
+				var rl: MeshInstance3D = office._box(Vector3(0.05, 1.85, 0.05),
+					Vector3(rx, 0.90, -0.02), pm, root, false)
+				rl.rotation_degrees = Vector3(-12, 0, 0)
+			for sh in 4:
+				office._box(Vector3(0.80, 0.03, 0.34 - sh * 0.07),
+					Vector3(0, 0.25 + sh * 0.42, -0.30 + sh * 0.115), pm, root, false)
+			office._box(Vector3(0.20, 0.20, 0.16), Vector3(-0.2, 0.38, -0.22), white, root, false)
+		"box_plastic":
+			office._box(Vector3(0.50, 0.32, 0.36), Vector3(0, 0.17, 0),
+				_glass_mat(Color.html(pchex) * Color(1, 1, 1, 0.55)), root, false)
+			office._box(Vector3(0.53, 0.04, 0.39), Vector3(0, 0.35, 0), white, root, false)
+		"shelf_pipe":
+			for px2 in [-0.55, 0.55]:
+				for pz in [-0.15, 0.15]:
+					_cyl(0.02, 0.02, 1.5, Vector3(px2, 0.75, pz), black, root)
+			for sh2 in 3:
+				office._box(Vector3(1.25, 0.04, 0.38), Vector3(0, 0.25 + sh2 * 0.55, 0), wood, root, false)
+		"cart_roll":
+			for px3 in [-0.30, 0.30]:
+				for pz2 in [-0.18, 0.18]:
+					_cyl(0.015, 0.015, 0.85, Vector3(px3, 0.46, pz2), metal, root)
+					_sph(0.03, Vector3(px3, 0.03, pz2), black, root)
+			for sh3 in 3:
+				office._box(Vector3(0.68, 0.03, 0.42), Vector3(0, 0.14 + sh3 * 0.36, 0), metal, root, false)
+		# ----------------------------------------------------- lighting
+		"pendant":
+			_cyl(0.008, 0.008, 0.55, Vector3(0, 2.32, 0), black, root)
+			_cyl(0.05, 0.19, 0.18, Vector3(0, 1.96, 0), pm, root)
+			_sph(0.045, Vector3(0, 1.90, 0), _emat(Color(1.0, 0.92, 0.75), 1.8), root)
+			_omni(Vector3(0, 1.85, 0), Color(1.0, 0.88, 0.68), 1.0, 3.0, root)
+		"neon_strip":
+			var segs := [[Vector3(-0.28, 0.10, 0), 25.0], [Vector3(0, 0.0, 0), -25.0],
+				[Vector3(0.28, 0.10, 0), 25.0]]
+			for sg in segs:
+				var ns: MeshInstance3D = office._box(Vector3(0.34, 0.035, 0.03), sg[0],
+					_emat(Color.html(pchex), 2.2), root, false)
+				ns.rotation_degrees = Vector3(0, 0, sg[1])
+			_omni(Vector3(0, 0.1, 0.2), Color.html(pchex), 0.9, 2.4, root)
+		"string_lights":
+			for px4 in [-1.1, 1.1]:
+				_cyl(0.025, 0.03, 2.2, Vector3(px4, 1.1, 0), dwood, root)
+			for i in 7:
+				var t := (i + 1) / 8.0
+				var bx2 := -1.1 + t * 2.2
+				var by := 2.15 - sin(t * PI) * 0.35
+				_sph(0.035, Vector3(bx2, by, 0), _emat(Color(1.0, 0.85, 0.55), 1.8), root)
+			_omni(Vector3(0, 1.9, 0), Color(1.0, 0.85, 0.55), 0.8, 3.0, root)
+		"lamp_arc":
+			office._box(Vector3(0.35, 0.05, 0.35), Vector3(0, 0.025, 0), black, root, false)
+			var arcs := [[Vector3(0, 0.75, 0.02), 0.0], [Vector3(0.12, 1.45, 0.02), -28.0],
+				[Vector3(0.45, 1.85, 0.02), -64.0]]
+			for ac in arcs:
+				var ap: MeshInstance3D = _cyl(0.02, 0.02, 0.85, ac[0], metal, root)
+				ap.rotation_degrees = Vector3(ac[1], 0, 0)
+			_cyl(0.06, 0.15, 0.16, Vector3(0.78, 1.95, 0.02), metal, root, Vector3(0, 0, -30))
+			_omni(Vector3(0.78, 1.82, 0.02), Color(1.0, 0.88, 0.68), 1.0, 3.0, root)
+		"lamp_tripod":
+			for i in 3:
+				var ang := i * TAU / 3.0
+				var tl: MeshInstance3D = _cyl(0.02, 0.02, 1.15,
+					Vector3(cos(ang) * 0.18, 0.55, sin(ang) * 0.18), wood, root)
+				tl.rotation_degrees = Vector3(sin(ang) * 16.0, 0, cos(ang) * -16.0)
+			_cyl(0.14, 0.18, 0.22, Vector3(0, 1.22, 0), white, root)
+			_omni(Vector3(0, 1.18, 0), Color(1.0, 0.88, 0.68), 0.9, 2.6, root)
+		"lamp_arm":
+			_cyl(0.07, 0.09, 0.03, Vector3(0, 0.015, 0), pm, root)
+			var a1: MeshInstance3D = office._box(Vector3(0.025, 0.34, 0.025),
+				Vector3(0, 0.17, 0.05), pm, root, false)
+			a1.rotation_degrees = Vector3(18, 0, 0)
+			var a2: MeshInstance3D = office._box(Vector3(0.025, 0.30, 0.025),
+				Vector3(0, 0.42, -0.02), pm, root, false)
+			a2.rotation_degrees = Vector3(-35, 0, 0)
+			_cyl(0.035, 0.065, 0.09, Vector3(0, 0.54, 0.10), pm, root, Vector3(-40, 0, 0))
+			_omni(Vector3(0, 0.48, 0.16), Color(1.0, 0.9, 0.7), 0.5, 1.2, root)
+		"lantern":
+			var ls := float(params.get("s", 0.2))
+			_cyl(0.06, 0.08, 0.03, Vector3(0, 0.015, 0), black, root)
+			_cyl(0.015, 0.015, 0.5, Vector3(0, 0.28, 0), black, root)
+			_sph(ls, Vector3(0, 0.55 + ls, 0), _emat(Color(0.98, 0.94, 0.86), 0.9), root)
+			_omni(Vector3(0, 0.55 + ls, 0), Color(1.0, 0.92, 0.78), 0.8, 2.4, root)
+		"softbox":
+			_cyl(0.02, 0.02, 1.4, Vector3(0, 0.7, 0), black, root)
+			for i in 3:
+				var ang := i * TAU / 3.0
+				var sl2: MeshInstance3D = _cyl(0.015, 0.015, 0.6,
+					Vector3(cos(ang) * 0.22, 0.26, sin(ang) * 0.22), black, root)
+				sl2.rotation_degrees = Vector3(sin(ang) * 24.0, 0, cos(ang) * -24.0)
+			var sbp: MeshInstance3D = office._box(Vector3(0.60, 0.80, 0.05),
+				Vector3(0, 1.55, 0.06), _emat(Color(0.98, 0.97, 0.93), 1.6), root, false)
+			sbp.rotation_degrees = Vector3(-12, 0, 0)
+			office._box(Vector3(0.66, 0.86, 0.03), Vector3(0, 1.56, 0.015), black, root, false)
+			_omni(Vector3(0, 1.5, 0.4), Color(1.0, 0.98, 0.94), 1.2, 3.0, root)
+		"ring_light":
+			_cyl(0.02, 0.02, 1.5, Vector3(0, 0.75, 0), black, root)
+			for i in 3:
+				var ang := i * TAU / 3.0
+				var rl2: MeshInstance3D = _cyl(0.015, 0.015, 0.55,
+					Vector3(cos(ang) * 0.2, 0.24, sin(ang) * 0.2), black, root)
+				rl2.rotation_degrees = Vector3(sin(ang) * 24.0, 0, cos(ang) * -24.0)
+			var ring := MeshInstance3D.new()
+			var tor := TorusMesh.new()
+			tor.inner_radius = 0.20
+			tor.outer_radius = 0.26
+			ring.mesh = tor
+			ring.material_override = _emat(Color(0.98, 0.97, 0.93), 1.8)
+			ring.position = Vector3(0, 1.62, 0)
+			ring.rotation_degrees = Vector3(90, 0, 0)
+			root.add_child(ring)
+			_omni(Vector3(0, 1.6, 0.3), Color(1.0, 0.98, 0.94), 1.0, 2.6, root)
+		"lamp_mushroom":
+			_cyl(0.05, 0.08, 0.20, Vector3(0, 0.10, 0), pm, root)
+			var cap := _sph(0.16, Vector3(0, 0.26, 0), pm, root)
+			cap.scale = Vector3(1, 0.62, 1)
+			_cyl(0.10, 0.10, 0.015, Vector3(0, 0.20, 0), _emat(Color(1.0, 0.9, 0.7), 1.4), root)
+			_omni(Vector3(0, 0.18, 0), Color(1.0, 0.88, 0.68), 0.5, 1.2, root)
+		"candles":
+			office._box(Vector3(0.30, 0.02, 0.14), Vector3(0, 0.01, 0), dwood, root, false)
+			var chs := [0.10, 0.15, 0.07]
+			for i in 3:
+				_cyl(0.028, 0.028, chs[i], Vector3(-0.09 + i * 0.09, 0.02 + chs[i] / 2.0, 0),
+					white, root)
+				_sph(0.012, Vector3(-0.09 + i * 0.09, 0.045 + chs[i], 0),
+					_emat(Color(1.0, 0.72, 0.30), 2.6), root)
+			_omni(Vector3(0, 0.25, 0), Color(1.0, 0.72, 0.35), 0.4, 1.0, root)
+		"banker":
+			_cyl(0.09, 0.11, 0.03, Vector3(0, 0.015, 0),
+				office._mat("sp_brass", Color(0.80, 0.65, 0.35)), root)
+			_cyl(0.015, 0.015, 0.30, Vector3(0, 0.17, 0),
+				office._mat("sp_brass", Color(0.80, 0.65, 0.35)), root)
+			var sh4: MeshInstance3D = _cyl(0.16, 0.16, 0.12, Vector3(0, 0.34, 0.05),
+				office._mat("sp_bankgreen", Color(0.15, 0.42, 0.28)), root)
+			sh4.rotation_degrees = Vector3(90, 0, 0)
+			_omni(Vector3(0, 0.28, 0.1), Color(1.0, 0.85, 0.55), 0.5, 1.1, root)
+		# ------------------------------------------------------- plants
+		"monstera":
+			_cyl(0.16, 0.12, 0.28, Vector3(0, 0.14, 0), pot, root)
+			for i in 5:
+				var ang := i * TAU / 5.0
+				var lf := _sph(0.16, Vector3(cos(ang) * 0.20, 0.55 + (i % 3) * 0.12,
+					sin(ang) * 0.20), dgreen, root)
+				lf.scale = Vector3(1.1, 0.18, 0.9)
+				lf.rotation_degrees = Vector3(sin(ang) * 30.0, rad_to_deg(ang), cos(ang) * 24.0)
+				office._box(Vector3(0.015, 0.35, 0.015), Vector3(cos(ang) * 0.09,
+					0.38, sin(ang) * 0.09), green, root, false)
+		"palm":
+			_cyl(0.15, 0.11, 0.26, Vector3(0, 0.13, 0), pot, root)
+			_cyl(0.035, 0.05, 0.55, Vector3(0, 0.52, 0), dwood, root)
+			for i in 6:
+				var ang := i * TAU / 6.0
+				var fr: MeshInstance3D = office._box(Vector3(0.09, 0.02, 0.75),
+					Vector3(cos(ang) * 0.28, 0.92, sin(ang) * 0.28), green, root, false)
+				fr.rotation_degrees = Vector3(20, -rad_to_deg(ang) + 90.0, 0)
+		"ficus":
+			_cyl(0.17, 0.13, 0.30, Vector3(0, 0.15, 0), white, root)
+			_cyl(0.03, 0.045, 0.60, Vector3(0, 0.58, 0), dwood, root)
+			_sph(0.26, Vector3(0, 1.05, 0), green, root)
+			_sph(0.20, Vector3(0.14, 1.25, 0.05), dgreen, root)
+			_sph(0.16, Vector3(-0.15, 1.22, -0.05), green, root)
+		"snake_plant":
+			_cyl(0.13, 0.10, 0.22, Vector3(0, 0.11, 0), white, root)
+			for i in 7:
+				var ang := i * TAU / 7.0
+				var bl2: MeshInstance3D = office._box(Vector3(0.06, 0.55 + (i % 3) * 0.12, 0.015),
+					Vector3(cos(ang) * 0.06, 0.45, sin(ang) * 0.06),
+					[green, dgreen][i % 2], root, false)
+				bl2.rotation_degrees = Vector3(sin(ang) * 8.0, rad_to_deg(ang), cos(ang) * 8.0)
+		"fern_hang":
+			_cyl(0.008, 0.008, 0.45, Vector3(0, 0.23, 0), black, root)
+			_cyl(0.14, 0.10, 0.14, Vector3(0, -0.02, 0), pot, root)
+			for i in 8:
+				var ang := i * TAU / 8.0
+				var fd: MeshInstance3D = office._box(Vector3(0.05, 0.02, 0.42),
+					Vector3(cos(ang) * 0.20, -0.12, sin(ang) * 0.20), green, root, false)
+				fd.rotation_degrees = Vector3(38, -rad_to_deg(ang) + 90.0, 0)
+		"bamboo":
+			office._box(Vector3(0.34, 0.22, 0.34), Vector3(0, 0.11, 0),
+				office._mat("sp_zen", Color(0.85, 0.82, 0.75)), root, false)
+			for bp in [Vector3(-0.08, 0, 0.04), Vector3(0.02, 0, -0.06), Vector3(0.09, 0, 0.05)]:
+				var bh: float = 0.9 + bp.x * 2.0
+				_cyl(0.022, 0.022, bh, bp + Vector3(0, 0.2 + bh / 2.0, 0), green, root)
+				var lf2: MeshInstance3D = office._box(Vector3(0.04, 0.015, 0.22),
+					bp + Vector3(0.06, 0.3 + bh, 0), dgreen, root, false)
+				lf2.rotation_degrees = Vector3(15, bp.z * 300.0, 0)
+		"bigtree":
+			_cyl(0.30, 0.24, 0.45, Vector3(0, 0.22, 0), pot, root)
+			_cyl(0.06, 0.09, 1.1, Vector3(0, 0.95, 0), dwood, root)
+			_sph(0.42, Vector3(0, 1.75, 0), green, root)
+			_sph(0.32, Vector3(0.25, 2.0, 0.1), dgreen, root)
+			_sph(0.28, Vector3(-0.25, 1.95, -0.1), green, root)
+		"planter_long":
+			office._box(Vector3(1.20, 0.35, 0.35), Vector3(0, 0.175, 0),
+				office._mat("sp_planter", Color(0.45, 0.46, 0.48)), root, false)
+			for i in 3:
+				_sph(0.16, Vector3(-0.38 + i * 0.38, 0.45, 0), [green, dgreen, green][i], root)
+		"bonsai":
+			office._box(Vector3(0.30, 0.06, 0.20), Vector3(0, 0.03, 0),
+				office._mat("sp_zen2", Color(0.35, 0.30, 0.28)), root, false)
+			var tr2: MeshInstance3D = _cyl(0.02, 0.035, 0.20, Vector3(0.02, 0.15, 0), dwood, root)
+			tr2.rotation_degrees = Vector3(0, 0, 18)
+			var p1 := _sph(0.11, Vector3(-0.06, 0.28, 0), dgreen, root)
+			p1.scale = Vector3(1.3, 0.5, 1.1)
+			var p2 := _sph(0.08, Vector3(0.10, 0.22, 0.03), green, root)
+			p2.scale = Vector3(1.2, 0.5, 1)
+		"vase":
+			_cyl(0.055, 0.075, 0.22, Vector3(0, 0.11, 0), white, root)
+			for i in 5:
+				var ang := i * TAU / 5.0
+				var st2: MeshInstance3D = office._box(Vector3(0.008, 0.24, 0.008),
+					Vector3(cos(ang) * 0.02, 0.30, sin(ang) * 0.02), green, root, false)
+				st2.rotation_degrees = Vector3(sin(ang) * 14.0, 0, cos(ang) * 14.0)
+				_sph(0.028, Vector3(cos(ang) * 0.07, 0.43, sin(ang) * 0.07), pm, root)
+		"herbs":
+			office._box(Vector3(0.50, 0.03, 0.18), Vector3(0, 0.015, 0), wood, root, false)
+			for i in 3:
+				_cyl(0.055, 0.045, 0.10, Vector3(-0.15 + i * 0.15, 0.08, 0), pot, root)
+				_sph(0.06, Vector3(-0.15 + i * 0.15, 0.17, 0), [green, dgreen, green][i], root)
+		"mosswall":
+			office._box(Vector3(1.20, 0.80, 0.04), Vector3(0, 0.20, 0), dwood, root, false)
+			office._box(Vector3(1.12, 0.72, 0.03), Vector3(0, 0.20, 0.015), dgreen, root, false)
+			for i in 6:
+				var mp := _sph(0.10, Vector3(-0.45 + (i % 3) * 0.45,
+					0.02 + (i / 3) * 0.36, 0.035), [green, dgreen][i % 2], root)
+				mp.scale = Vector3(1.4, 1.0, 0.3)
+		"saguaro":
+			_cyl(0.20, 0.16, 0.30, Vector3(0, 0.15, 0), pot, root)
+			_cyl(0.09, 0.11, 1.3, Vector3(0, 0.95, 0), green, root)
+			for aa in [[-1.0, 0.75], [1.0, 1.05]]:
+				_cyl(0.05, 0.05, 0.25, Vector3(aa[0] * 0.17, aa[1], 0), green, root,
+					Vector3(0, 0, aa[0] * 90.0))
+				_cyl(0.05, 0.05, 0.30, Vector3(aa[0] * 0.28, aa[1] + 0.17, 0), green, root)
+		"pampas":
+			_cyl(0.06, 0.09, 0.35, Vector3(0, 0.175, 0),
+				office._mat("sp_zen", Color(0.85, 0.82, 0.75)), root)
+			for i in 5:
+				var ang := i * TAU / 5.0
+				var pst: MeshInstance3D = office._box(Vector3(0.008, 0.6, 0.008),
+					Vector3(cos(ang) * 0.03, 0.6, sin(ang) * 0.03),
+					office._mat("sp_dry", Color(0.75, 0.65, 0.48)), root, false)
+				pst.rotation_degrees = Vector3(sin(ang) * 10.0, 0, cos(ang) * 10.0)
+				var pl2 := _sph(0.05, Vector3(cos(ang) * 0.12, 0.95, sin(ang) * 0.12),
+					office._mat("sp_plume", Color(0.88, 0.80, 0.68)), root)
+				pl2.scale = Vector3(1, 2.2, 1)
+		"pothos":
+			_cyl(0.07, 0.055, 0.12, Vector3(0, 0.06, 0), white, root)
+			_sph(0.09, Vector3(0, 0.14, 0), green, root)
+			for i in 3:
+				var vn: MeshInstance3D = office._box(Vector3(0.03, 0.30, 0.015),
+					Vector3(-0.08 + i * 0.08, -0.02, 0.08), dgreen, root, false)
+				vn.rotation_degrees = Vector3(24, i * 40.0 - 40.0, 0)
+		# ------------------------------------------------- wall pieces
+		"slatwall":
+			office._box(Vector3(2.00, 0.06, 0.10), Vector3(0, 0.03, 0), dwood, root, false)
+			office._box(Vector3(2.00, 0.06, 0.10), Vector3(0, 2.30, 0), dwood, root, false)
+			for i in 13:
+				office._box(Vector3(0.07, 2.25, 0.05), Vector3(-0.93 + i * 0.155, 1.16, 0),
+					pm, root, false)
+		"glassframe":
+			var gw := float(params.get("w", 2.0))
+			office._box(Vector3(gw, 0.06, 0.07), Vector3(0, 0.03, 0), black, root, false)
+			office._box(Vector3(gw, 0.06, 0.07), Vector3(0, 2.42, 0), black, root, false)
+			for fx2 in [-gw / 2.0 + 0.03, gw / 2.0 - 0.03]:
+				office._box(Vector3(0.06, 2.45, 0.07), Vector3(fx2, 1.22, 0), black, root, false)
+			var mn := int(gw / 0.5)
+			for i in mn - 1:
+				office._box(Vector3(0.035, 2.36, 0.05),
+					Vector3(-gw / 2.0 + (i + 1) * gw / mn, 1.22, 0), black, root, false)
+			office._box(Vector3(gw - 0.08, 0.035, 0.05), Vector3(0, 1.0, 0), black, root, false)
+			office._box(Vector3(gw - 0.08, 2.30, 0.02), Vector3(0, 1.22, 0), _glass_mat(), root, false)
+		"column_p":
+			_cyl(0.16, 0.18, 2.55, Vector3(0, 1.275, 0), pm, root)
+			_cyl(0.21, 0.21, 0.08, Vector3(0, 0.04, 0), pm, root)
+			_cyl(0.21, 0.21, 0.08, Vector3(0, 2.51, 0), pm, root)
+		"fence":
+			for rz2 in [0.30, 0.75]:
+				office._box(Vector3(1.80, 0.05, 0.04), Vector3(0, rz2, 0), pm, root, false)
+			for i in 5:
+				office._box(Vector3(0.05, 0.90, 0.05), Vector3(-0.80 + i * 0.40, 0.45, 0),
+					pm, root, false)
+		_:
+			return false
+	return true
 
 
 ## Native-scale model (Kenney/KayKit kits are true-to-life meters) with
@@ -985,7 +1581,8 @@ func _spawn_wall(params: Dictionary, at: Vector3) -> Node3D:
 		m.roughness = 0.05
 		m.metallic = 0.1
 	else:
-		m = office._mat("bwall_paint", Color(0.92, 0.91, 0.88))
+		var wc := str(params.get("col", "ebe8e1"))
+		m = office._mat("bwall_" + wc, Color.html(wc))
 	office._box(Vector3(w, h, 0.09), Vector3(0, h / 2.0, 0), m, root, false)
 	if params.has("glass"):    # slim posts so the pane reads at a glance
 		var post: StandardMaterial3D = office._mat("bwall_post", Color(0.30, 0.31, 0.34))
