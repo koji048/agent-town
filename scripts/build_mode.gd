@@ -3609,6 +3609,7 @@ func _catalog_pick(kind: String, params: Dictionary) -> void:
 		node.set_meta("snap_mode", _carry_snap)
 	Sfx.play_ui("paper", -10.0)
 	_attach_ring()
+	_update_swatches()
 
 
 func _record_added(piece: Node3D, entry: Dictionary) -> void:
