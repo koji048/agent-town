@@ -3799,7 +3799,18 @@ func _prune_posts(layout: Dictionary) -> void:
 		_write_layout(layout)
 
 
+var _layout_backed := false
+
+
 func _write_layout(layout: Dictionary) -> void:
+	# once per session: snapshot the previous save before touching it —
+	# a fat-fingered wipe (mine, 2026-07-10) must never cost real work
+	if not _layout_backed:
+		_layout_backed = true
+		var pth := _save_path()
+		if FileAccess.file_exists(pth):
+			DirAccess.copy_absolute(ProjectSettings.globalize_path(pth),
+				ProjectSettings.globalize_path(pth + ".bak"))
 	var f := FileAccess.open(_save_path(), FileAccess.WRITE)
 	if f:
 		f.store_string(JSON.stringify(layout, "  "))
