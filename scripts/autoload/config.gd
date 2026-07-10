@@ -4,6 +4,17 @@
 ## always runs.
 extends Node
 
+## Which office this town runs: "studio" (Reels crew, default) or
+## "itdata" (Factory IT & Data Management floor).
+var office_branch := "studio"
+
+
+func set_branch(b: String) -> void:
+	office_branch = b
+	var f := FileAccess.open("user://office.txt", FileAccess.WRITE)
+	if f:
+		f.store_string(b)
+
 var api_key: String = ""
 var provider: String = "auto"          # auto | claude-code | api | simulate
 var provider_resolved: String = "simulate"
@@ -21,6 +32,10 @@ var exports_dir: String = ""
 
 
 func _ready() -> void:
+	if FileAccess.file_exists("user://office.txt"):
+		var ob := FileAccess.get_file_as_string("user://office.txt").strip_edges()
+		if ob in ["studio", "itdata"]:
+			office_branch = ob
 	var cfg := ConfigFile.new()
 	if cfg.load("res://user_config.cfg") == OK:
 		api_key = str(cfg.get_value("claude", "api_key", ""))

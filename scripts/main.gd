@@ -1133,12 +1133,17 @@ func _build_settings_panel(hud: CanvasLayer) -> PanelContainer:
 	I18n.reg(orow, "text", "set_office")
 	orow.add_theme_font_size_override("font_size", 14)
 	vb.add_child(orow)
-	for key in ["office_current", "office_soon1", "office_soon2"]:
-		var o := Label.new()
-		I18n.reg(o, "text", key)
-		o.add_theme_font_size_override("font_size", 13)
-		o.modulate = Color(0.9, 0.9, 0.86) if key == "office_current" else Color(0.55, 0.55, 0.6)
-		vb.add_child(o)
+	for pair in [["studio", "office_studio"], ["itdata", "office_itdata"]]:
+		var ob := Button.new()
+		I18n.reg(ob, "text", str(pair[1]))
+		ob.add_theme_font_size_override("font_size", 13)
+		ob.disabled = Config.office_branch == str(pair[0])
+		var bkey: String = str(pair[0])
+		ob.pressed.connect(func() -> void:
+			Config.set_branch(bkey)
+			EventBus.log_line.emit("🏢 Switching office -> %s" % bkey)
+			get_tree().reload_current_scene())
+		vb.add_child(ob)
 	return p
 
 

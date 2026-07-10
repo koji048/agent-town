@@ -33,6 +33,8 @@ const S := {
 	"side_build": {"en": "  Build mode", "th": "  จัดห้อง"},
 	"build_hint": {"en": "BUILD: pick from the catalog or click a piece · R rotate · X delete · click to set down · Esc cancel", "th": "จัดห้อง: เลือกของจากแคตตาล็อก หรือคลิกของที่มีอยู่ (ย้ายได้ทุกชิ้น) · R หมุน · X ลบ · พื้น: ลากเมาส์ทาสีได้ · กำแพง: snap ขอบช่องอัตโนมัติ · Esc ยกเลิก"},
 	"build_catalog": {"en": "CATALOG", "th": "แคตตาล็อก"},
+	"office_studio": {"en": "Creator Studio (Reels office)", "th": "สตูดิโอครีเอเตอร์ (ออฟฟิศ Reels)"},
+	"office_itdata": {"en": "Factory IT & Data Management", "th": "โรงงาน: IT & Data Management"},
 	"set_amb": {"en": "Background air-con hum", "th": "เสียงแอร์พื้นหลัง (บรรยากาศ)"},
 	"set_sfx": {"en": "Effects volume", "th": "ระดับเสียงเอฟเฟกต์"},
 	"pick_color": {"en": "Colour:", "th": "สี:"},

@@ -1,0 +1,88 @@
+{
+ "tile_w": 16,
+ "tile_h": 16,
+ "rows": [
+  "cwwWWwwwMMMMwwwWwwWWwWww",
+  "vrrrrrr,PPPPPPPP,rrrrrrr",
+  "vrrrrrr,PPPPPPPP,rrrrrrr",
+  "vrrrrrr,PPPPPPPP,rrrrrrr",
+  "vrrrrrr,,,,,,,,,,rrrrrrr",
+  "vrrrrrr,,,,,,,,,,rrrrrrr",
+  "v,,,,,,,,,,,,,,,,,,,,,,,",
+  "v,,,,,,,,,,,,,,,,,,,,,,,",
+  "v,,,,,,,GGGGGGGG,GGG,GGG",
+  "v,,,,,,,HrrrrrrH,Hrrrrrr",
+  "v,,,,,,,HrrrrrrH,Hrrrrrr",
+  "vGGGGGG,HrrrrrrH,Hrrrrrr",
+  "vrrrrrH,HrrrrrrH,Hrrrrrr",
+  "vrrrrrH,HrrrrrrH,Hrrrrrr",
+  "vrrrrrH,GGG,GGGG,,,,,,,,",
+  "vrrrrrH,,,,,,,,,,,######",
+  "vrrrrrH,,,,,,,,,,,######",
+  "v,,,,,,,,,,,,,,,,,######",
+  "v,,,,,,,,,,,,,,,,,,,,,,,"
+ ],
+ "blocked_chars": "~tdlcwWMvVGH",
+ "buildings": {
+  "war_room": {
+   "anchor": [
+    17,
+    8
+   ],
+   "role": "director",
+   "name": "ERP War Room",
+   "workstation": [
+    20,
+    11
+   ]
+  },
+  "noc": {
+   "anchor": [
+    8,
+    1
+   ],
+   "role": "researcher",
+   "name": "NOC",
+   "workstation": [
+    11,
+    2
+   ]
+  },
+  "infra": {
+   "anchor": [
+    1,
+    1
+   ],
+   "role": "writer",
+   "name": "IT Infrastructure",
+   "workstation": [
+    3,
+    3
+   ]
+  },
+  "soc": {
+   "anchor": [
+    1,
+    12
+   ],
+   "role": "editor",
+   "name": "Security Ops",
+   "workstation": [
+    3,
+    13
+   ]
+  },
+  "data_lab": {
+   "anchor": [
+    17,
+    1
+   ],
+   "role": "publisher",
+   "name": "Data & AI Lab",
+   "workstation": [
+    20,
+    3
+   ]
+  }
+ }
+}
