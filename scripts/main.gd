@@ -212,8 +212,9 @@ func _ready() -> void:
 	# Sims-style build mode, phase 1: move/rotate the existing furniture
 	_build = BuildMode.new()
 	_build.cam = _cam
+	_build.office = office
 	add_child(_build)
-	BuildMode.apply_saved(get_tree())
+	_build.apply_layout()
 
 	# the Caption Review Studio: pre-burn gate for clips (CapCut moment)
 	var studio_layer := CanvasLayer.new()

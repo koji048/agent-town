@@ -772,7 +772,7 @@ func _modern_desk(x: float, z: float, w: float = 1.7) -> void:
 
 ## A modern ergonomic task chair: mesh back with lumbar, slim arms,
 ## gas lift on a five-star base. Front faces +Z (KayKit convention).
-func _task_chair(x: float, z: float, rot_deg: float) -> void:
+func _task_chair(x: float, z: float, rot_deg: float) -> Node3D:
 	var root := Node3D.new()
 	root.position = Vector3(x, 0, z)
 	root.rotation_degrees = Vector3(0, rot_deg, 0)
@@ -794,6 +794,7 @@ func _task_chair(x: float, z: float, rot_deg: float) -> void:
 	for sx in [-0.25, 0.25]:
 		_box(Vector3(0.04, 0.15, 0.05), Vector3(sx, 0.545, 0.03), steel, root, false)
 		_box(Vector3(0.06, 0.025, 0.24), Vector3(sx, 0.63, 0.0), seatm, root, false)
+	return root
 
 
 ## Permanence (juice doctrine): each finished stage leaves a page on the
@@ -866,7 +867,7 @@ func _shell_chair(x: float, z: float, rot_deg: float, col: Color) -> void:
 
 
 ## Open shelving: black steel frame, oak shelves, colored book spines.
-func _shelving(x: float, z: float, rot_deg: float, w: float = 1.1, h: float = 1.8) -> void:
+func _shelving(x: float, z: float, rot_deg: float, w: float = 1.1, h: float = 1.8) -> Node3D:
 	var root := Node3D.new()
 	root.position = Vector3(x, 0, z)
 	root.rotation_degrees = Vector3(0, rot_deg, 0)
@@ -890,11 +891,12 @@ func _shelving(x: float, z: float, rot_deg: float, w: float = 1.1, h: float = 1.
 				bx += 0.058
 	_box(Vector3(0.22, 0.16, 0.16), Vector3(w / 2.0 - 0.2, h - 0.12 + 0.10, 0),
 		_mat("basket", Color(0.72, 0.58, 0.38)), root, false)
+	return root
 
 
 ## Low-profile modern sofa: boxy fabric volumes on slim steel legs,
 ## two throw pillows. Front faces +Z.
-func _modern_sofa(x: float, z: float, rot_deg: float, col: Color, w: float = 1.75) -> void:
+func _modern_sofa(x: float, z: float, rot_deg: float, col: Color, w: float = 1.75) -> Node3D:
 	var root := Node3D.new()
 	root.position = Vector3(x, 0, z)
 	root.rotation_degrees = Vector3(0, rot_deg, 0)
@@ -916,10 +918,11 @@ func _modern_sofa(x: float, z: float, rot_deg: float, col: Color, w: float = 1.7
 		var p := _box(Vector3(0.30, 0.30, 0.10), Vector3(-w / 4.0 + i * w / 2.0, 0.50, -0.22),
 			_mat("kilim_%d" % i, pil_cols[i]), root, false)
 		p.rotation_degrees = Vector3(-10, 0, i * 8 - 4)
+	return root
 
 
 ## Modern lounge armchair: the sofa language at one-seat width.
-func _modern_armchair(x: float, z: float, rot_deg: float, col: Color) -> void:
+func _modern_armchair(x: float, z: float, rot_deg: float, col: Color) -> Node3D:
 	var root := Node3D.new()
 	root.position = Vector3(x, 0, z)
 	root.rotation_degrees = Vector3(0, rot_deg, 0)
@@ -935,6 +938,7 @@ func _modern_armchair(x: float, z: float, rot_deg: float, col: Color) -> void:
 	_box(Vector3(0.80, 0.34, 0.15), Vector3(0, 0.45, -0.29), fab, root)
 	for ax in [-0.34, 0.34]:
 		_box(Vector3(0.12, 0.26, 0.72), Vector3(ax, 0.41, 0), fab, root, false)
+	return root
 
 
 ## Bar stool: steel disc base + post, round seat.
