@@ -31,6 +31,7 @@ signal chat_line(speaker: String, text: String)
 ## A stage handoff: FROM passes the work to TO (delegation-flow visuals).
 signal handoff(from_role: String, to_role: String, stage: String, request: Dictionary)
 ## The owner cancelled a running project from the board.
+signal provider_limited(reason: String, until_unix: int)
 signal request_cancelled(request: Dictionary)
 ## A clip is ready for the Caption Review Studio (pre-burn gate).
 signal clip_review_requested(request: Dictionary, srt_path: String, preview_dir: String)

@@ -26,6 +26,53 @@ signal _cli_finished(text: String, code: int)
 ## PARALLEL-SAFE: every call gets its own temp files and its own result
 ## slot — agents never wait for EACH OTHER, only a person waits for
 ## their own previous task (per-role locks live in RoleLocks).
+## Circuit breaker (Anthropic multi-agent lesson: classify failures,
+## never let agents grind against a dead provider). When the CLI says
+## the session quota is gone we remember WHEN it returns and every
+## caller can check limited() instead of burning more calls.
+var limit_until := 0
+
+
+func limited() -> bool:
+	return limit_until > int(Time.get_unix_time_from_system())
+
+
+func _note_failure(text: String) -> void:
+	var lower := text.to_lower()
+	if not (lower.contains("hit your session limit") or lower.contains("rate limit")
+			or lower.contains("usage limit")):
+		return
+	var was := limited()
+	var until := int(Time.get_unix_time_from_system()) + 30 * 60
+	var re := RegEx.new()
+	re.compile("resets? (\\d{1,2}):(\\d{2})\\s*(am|pm)")
+	var mres := re.search(lower)
+	if mres:
+		var hh := int(mres.get_string(1)) % 12
+		if mres.get_string(3) == "pm":
+			hh += 12
+		var d := Time.get_datetime_dict_from_system()
+		d["hour"] = hh
+		d["minute"] = int(mres.get_string(2))
+		d["second"] = 0
+		# from_datetime_dict assumes UTC; correct with the local bias
+		var bias := int(Time.get_unix_time_from_system()) \
+			- int(Time.get_unix_time_from_datetime_dict(Time.get_datetime_dict_from_system()))
+		var t := int(Time.get_unix_time_from_datetime_dict(d)) + bias
+		if t <= int(Time.get_unix_time_from_system()):
+			t += 24 * 3600
+		until = t + 90
+	limit_until = until
+	if not was:
+		EventBus.provider_limited.emit(text.left(120), until)
+
+
+## Local wall-clock "HH:MM" for the moment the quota returns.
+func limit_reset_text() -> String:
+	var off: int = int(Time.get_time_zone_from_system().get("bias", 0)) * 60
+	return Time.get_datetime_string_from_unix_time(limit_until + off).substr(11, 5)
+
+
 func complete(system_prompt: String, user_prompt: String, sim_stage: String = "") -> String:
 	if Config.provider_resolved == "simulate":
 		await get_tree().create_timer(randf_range(2.5, 5.0)).timeout
@@ -101,6 +148,8 @@ var _call_results: Dictionary = {}
 ## no generated content may ever appear in the argument list. Each call
 ## gets UNIQUE temp files + its own result slot: fully concurrent.
 func _cli_complete(system_prompt: String, user_prompt: String) -> String:
+	if limited():
+		return ""    # quota outage: fail fast, callers park the job
 	var id := _next_call_id
 	_next_call_id += 1
 	var user_res := "user://cli_user_%d.txt" % id
@@ -140,6 +189,7 @@ func _cli_complete(system_prompt: String, user_prompt: String) -> String:
 	var code := int(res[1])
 	if code != 0:
 		printerr("claude-code FAIL code=%d out=%s" % [code, text.left(300)])
+		_note_failure(text)
 		EventBus.log_line.emit("claude-code exited %d: %s" % [code, text.left(80)])
 		return ""
 	if text.is_empty():

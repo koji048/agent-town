@@ -28,6 +28,9 @@ func _run(request: Dictionary) -> void:
 		await _run_clip(request)
 		return
 	var results: Dictionary = {}
+	if request.get("_partial") is Dictionary:   # parked run: keep paid work
+		results = request["_partial"]
+		request.erase("_partial")
 	var topic := str(request.get("topic", "untitled"))
 	var lang := str(request.get("language", Config.language))
 	var niche := str(request.get("niche", Config.niche))
@@ -52,6 +55,9 @@ func _run(request: Dictionary) -> void:
 	var plan := await _stage("plan", "director", request,
 		Prompts.director_plan(lang, niche),
 		"Content request:\n%s" % brief, results)
+	if plan.is_empty():
+		_park_job(request, results)
+		return
 	if TaskQueue.take_cancel(request):
 		_cancel_job(request)
 		return
@@ -59,6 +65,9 @@ func _run(request: Dictionary) -> void:
 	var research := await _stage("research", "researcher", request,
 		Prompts.researcher(lang, niche),
 		"Request:\n%s\n\nDirector's brief:\n%s" % [brief, plan], results)
+	if research.is_empty():
+		_park_job(request, results)
+		return
 	if TaskQueue.take_cancel(request):
 		_cancel_job(request)
 		return
@@ -66,6 +75,9 @@ func _run(request: Dictionary) -> void:
 	var script := await _stage("script", "writer", request,
 		Prompts.scriptwriter(lang, niche),
 		"Request:\n%s\n\nDirector's brief:\n%s\n\nResearch notes:\n%s" % [brief, plan, research], results)
+	if script.is_empty():
+		_park_job(request, results)
+		return
 	if TaskQueue.take_cancel(request):
 		_cancel_job(request)
 		return
@@ -73,6 +85,9 @@ func _run(request: Dictionary) -> void:
 	var captions := await _stage("edit", "editor", request,
 		Prompts.editor(lang, niche),
 		"Script:\n%s" % script, results)
+	if captions.is_empty():
+		_park_job(request, results)
+		return
 	if TaskQueue.take_cancel(request):
 		_cancel_job(request)
 		return
@@ -94,6 +109,9 @@ func _run(request: Dictionary) -> void:
 	var publish := await _stage("publish", "publisher", request,
 		Prompts.publisher(lang, niche),
 		"Script:\n%s\n\nResearch notes:\n%s" % [script, research], results)
+	if publish.is_empty():
+		_park_job(request, results)
+		return
 	if TaskQueue.take_cancel(request):
 		_cancel_job(request)
 		return
@@ -102,6 +120,9 @@ func _run(request: Dictionary) -> void:
 		Prompts.director_review(lang, niche),
 		"Research:\n%s\n\nScript:\n%s\n\nCaptions:\n%s\n\nPublish plan:\n%s" % [research, script, captions, publish], results)
 
+	if not _valid("script", str(results.get("script", ""))):
+		_park_job(request, results)   # never ship an empty package
+		return
 	var out_dir: String = OutputWriter.write_package(request, results)
 	TaskQueue.finish(request)
 	# the whole crew remembers shipping this one (Smallville: shared
@@ -383,8 +404,36 @@ func _walk_stage(stage: String, role: String, request: Dictionary) -> void:
 	EventBus.agent_arrived.disconnect(cb)
 
 
+## Quality gate (Anthropic lesson: validate at checkpoints, an empty
+## deliverable must FAIL loudly, never ship as a placeholder).
+const STAGE_MIN := {"plan": 60, "research": 150, "script": 150,
+	"edit": 60, "publish": 60, "review": 30}
+
+
+func _valid(stage: String, out: String) -> bool:
+	return out.strip_edges().length() >= int(STAGE_MIN.get(stage, 40))
+
+
+## Park a job that hit the quota wall: keep every finished stage as a
+## checkpoint, requeue, clear the boards, and the Director tells the
+## owner exactly when work resumes. NOTHING fake gets delivered.
+func _park_job(request: Dictionary, results: Dictionary) -> void:
+	var topic := str(request.get("topic", "untitled"))
+	request["_partial"] = results
+	TaskQueue.park(request)
+	EventBus.request_cancelled.emit(request)
+	EventBus.agent_say.emit("director",
+		I18n.f("say_parked", [topic.left(30), Claude.limit_reset_text()]))
+	EventBus.log_line.emit("⏸ Parked (quota): %s — resumes ~%s" % [topic.left(40), Claude.limit_reset_text()])
+
+
 func _stage(stage: String, role: String, request: Dictionary, system_prompt: String,
 		user_prompt: String, results: Dictionary) -> String:
+	# checkpoint reuse (resume-from-failure, not restart): a parked run
+	# already paid for this stage — keep it
+	if _valid(stage, str(results.get(stage, ""))):
+		EventBus.log_line.emit("↻ %s: reusing checkpoint from the parked run" % stage)
+		return str(results[stage])
 	# delegation made VISIBLE (UX audit P1): every change of hands is a
 	# real event the HUD, chat feed and world can show
 	var prev_role := str(request.get("_last_role", ""))
@@ -405,7 +454,12 @@ func _stage(stage: String, role: String, request: Dictionary, system_prompt: Str
 		user_prompt += "\n\nOWNER'S MID-FLIGHT SCOPE UPDATE (overrides earlier direction): " + scope
 	var out: String = await Claude.complete(
 		system_prompt + Memory.context_for(role, topic), user_prompt, stage)
-	if out.is_empty():
+	if not _valid(stage, out) and Claude.limited():
+		# quota outage: do not interrogate the owner, do not fabricate —
+		# release the desk and let the caller park the whole job
+		RoleLocks.release(role)
+		return ""
+	if not _valid(stage, out):
 		# mixed initiative: the agent asks the owner ONE clarifying
 		# question, and the typed guidance feeds a single retry
 		var guidance := await _ask_owner(role, I18n.f("ask_stuck", [stage, topic]))
@@ -416,13 +470,13 @@ func _stage(stage: String, role: String, request: Dictionary, system_prompt: Str
 			Memory.nudge_affinity(role, "owner", 0.06)
 		out = await Claude.complete(
 			system_prompt + Memory.context_for(role, topic), retry_prompt, stage)
-	if out.is_empty():
-		out = "(stage '%s' produced no output — check the log)" % stage
-	if out.begins_with("(stage"):
+	if not _valid(stage, out):
+		# still broken after the retry: honest failure — no placeholder
 		Memory.remember(role, I18n.f("mem_stage_fail", [stage, topic]), 7.0)
 		Memory.nudge_affinity(role, "director", -0.04)
-	else:
-		Memory.remember(role, I18n.f("mem_stage_done", [stage, topic]), 6.0)
+		RoleLocks.release(role)
+		return ""
+	Memory.remember(role, I18n.f("mem_stage_done", [stage, topic]), 6.0)
 	results[stage] = out
 	EventBus.stage_completed.emit(stage, role, request, out)
 	RoleLocks.release(role)
@@ -499,6 +553,23 @@ func revise(request: Dictionary, feedback: String) -> void:
 	if request.has("_batch"):
 		_revise_clip(str(request["_batch"]), feedback, request)
 		return
+	# INTENT DISCRIMINATION: "the files are empty / broken" is an ops
+	# complaint, not content feedback. Re-running "แก้ไข: <topic>" on a
+	# dead provider just fails again — instead requeue the ORIGINAL
+	# brief as a fresh run that starts when the provider is healthy.
+	var lowfb := feedback.to_lower()
+	for kw in ["ว่างเปล่า", "ไฟล์เปล่า", "ไม่มีเนื้อหา", "ไฟล์เสีย", "empty", "blank", "no output", "พัง", "error"]:
+		if lowfb.contains(kw):
+			var clean_topic := str(request.get("topic", ""))
+			while clean_topic.begins_with("แก้ไข: "):
+				clean_topic = clean_topic.trim_prefix("แก้ไข: ")
+			var clean_notes := str(request.get("notes", ""))
+			if clean_notes.begins_with("REVISION requested"):
+				clean_notes = ""
+			TaskQueue.park({"topic": clean_topic, "notes": clean_notes})
+			EventBus.agent_say.emit("director", I18n.t("say_ops_retry"))
+			EventBus.log_line.emit("♻ Ops complaint detected — fresh rerun queued: %s" % clean_topic.left(40))
+			return
 	# idea job: a revision request with the feedback in the notes
 	var path := "res://queue/pending/fix_%d.json" % int(Time.get_unix_time_from_system())
 	var f := FileAccess.open(path, FileAccess.WRITE)

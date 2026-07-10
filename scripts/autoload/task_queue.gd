@@ -132,6 +132,27 @@ func _inbox() -> String:
 	return Config.project_dir().path_join("inbox")
 
 
+## Park a job for later (quota outage): requeue as pending json with
+## its checkpoints; the poller stays quiet until the provider returns.
+func park(request: Dictionary) -> void:
+	var fname: String = str(request.get("_file", ""))
+	if not fname.is_empty():
+		DirAccess.rename_absolute(_qdir("processing").path_join(fname), _qdir("done").path_join(fname))
+		active = maxi(active - 1, 0)
+	elif active > 0:
+		active = maxi(active - 1, 0)
+	request.erase("_file")
+	if request.has("clip"):
+		clip_active = false
+	var path := _qdir("pending").path_join("park_%d.json" % Time.get_ticks_msec())
+	var f := FileAccess.open(path, FileAccess.WRITE)
+	if f:
+		f.store_string(JSON.stringify(request, "  "))
+
+
+var _was_limited := false
+
+
 func finish(request: Dictionary) -> void:
 	var fname: String = str(request.get("_file", ""))
 	if not fname.is_empty():
@@ -146,6 +167,15 @@ func _qdir(sub: String) -> String:
 
 
 func _poll() -> void:
+	# circuit breaker: while the provider quota is out, nobody starts
+	# NEW work (parked jobs wait in pending/ with their checkpoints)
+	if Claude.limited():
+		_was_limited = true
+		return
+	if _was_limited:
+		_was_limited = false
+		EventBus.agent_say.emit("director", I18n.t("say_quota_back"))
+		EventBus.log_line.emit("▶ Provider quota restored — resuming parked work")
 	if active >= MAX_PARALLEL:
 		return
 	# footage first: AirDropped clips dropped into inbox/ become real
