@@ -293,6 +293,9 @@ func _run_clip_reels(request: Dictionary) -> void:
 		if not want_burn:
 			EventBus.log_line.emit("⏭ no-burn mode: delivering the .srt only, as ordered")
 		else:
+			# a clip burns ONLY on an explicit owner OK (studio Burn click,
+			# or Yes at the fallback desk) — no auto-pass
+			var do_burn := true
 			# 3) CAPTION REVIEW STUDIO — the human checks captions the way an
 			# editor would in CapCut: filmstrip + audio scrub + style pick.
 			# Falls back to the plain approval desk if ffmpeg can't prep.
@@ -321,28 +324,34 @@ func _run_clip_reels(request: Dictionary) -> void:
 				# studio edits wrote the srt — refresh what publish reports
 				results["edit"] = FileAccess.get_file_as_string(srt_path)
 			else:
-				await _await_approval(request, reviewed)
+				var approved := await _await_approval(request, reviewed, false)
+				if not approved:
+					do_burn = false
+					EventBus.log_line.emit("🛑 Subtitles rejected — no burn. The clean .srt is ready to fix.")
 
 			# 4) burn — reel.sh (skill standard) or the studio's chosen style
-			var mp4 := ""
-			if action == "custom":
-				EventBus.log_line.emit("🔥 burn with studio style (1080x1920)...")
-				var base := srt_path.get_file().trim_suffix("-clean.srt")
-				mp4 = exports.path_join(base + ".mp4")
-				var cues: Array = PreviewMaker.parse_srt(FileAccess.get_file_as_string(srt_path))
-				r = await PreviewMaker.burn_custom(footage, cues, style, mp4)
-				if int(r[1]) != 0 or not FileAccess.file_exists(mp4):
-					mp4 = ""
+			if do_burn:
+				var mp4 := ""
+				if action == "custom":
+					EventBus.log_line.emit("🔥 burn with studio style (1080x1920)...")
+					var base := srt_path.get_file().trim_suffix("-clean.srt")
+					mp4 = exports.path_join(base + ".mp4")
+					var cues: Array = PreviewMaker.parse_srt(FileAccess.get_file_as_string(srt_path))
+					r = await PreviewMaker.burn_custom(footage, cues, style, mp4)
+					if int(r[1]) != 0 or not FileAccess.file_exists(mp4):
+						mp4 = ""
+				else:
+					EventBus.log_line.emit("🔥 reel.sh burn (1080x1920)...")
+					ReelRunner.run(PackedStringArray(["burn"]))
+					r = await ReelRunner.finished
+					mp4 = ReelRunner.newest_file(exports, ".mp4")
+				if not mp4.is_empty():
+					results["burn_note"] = "Burned reel: %s\n\n%s" % [mp4.get_file(), str(r[0]).right(300)]
+					EventBus.log_line.emit("🎞 Cut file: %s" % mp4.get_file())
+				else:
+					results["burn_note"] = "(burn produced no mp4 — import the .srt in your editor)\n" + str(r[0]).right(300)
 			else:
-				EventBus.log_line.emit("🔥 reel.sh burn (1080x1920)...")
-				ReelRunner.run(PackedStringArray(["burn"]))
-				r = await ReelRunner.finished
-				mp4 = ReelRunner.newest_file(exports, ".mp4")
-			if not mp4.is_empty():
-				results["burn_note"] = "Burned reel: %s\n\n%s" % [mp4.get_file(), str(r[0]).right(300)]
-				EventBus.log_line.emit("🎞 Cut file: %s" % mp4.get_file())
-			else:
-				results["burn_note"] = "(burn produced no mp4 — import the .srt in your editor)\n" + str(r[0]).right(300)
+				results["burn_note"] = "(subtitles rejected — no burn; the clean .srt is delivered for manual fixing)"
 
 		# 5) optional Publisher: a REAL paste-ready caption from the
 		# actual transcript (only when the owner asked for it)
@@ -439,7 +448,7 @@ func _run_clip_legacy(request: Dictionary) -> void:
 		EventBus.stage_completed.emit("edit", "editor", request, cleaned)
 
 		# 3) the approval desk (one revision pass when live)
-		if not await _await_approval(request, cleaned):
+		if not await _await_approval(request, cleaned, false):
 			if Config.provider_resolved != "simulate":
 				EventBus.log_line.emit("✍ Caption revision — the Editor tightens the cut.")
 				await _walk_stage("edit", "editor", request)
