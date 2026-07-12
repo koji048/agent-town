@@ -95,7 +95,7 @@ const S := {
 	"studio_color": {"en": "Colour", "th": "สี"},
 	"btn_save_cue": {"en": "✏ Save this line (writes the real .srt)", "th": "✏ บันทึกบรรทัดนี้ (เขียนลง .srt จริง)"},
 	"btn_burn_custom": {"en": "🔥 Burn — exactly what you see", "th": "🔥 Burn ตามที่เห็นบนจอ"},
-	"studio_auto": {"en": "No touch: burns the current look in %d s", "th": "ไม่กดอะไร จะ burn ตามที่ตั้งไว้ใน %d วิ"},
+	"studio_waiting": {"en": "Waiting for your review — press Burn when the subtitles look right", "th": "รอคุณตรวจซับอยู่ — กด Burn เมื่อซับพร้อมแล้ว"},
 	"say_studio": {"en": "Captions are up for your check, %s — in the studio!", "th": "ซับพร้อมให้ตรวจแล้วครับ %s — เชิญที่ห้องตรวจซับ!"},
 	"tv_intake": {"en": "🎬 ON AIR — footage coming in...", "th": "🎬 ON AIR — รับคลิปเข้าห้องตัด..."},
 	"tv_cutting": {"en": "🎬 ON AIR — cutting EP%d", "th": "🎬 ON AIR — กำลังตัด EP%d"},
