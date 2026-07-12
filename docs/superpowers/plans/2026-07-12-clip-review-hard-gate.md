@@ -24,6 +24,8 @@
 - **`tools/test_approval_gate.gd`** (new) — standalone headless test for `_await_approval`'s `allow_auto` behavior (Task 1).
 - **`scripts/caption_studio.gd`** (modify) — remove the 90s auto-burn, add a static waiting hint, wrap content in a `ScrollContainer` capped to the viewport (Task 3).
 - **`scripts/autoload/i18n.gd`** (modify) — replace the `studio_auto` countdown string with a static `studio_waiting` string (Task 3).
+- **`scripts/autoload/output_writer.gd`** (modify) — add `write_clip_extras` (Task 4).
+- **`tools/test_clip_extras.gd`** (new) — standalone headless test for `write_clip_extras` (Task 4).
 
 ---
 
@@ -453,6 +455,182 @@ Then quit the app (Cmd+Q). If observation isn't possible in the environment, gre
 ```bash
 git add scripts/caption_studio.gd scripts/autoload/i18n.gd
 git commit -m "feat: caption studio waits for you (no 90s auto-burn) and scrolls
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
+```
+
+---
+
+### Task 4: Clip output consolidation — one clip = one folder
+
+**Files:**
+- Modify: `scripts/autoload/output_writer.gd` (add `write_clip_extras`)
+- Modify: `scripts/pipeline.gd:361-371` (the `_run_clip_reels` end block)
+- Test: `tools/test_clip_extras.gd` (new)
+
+**Interfaces:**
+- Produces: `OutputWriter.write_clip_extras(dir_path: String, request: Dictionary, results: Dictionary) -> String` — writes the post caption + working papers INTO `dir_path`; does NOT write `1_สคริปต์.md`/`2_แคปชั่น.srt` (the batch's `-clean.srt` is the script/caption). Returns `dir_path`.
+
+- [ ] **Step 1: Write the failing test**
+
+Create `tools/test_clip_extras.gd`:
+
+```gdscript
+## Headless test for OutputWriter.write_clip_extras. Run:
+##   godot --headless --path . -s res://tools/test_clip_extras.gd
+## Verifies a clip's text deliverables land in ONE folder with NO duplicate
+## script/caption files. Exits non-zero on any failure.
+extends SceneTree
+
+var _passes := 0
+var _fails := 0
+
+
+func _init() -> void:
+	process_frame.connect(_run, CONNECT_ONE_SHOT)
+
+
+func _run() -> void:
+	var ow: Node = root.get_node("/root/OutputWriter")
+	var abs := ProjectSettings.globalize_path("user://test_clip_extras_%d" % Time.get_ticks_msec())
+	DirAccess.make_dir_recursive_absolute(abs)
+	var req := {"topic": "my clip", "_file": "x.json", "_batch": "/b"}
+	var res := {
+		"publish": "caption text #tag",
+		"plan": "the plan",
+		"review": "GO",
+		"burn_note": "burned ep1.mp4",
+		"script": "1\n00:00:00,000 --> 00:00:01,000\nhi",
+		"edit": "1\n00:00:00,000 --> 00:00:01,000\nhi",
+	}
+	ow.write_clip_extras(abs, req, res)
+
+	_check("post caption written (3_โพสต์.txt)", FileAccess.file_exists(abs.path_join("3_โพสต์.txt")))
+	_check("NO duplicate script file (1_สคริปต์.md)", not FileAccess.file_exists(abs.path_join("1_สคริปต์.md")))
+	_check("NO duplicate caption srt (2_แคปชั่น.srt)", not FileAccess.file_exists(abs.path_join("2_แคปชั่น.srt")))
+	_check("request.json in _เบื้องหลัง", FileAccess.file_exists(abs.path_join("_เบื้องหลัง/request.json")))
+	_check("plan paper written", FileAccess.file_exists(abs.path_join("_เบื้องหลัง/แผนงานผู้กำกับ.md")))
+
+	_rmrf(abs)
+	print("\n=== clip extras tests: %d passed, %d failed ===" % [_passes, _fails])
+	quit(1 if _fails > 0 else 0)
+
+
+func _check(name: String, cond: bool) -> void:
+	if cond:
+		_passes += 1
+		print("  PASS  ", name)
+	else:
+		_fails += 1
+		print("  FAIL  ", name)
+
+
+func _rmrf(path: String) -> void:
+	var d := DirAccess.open(path)
+	if d == null:
+		return
+	for sub in d.get_directories():
+		_rmrf(path.path_join(sub))
+	for f in d.get_files():
+		d.remove(f)
+	DirAccess.remove_absolute(path)
+```
+
+- [ ] **Step 2: Run the test — expect failure (method missing)**
+
+Run: `godot --headless --path . -s res://tools/test_clip_extras.gd`
+Expected: runtime error — `write_clip_extras` does not exist on OutputWriter (e.g. "Invalid call. Nonexistent function 'write_clip_extras'"). RED state.
+
+- [ ] **Step 3: Implement `write_clip_extras`**
+
+In `scripts/autoload/output_writer.gd`, add this method (it reuses the existing `BEHIND` constant and `_write` helper):
+
+```gdscript
+## Write the town's text deliverables INTO an existing folder (a reels clip's
+## 05_EXPORTS) so a clip lands as ONE folder: the real -clean.srt/.mp4 plus the
+## post caption and working papers. Deliberately does NOT write a script.md or
+## caption.srt — the batch's own -clean.srt IS the clip's script/caption, and
+## duplicating it was the "caption and script in different folders" confusion.
+func write_clip_extras(dir_path: String, request: Dictionary, results: Dictionary) -> String:
+	var behind := dir_path.path_join("_เบื้องหลัง")
+	DirAccess.make_dir_recursive_absolute(behind)
+	var clean := request.duplicate()
+	clean.erase("_file")
+	clean.erase("_partial")
+	clean.erase("_batch")
+	_write(behind.path_join("request.json"), JSON.stringify(clean, "  "))
+	var post: String = str(results.get("publish", ""))
+	if not post.is_empty():
+		_write(dir_path.path_join("3_โพสต์.txt"), post)
+	var combined := "# Clip Package — %s\n" % str(request.get("topic", "clip"))
+	for stage in BEHIND:
+		var text: String = str(results.get(stage, ""))
+		if text.is_empty():
+			continue
+		_write(behind.path_join(BEHIND[stage]), text)
+		combined += "\n\n---\n\n## %s\n\n%s" % [str(stage).capitalize(), text]
+	var burn: String = str(results.get("burn_note", ""))
+	if not burn.is_empty():
+		_write(behind.path_join("การเผา.md"), burn)
+		combined += "\n\n---\n\n## Burn\n\n%s" % burn
+	_write(behind.path_join("รวมทุกขั้น.md"), combined)
+	return dir_path
+```
+
+- [ ] **Step 4: Run the test — expect all pass**
+
+Run: `godot --headless --path . -s res://tools/test_clip_extras.gd`
+Expected output ends with `=== clip extras tests: 5 passed, 0 failed ===`, exit 0.
+
+- [ ] **Step 5: Wire the reels clip flow to write into the batch**
+
+In `scripts/pipeline.gd`, `_run_clip_reels` end block (lines 361-371), the `exports` variable is already in scope (declared at `pipeline.gd:266`). Change:
+```gdscript
+	results["review"] = "EP%d files live in:\n%s" % [ep, batch]
+	request["_batch"] = batch  # so a typed fix can revise the REAL files
+	var out_dir: String = OutputWriter.write_package(request, results)
+	var done_dest := clip.get_base_dir().path_join("done").path_join(clip.get_file())
+	if FileAccess.file_exists(clip):
+		DirAccess.rename_absolute(clip, done_dest)
+	TaskQueue.finish(request)
+	# deliver the REAL folder: the batch 05_EXPORTS, not the town package
+	EventBus.request_completed.emit(request, out_dir)
+	EventBus.log_line.emit("📦 EP%d -> %s" % [ep, batch.path_join("05_EXPORTS")])
+	OS.shell_open(batch.path_join("05_EXPORTS"))
+```
+to:
+```gdscript
+	results["review"] = "EP%d files live in:\n%s" % [ep, batch]
+	request["_batch"] = batch  # so a typed fix can revise the REAL files
+	# one clip = one folder: text deliverables land IN the batch's 05_EXPORTS
+	# beside the real -clean.srt and .mp4 (no separate town package copy)
+	OutputWriter.write_clip_extras(exports, request, results)
+	var done_dest := clip.get_base_dir().path_join("done").path_join(clip.get_file())
+	if FileAccess.file_exists(clip):
+		DirAccess.rename_absolute(clip, done_dest)
+	TaskQueue.finish(request)
+	# deliver the REAL folder: the batch 05_EXPORTS
+	EventBus.request_completed.emit(request, exports)
+	EventBus.log_line.emit("📦 EP%d -> %s" % [ep, exports])
+	OS.shell_open(exports)
+```
+
+- [ ] **Step 6: Verify it compiles cleanly (headless)**
+
+Run: `godot --headless --path . -s res://tools/ci_check.gd 2>&1 | tail -3`
+Expected: `all checks passed`.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add scripts/autoload/output_writer.gd scripts/pipeline.gd tools/test_clip_extras.gd
+git commit -m "feat: clips land as one folder — text deliverables into the batch 05_EXPORTS
+
+The reels clip flow wrote a duplicate text package to the git project's
+output/ while the real .srt/.mp4 lived in the content-tree batch. Now the post
+caption + working papers write into 05_EXPORTS beside them (no duplicate
+script.md/caption.srt — the -clean.srt is the script/caption), and
+request_completed points at the batch.
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ```

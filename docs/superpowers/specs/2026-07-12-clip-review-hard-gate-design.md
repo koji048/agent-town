@@ -112,14 +112,47 @@ Make every control reachable regardless of scale/viewport:
 - The existing inner cue-list ScrollContainer (`caption_studio.gd:192`) stays;
   the outer scroll handles the whole-window overflow (timeline, Burn button).
 
+### A5 — Clip output consolidation: one clip = one folder
+
+Today a reels clip lands in TWO trees: the real `-clean.srt` + `.mp4` in the
+batch's `05_EXPORTS` (under `~/Movies/CONTENT/02_PRODUCTION/…`), and a duplicate
+text package in the git project's `output/<stamp>_<slug>/` (via
+`OutputWriter.write_package`, `pipeline.gd:363`). Worse, `pipeline.gd:369`
+emits `request_completed` with the `output/` dir even though the comment above
+it says it means to deliver the batch.
+
+Consolidate: for reels clips, write the town's text deliverables INTO the
+batch's `05_EXPORTS`, and stop the separate `output/` copy.
+
+- Add `OutputWriter.write_clip_extras(dir_path, request, results) -> String`
+  that writes into an existing folder:
+  - `3_โพสต์.txt` (the IG post caption from `results["publish"]`) — a genuine,
+    non-duplicate deliverable.
+  - a `_เบื้องหลัง/` subfolder with `request.json`, plan, research, review, and
+    the burn note, plus the combined `รวมทุกขั้น.md`.
+  - It does NOT write `1_สคริปต์.md` / `2_แคปชั่น.srt`: for a clip the real
+    `-clean.srt` already in `05_EXPORTS` IS the script/caption, so duplicating
+    it as town files was exactly the "caption and script in different folders"
+    confusion. The subtitle stays the single `-clean.srt`.
+- In `_run_clip_reels` (`pipeline.gd:361-371`): replace
+  `OutputWriter.write_package(request, results)` with
+  `OutputWriter.write_clip_extras(exports, request, results)` (reusing the
+  `exports` var from `pipeline.gd:266`), and emit
+  `request_completed(request, exports)` and open `exports`.
+- **Legacy clip flow and idea jobs are unchanged.** The legacy flow
+  (`_run_clip_legacy`) has no reels batch to consolidate into, so it keeps
+  writing to `output/`; idea jobs already land as one `output/` folder.
+
 ## Files touched
 
-- **Modify:** `scripts/pipeline.gd` — `_await_approval` signature + 2 call
-  sites (A1, A2, A3).
+- **Modify:** `scripts/pipeline.gd` — `_await_approval` signature + 2 clip call
+  sites (A1, A2, A3); the `_run_clip_reels` end block (A5).
 - **Modify:** `scripts/caption_studio.gd` — remove auto-burn, add waiting hint,
   wrap in ScrollContainer, cap height (A4, B).
 - **Modify:** `scripts/autoload/i18n.gd` — one new string
-  (`studio_waiting`), replacing/alongside `studio_auto`.
+  (`studio_waiting`), replacing `studio_auto`.
+- **Modify:** `scripts/autoload/output_writer.gd` — add `write_clip_extras`
+  (A5).
 
 ## Testing
 
