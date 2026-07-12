@@ -32,3 +32,4 @@ jobs:
         run: |
           godot --headless --path . -s res://tools/test_pipeline.gd 2>&1 | tee /tmp/pipe.log
           grep -q ", 0 failed ===" /tmp/pipe.log
+          ! grep -q "SCRIPT ERROR" /tmp/pipe.log

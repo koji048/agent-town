@@ -12,6 +12,7 @@ var _fails: int = 0
 var _stage_log: Array[String] = []   # "role:stage" per stage_completed, per run
 var _completed: Array = []           # [request, out_dir] appended on request_completed
 var _cancelled: Array = []           # request appended on request_cancelled
+var _questions: Array = []           # role appended on agent_question (ask-retry marker)
 
 # Autoloads referenced via get_node(), not bare identifiers: a custom
 # `extends SceneTree` script run with `-s` compiles BEFORE the engine
@@ -49,6 +50,7 @@ func _run() -> void:
 	_event_bus.approval_requested.connect(func(_r: Dictionary, _p: String) -> void:
 		_event_bus.approval_resolved.emit(true))
 	_event_bus.agent_question.connect(func(_role: String, _q: String) -> void:
+		_questions.append(_role)
 		_event_bus.guidance_given.emit(""))   # a shrug: no guidance -> honest failure
 
 	# capture what the pipeline produces
@@ -83,10 +85,21 @@ func _run() -> void:
 
 func _scenario_a() -> void:
 	print("\n[A] happy path — full cascade completes and ships")
+	# Deliberately runs PURE simulate (no test_hook): this is the only
+	# scenario that exercises the real SIM_TEXT -> _valid -> ship path
+	# end-to-end, covering the demo-content path. That means it depends
+	# on Claude.SIM_TEXT staying above Pipeline.STAGE_MIN for every stage
+	# (research has only a ~4-char margin) — if a demo string is ever
+	# trimmed below its stage's gate, this scenario parks instead of
+	# shipping, and the explicit assertion below turns that into a
+	# crisp, named failure instead of a confusing "completed didn't fire".
 	_claude.limit_until = 0
 	var before := _completed.size()
+	var x0 := _cancelled.size()
 	await _run_request({"topic": "test-a-happy"})
 	_check("A: request_completed fired", _completed.size() == before + 1)
+	_check("A: shipped without parking", _cancelled.size() == x0,
+		"unexpectedly parked — check SIM_TEXT vs STAGE_MIN")
 	_check("A: all five stages + review ran",
 		_has_all(_stage_log, ["director:plan", "researcher:research", "writer:script",
 			"editor:edit", "publisher:publish", "director:review"]),
@@ -102,9 +115,12 @@ func _scenario_b() -> void:
 		return "" if stage == "script" else _valid_text(stage)
 	var c0 := _completed.size()
 	var x0 := _cancelled.size()
+	var q0 := _questions.size()
 	await _run_request({"topic": "test-b-gate"})
 	_check("B: request_completed did NOT fire (nothing shipped)", _completed.size() == c0)
 	_check("B: job was parked (request_cancelled fired)", _cancelled.size() == x0 + 1)
+	_check("B: took the ask-retry path (asked the owner once)", _questions.size() > q0,
+		"questions delta=%d" % (_questions.size() - q0))
 	_claude.test_hook = Callable()
 	_clean_parks()
 
@@ -115,9 +131,11 @@ func _scenario_c() -> void:
 	_claude.test_hook = func(stage: String) -> String:
 		return "" if stage == "edit" else _valid_text(stage)
 	var x0 := _cancelled.size()
+	var q0 := _questions.size()
 	await _run_request({"topic": "test-c-park"})
 	_check("C: job was parked (request_cancelled fired)", _cancelled.size() == x0 + 1,
 		"cancelled delta=%d" % (_cancelled.size() - x0))
+	_check("C: limited path did NOT ask the owner", _questions.size() == q0)
 	var partial: Dictionary = {}
 	if _cancelled.size() > x0:
 		partial = _cancelled[-1].get("_partial", {})
@@ -125,6 +143,24 @@ func _scenario_c() -> void:
 		partial.has("plan") and partial.has("research") and partial.has("script")
 			and not partial.has("edit"),
 		"partial keys=%s" % str(partial.keys()))
+
+	# RESUME: prove the checkpoint is actually REUSED, not just carried.
+	# Bring the provider back healthy so every stage can succeed, then
+	# resubmit the SAME parked job with its _partial attached — pipeline.gd
+	# reads request["_partial"] into `results` at the top of `_run`.
+	_claude.limit_until = 0
+	_claude.test_hook = func(stage: String) -> String: return _valid_text(stage)
+	var c0 := _completed.size()
+	await _run_request({"topic": "test-c-park", "_partial": partial})
+	_check("C: resumed run completed", _completed.size() == c0 + 1)
+	_check("C: reused plan/research/script from checkpoint (not re-run)",
+		not _stage_log.has("director:plan") and not _stage_log.has("researcher:research")
+			and not _stage_log.has("writer:script") and _stage_log.has("editor:edit")
+			and _stage_log.has("publisher:publish"),
+		str(_stage_log))
+	if _completed.size() > c0:
+		_rmrf(str(_completed[-1][1]))   # delete the resumed run's output dir
+
 	_claude.test_hook = Callable()
 	_claude.limit_until = 0
 	_clean_parks()
