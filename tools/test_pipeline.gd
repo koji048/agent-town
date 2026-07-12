@@ -72,6 +72,8 @@ func _run() -> void:
 	root.add_child(pipe)
 
 	await _scenario_a()
+	await _scenario_b()
+	await _scenario_c()
 
 	print("\n=== pipeline tests: %d passed, %d failed ===" % [_passes, _fails])
 	quit(1 if _fails > 0 else 0)
@@ -91,6 +93,41 @@ func _scenario_a() -> void:
 		str(_stage_log))
 	if _completed.size() > before:
 		_rmrf(str(_completed[-1][1]))   # delete the output dir it wrote
+
+
+func _scenario_b() -> void:
+	print("\n[B] quality gate — an empty stage never ships a placeholder")
+	_claude.limit_until = 0   # provider healthy: exercises the ask-retry-then-park path
+	_claude.test_hook = func(stage: String) -> String:
+		return "" if stage == "script" else _valid_text(stage)
+	var c0 := _completed.size()
+	var x0 := _cancelled.size()
+	await _run_request({"topic": "test-b-gate"})
+	_check("B: request_completed did NOT fire (nothing shipped)", _completed.size() == c0)
+	_check("B: job was parked (request_cancelled fired)", _cancelled.size() == x0 + 1)
+	_claude.test_hook = Callable()
+	_clean_parks()
+
+
+func _scenario_c() -> void:
+	print("\n[C] park & resume — a quota trip preserves finished stages")
+	_claude.limit_until = int(Time.get_unix_time_from_system()) + 3600   # provider "limited"
+	_claude.test_hook = func(stage: String) -> String:
+		return "" if stage == "edit" else _valid_text(stage)
+	var x0 := _cancelled.size()
+	await _run_request({"topic": "test-c-park"})
+	_check("C: job was parked (request_cancelled fired)", _cancelled.size() == x0 + 1,
+		"cancelled delta=%d" % (_cancelled.size() - x0))
+	var partial: Dictionary = {}
+	if _cancelled.size() > x0:
+		partial = _cancelled[-1].get("_partial", {})
+	_check("C: checkpoint kept plan+research+script, dropped edit",
+		partial.has("plan") and partial.has("research") and partial.has("script")
+			and not partial.has("edit"),
+		"partial keys=%s" % str(partial.keys()))
+	_claude.test_hook = Callable()
+	_claude.limit_until = 0
+	_clean_parks()
 
 
 # ---- helpers ---------------------------------------------------------------
