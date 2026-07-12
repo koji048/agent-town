@@ -589,7 +589,7 @@ func _ask_owner(role: String, question: String) -> String:
 
 ## Wait at the approval desk: Y approves, N requests one revision,
 ## silence auto-approves after 45 s. Returns true when approved.
-func _await_approval(request: Dictionary, preview: String) -> bool:
+func _await_approval(request: Dictionary, preview: String, allow_auto := true) -> bool:
 	# one desk: concurrent jobs take turns waiting for the owner
 	await RoleLocks.acquire("approval_desk")
 	var decided := [false, true]
@@ -599,11 +599,11 @@ func _await_approval(request: Dictionary, preview: String) -> bool:
 	EventBus.approval_resolved.connect(cb)
 	EventBus.approval_requested.emit(request, preview)
 	var waited := 0.0
-	while not decided[0] and waited < 45.0:
+	while not decided[0] and (not allow_auto or waited < 45.0):
 		await get_tree().create_timer(0.25).timeout
 		waited += 0.25
 	EventBus.approval_resolved.disconnect(cb)
-	if not decided[0]:
+	if not decided[0] and allow_auto:
 		# auto-approve IS a resolution: emit so the HUD panel closes
 		# (cb is already disconnected, so this can't loop back here)
 		EventBus.approval_resolved.emit(true)
