@@ -150,7 +150,7 @@ func _ready() -> void:
 		_update_now())
 	EventBus.request_completed.connect(func(request: Dictionary, output_dir: String) -> void:
 		_update_now()
-		_append_log("Package saved: output/%s" % output_dir.get_file())
+		_append_log("Package saved: %s" % output_dir.get_file())
 		_append_log("The crew gathers in the town hall!")
 		_deliver(output_dir)
 		# the team ASKS before closing the job: anything to fix?
@@ -1267,7 +1267,7 @@ func _deliver(output_dir: String) -> void:
 				_append_log("📤 SRT exported: %s" % dest.get_file())
 	# toast with one-click open
 	var abs_dir := ProjectSettings.globalize_path(output_dir)
-	_open_toast("📦 '%s' is ready — script, captions.srt, publish plan." % output_dir.get_file(), abs_dir)
+	_open_toast("📦 '%s' is ready to open." % output_dir.get_file(), abs_dir)
 
 
 func _open_toast(text: String, open_path: String) -> void:

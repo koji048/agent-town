@@ -293,6 +293,9 @@ func _run_clip_reels(request: Dictionary) -> void:
 		if not want_burn:
 			EventBus.log_line.emit("⏭ no-burn mode: delivering the .srt only, as ordered")
 		else:
+			# a clip burns ONLY on an explicit owner OK (studio Burn click,
+			# or Yes at the fallback desk) — no auto-pass
+			var do_burn := true
 			# 3) CAPTION REVIEW STUDIO — the human checks captions the way an
 			# editor would in CapCut: filmstrip + audio scrub + style pick.
 			# Falls back to the plain approval desk if ffmpeg can't prep.
@@ -321,28 +324,34 @@ func _run_clip_reels(request: Dictionary) -> void:
 				# studio edits wrote the srt — refresh what publish reports
 				results["edit"] = FileAccess.get_file_as_string(srt_path)
 			else:
-				await _await_approval(request, reviewed)
+				var approved := await _await_approval(request, reviewed, false)
+				if not approved:
+					do_burn = false
+					EventBus.log_line.emit("🛑 Subtitles rejected — no burn. The clean .srt is ready to fix.")
 
 			# 4) burn — reel.sh (skill standard) or the studio's chosen style
-			var mp4 := ""
-			if action == "custom":
-				EventBus.log_line.emit("🔥 burn with studio style (1080x1920)...")
-				var base := srt_path.get_file().trim_suffix("-clean.srt")
-				mp4 = exports.path_join(base + ".mp4")
-				var cues: Array = PreviewMaker.parse_srt(FileAccess.get_file_as_string(srt_path))
-				r = await PreviewMaker.burn_custom(footage, cues, style, mp4)
-				if int(r[1]) != 0 or not FileAccess.file_exists(mp4):
-					mp4 = ""
+			if do_burn:
+				var mp4 := ""
+				if action == "custom":
+					EventBus.log_line.emit("🔥 burn with studio style (1080x1920)...")
+					var base := srt_path.get_file().trim_suffix("-clean.srt")
+					mp4 = exports.path_join(base + ".mp4")
+					var cues: Array = PreviewMaker.parse_srt(FileAccess.get_file_as_string(srt_path))
+					r = await PreviewMaker.burn_custom(footage, cues, style, mp4)
+					if int(r[1]) != 0 or not FileAccess.file_exists(mp4):
+						mp4 = ""
+				else:
+					EventBus.log_line.emit("🔥 reel.sh burn (1080x1920)...")
+					ReelRunner.run(PackedStringArray(["burn"]))
+					r = await ReelRunner.finished
+					mp4 = ReelRunner.newest_file(exports, ".mp4")
+				if not mp4.is_empty():
+					results["burn_note"] = "Burned reel: %s\n\n%s" % [mp4.get_file(), str(r[0]).right(300)]
+					EventBus.log_line.emit("🎞 Cut file: %s" % mp4.get_file())
+				else:
+					results["burn_note"] = "(burn produced no mp4 — import the .srt in your editor)\n" + str(r[0]).right(300)
 			else:
-				EventBus.log_line.emit("🔥 reel.sh burn (1080x1920)...")
-				ReelRunner.run(PackedStringArray(["burn"]))
-				r = await ReelRunner.finished
-				mp4 = ReelRunner.newest_file(exports, ".mp4")
-			if not mp4.is_empty():
-				results["burn_note"] = "Burned reel: %s\n\n%s" % [mp4.get_file(), str(r[0]).right(300)]
-				EventBus.log_line.emit("🎞 Cut file: %s" % mp4.get_file())
-			else:
-				results["burn_note"] = "(burn produced no mp4 — import the .srt in your editor)\n" + str(r[0]).right(300)
+				results["burn_note"] = "(subtitles rejected — no burn; the clean .srt is delivered for manual fixing)"
 
 		# 5) optional Publisher: a REAL paste-ready caption from the
 		# actual transcript (only when the owner asked for it)
@@ -360,15 +369,17 @@ func _run_clip_reels(request: Dictionary) -> void:
 
 	results["review"] = "EP%d files live in:\n%s" % [ep, batch]
 	request["_batch"] = batch  # so a typed fix can revise the REAL files
-	var out_dir: String = OutputWriter.write_package(request, results)
+	# one clip = one folder: text deliverables land IN the batch's 05_EXPORTS
+	# beside the real -clean.srt and .mp4 (no separate town package copy)
+	OutputWriter.write_clip_extras(exports, request, results)
 	var done_dest := clip.get_base_dir().path_join("done").path_join(clip.get_file())
 	if FileAccess.file_exists(clip):
 		DirAccess.rename_absolute(clip, done_dest)
 	TaskQueue.finish(request)
-	# deliver the REAL folder: the batch 05_EXPORTS, not the town package
-	EventBus.request_completed.emit(request, out_dir)
-	EventBus.log_line.emit("📦 EP%d -> %s" % [ep, batch.path_join("05_EXPORTS")])
-	OS.shell_open(batch.path_join("05_EXPORTS"))
+	# deliver the REAL folder: the batch 05_EXPORTS
+	EventBus.request_completed.emit(request, exports)
+	EventBus.log_line.emit("📦 EP%d -> %s" % [ep, exports])
+	OS.shell_open(exports)
 
 
 ## Newest media file inside a folder (the ingested footage).
@@ -439,7 +450,7 @@ func _run_clip_legacy(request: Dictionary) -> void:
 		EventBus.stage_completed.emit("edit", "editor", request, cleaned)
 
 		# 3) the approval desk (one revision pass when live)
-		if not await _await_approval(request, cleaned):
+		if not await _await_approval(request, cleaned, false):
 			if Config.provider_resolved != "simulate":
 				EventBus.log_line.emit("✍ Caption revision — the Editor tightens the cut.")
 				await _walk_stage("edit", "editor", request)
@@ -589,7 +600,7 @@ func _ask_owner(role: String, question: String) -> String:
 
 ## Wait at the approval desk: Y approves, N requests one revision,
 ## silence auto-approves after 45 s. Returns true when approved.
-func _await_approval(request: Dictionary, preview: String) -> bool:
+func _await_approval(request: Dictionary, preview: String, allow_auto := true) -> bool:
 	# one desk: concurrent jobs take turns waiting for the owner
 	await RoleLocks.acquire("approval_desk")
 	var decided := [false, true]
@@ -599,11 +610,11 @@ func _await_approval(request: Dictionary, preview: String) -> bool:
 	EventBus.approval_resolved.connect(cb)
 	EventBus.approval_requested.emit(request, preview)
 	var waited := 0.0
-	while not decided[0] and waited < 45.0:
+	while not decided[0] and (not allow_auto or waited < 45.0):
 		await get_tree().create_timer(0.25).timeout
 		waited += 0.25
 	EventBus.approval_resolved.disconnect(cb)
-	if not decided[0]:
+	if not decided[0] and allow_auto:
 		# auto-approve IS a resolution: emit so the HUD panel closes
 		# (cb is already disconnected, so this can't loop back here)
 		EventBus.approval_resolved.emit(true)

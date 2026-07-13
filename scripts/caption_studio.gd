@@ -3,7 +3,7 @@
 ## scrubbing on a waveform timeline, cue-by-cue text editing (writes
 ## straight back to the batch's -clean.srt), and a live-styled caption
 ## overlay with font / size / colour choices that the burn honours.
-## Walk away and it burns the skill-standard style on a countdown.
+## It waits for your explicit Burn click — nothing auto-burns.
 class_name CaptionStudio
 extends PanelContainer
 
@@ -23,7 +23,6 @@ const COLORS := [
 	["มินต์", "&H00B4E6A8", "&H00000000", Color(0.66, 0.90, 0.70), Color(0, 0, 0)],
 	["ดำ", "&H00141414", "&H00FFFFFF", Color(0.08, 0.08, 0.08), Color(1, 1, 1)],
 ]
-const AUTO_SEC := 90.0
 const PREVIEW_SCALE := 576.0 / 1920.0  # preview panel vs burn canvas
 
 var cues: Array = []
@@ -34,7 +33,6 @@ var _duration := 1.0
 var _t := 0.0
 var _playing := false
 var _sel := -1
-var _auto_left := AUTO_SEC
 var _tex_cache: Dictionary = {}
 var _scale_idx := 0
 
@@ -63,8 +61,11 @@ func _ready() -> void:
 	sb.set_corner_radius_all(10)
 	sb.set_content_margin_all(14)
 	add_theme_stylebox_override("panel", sb)
-	position = Vector2(310, 60)
-	custom_minimum_size = Vector2(1300, 860)
+	position = Vector2(310, 40)
+	# width fixed; height is driven by the ScrollContainer's cap (below), so
+	# the panel wraps the scroll viewport snugly instead of the ~1050px content
+	# that used to overrun the screen
+	custom_minimum_size = Vector2(1300, 0)
 
 	_audio = AudioStreamPlayer.new()
 	add_child(_audio)
@@ -218,6 +219,7 @@ func _ready() -> void:
 	_auto_label = Label.new()
 	_auto_label.add_theme_font_size_override("font_size", 12)
 	_auto_label.modulate = Color(0.75, 0.7, 0.6)
+	I18n.reg(_auto_label, "text", "studio_waiting")
 	right.add_child(_auto_label)
 	mid.add_child(right)
 	root.add_child(mid)
@@ -228,7 +230,16 @@ func _ready() -> void:
 	_timeline.draw.connect(_draw_timeline)
 	_timeline.gui_input.connect(_timeline_input)
 	root.add_child(_timeline)
-	add_child(root)
+	# a fixed-height viewport: content taller than this scrolls, so the
+	# Burn button stays reachable (content is ~1050px; screen may be less)
+	var scroll_outer := ScrollContainer.new()
+	scroll_outer.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	var vh := DisplayServer.window_get_size().y
+	scroll_outer.custom_minimum_size = Vector2(0, minf(920.0, vh - 120.0))
+	scroll_outer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll_outer.add_child(root)
+	add_child(scroll_outer)
 	_style_color_btns()
 
 
@@ -248,7 +259,6 @@ func open_clip(srt_path: String, frames_dir: String) -> void:
 	_t = 0.0
 	_sel = -1
 	_playing = false
-	_auto_left = AUTO_SEC
 	_tex_cache.clear()
 	_rebuild_cue_list()
 	_apply_style()
@@ -257,7 +267,7 @@ func open_clip(srt_path: String, frames_dir: String) -> void:
 	Sfx.play_ui("paper", -8.0)
 
 
-func _process(delta: float) -> void:
+func _process(_delta: float) -> void:
 	if not visible:
 		return
 	if _playing:
@@ -267,13 +277,6 @@ func _process(delta: float) -> void:
 			_audio.stop()
 			_play_btn.text = "▶"
 		_show_time()
-	# walk-away: ambient mode survives — burns the CURRENT selections
-	# (untouched = Anuphan/M/white, the skill-standard look)
-	_auto_left -= delta
-	if _auto_left <= 0.0:
-		_resolve("custom")
-		return
-	_auto_label.text = I18n.f("studio_auto", [int(_auto_left)])
 
 
 func _toggle_play() -> void:
