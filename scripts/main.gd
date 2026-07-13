@@ -241,11 +241,12 @@ func _ready() -> void:
 		var ep := int(req.get("_ep", 0))
 		var ttl := ("EP%02d : %s" % [ep, str(req.get("topic", "")).left(60)]) if ep > 0 else ""
 		_studio.open_clip(srt, prev, ttl))
-	# dev hook: AGENT_TOWN_STUDIO="<srt>|<preview_dir>" opens it on boot
+	# dev hook: AGENT_TOWN_STUDIO="<srt>|<preview_dir>[|<EP title>]" opens it on boot
 	var dev_studio := OS.get_environment("AGENT_TOWN_STUDIO")
 	if not dev_studio.is_empty() and dev_studio.contains("|"):
 		get_tree().create_timer(2.0).timeout.connect(func() -> void:
-			_studio.open_clip(dev_studio.get_slice("|", 0), dev_studio.get_slice("|", 1)))
+			_studio.open_clip(dev_studio.get_slice("|", 0), dev_studio.get_slice("|", 1),
+				dev_studio.get_slice("|", 2)))
 	_build_cost_meter()
 	EventBus.stage_started.connect(func(_s, _r, _q) -> void:
 		_calls_inflight += 1)
