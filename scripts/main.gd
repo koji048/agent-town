@@ -239,7 +239,7 @@ func _ready() -> void:
 	studio_layer.add_child(_studio)
 	EventBus.clip_review_requested.connect(func(req: Dictionary, srt: String, prev: String) -> void:
 		var ep := int(req.get("_ep", 0))
-		var ttl := ("EP%02d : %s" % [ep, str(req.get("topic", ""))]) if ep > 0 else ""
+		var ttl := ("EP%02d : %s" % [ep, str(req.get("topic", "")).left(60)]) if ep > 0 else ""
 		_studio.open_clip(srt, prev, ttl))
 	# dev hook: AGENT_TOWN_STUDIO="<srt>|<preview_dir>" opens it on boot
 	var dev_studio := OS.get_environment("AGENT_TOWN_STUDIO")

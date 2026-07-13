@@ -54,6 +54,7 @@ func write_clip_extras(dir_path: String, request: Dictionary, results: Dictionar
 	clean.erase("_file")
 	clean.erase("_partial")
 	clean.erase("_batch")
+	clean.erase("_ep")
 	_write(behind.path_join("request.json"), JSON.stringify(clean, "  "))
 	var post: String = str(results.get("publish", ""))
 	if not post.is_empty():
