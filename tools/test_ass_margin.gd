@@ -26,6 +26,14 @@ func _run() -> void:
 	_check("default margin 360 when unset", t.contains("70,70,360,1"))
 
 	DirAccess.remove_absolute(p)
+
+	# caption colour -> ASS BGR (regression guard for the byte order); _ass_color
+	# is pure string formatting, so a bare instance (no _ready) is enough
+	var cs: Node = load("res://scripts/caption_studio.gd").new()
+	_check("ass colour red -> &H000000FF", cs._ass_color(Color(1, 0, 0)) == "&H000000FF")
+	_check("ass colour blue -> &H00FF0000", cs._ass_color(Color(0, 0, 1)) == "&H00FF0000")
+	cs.free()
+
 	print("\n=== ass margin tests: %d passed, %d failed ===" % [_passes, _fails])
 	quit(1 if _fails > 0 else 0)
 

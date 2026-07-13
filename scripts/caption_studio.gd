@@ -122,8 +122,8 @@ func _ready() -> void:
 	_ig_guide(frame_holder, Control.PRESET_TOP_WIDE, 0, 0, 0, 250.0 * ps, fill)
 	_ig_guide(frame_holder, Control.PRESET_TOP_WIDE, 0, 250.0 * ps - 2.0, 0, 250.0 * ps, edge)
 	# right action-button column (lower) + left edge line
-	_ig_guide(frame_holder, Control.PRESET_RIGHT_WIDE, -130.0 * ps, 230.0, 0, -420.0 * ps, fill)
-	_ig_guide(frame_holder, Control.PRESET_RIGHT_WIDE, -130.0 * ps, 230.0, -130.0 * ps + 2.0, -420.0 * ps, edge)
+	_ig_guide(frame_holder, Control.PRESET_RIGHT_WIDE, -130.0 * ps, 770.0 * ps, 0, -420.0 * ps, fill)
+	_ig_guide(frame_holder, Control.PRESET_RIGHT_WIDE, -130.0 * ps, 770.0 * ps, -130.0 * ps + 2.0, -420.0 * ps, edge)
 	var ig_lbl := Label.new()
 	ig_lbl.text = "IG safe zone"
 	ig_lbl.add_theme_font_size_override("font_size", 10)
@@ -277,7 +277,7 @@ func _ready() -> void:
 	scroll_outer.add_child(root)
 	add_child(scroll_outer)
 	# fixed 120% zoom, scaled from the top edge so the top never leaves screen
-	pivot_offset = Vector2(1300.0 / 2.0, 0.0)
+	pivot_offset = Vector2(custom_minimum_size.x / 2.0, 0.0)
 	scale = Vector2(ZOOM, ZOOM)
 	_style_color_btns()
 
@@ -299,6 +299,7 @@ func open_clip(srt_path: String, frames_dir: String) -> void:
 	_sel = -1
 	_playing = false
 	_tex_cache.clear()
+	# reset only the position per clip; font / size / colour persist across clips
 	_margin_v = 360.0
 	_place_caption()
 	_rebuild_cue_list()
