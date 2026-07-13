@@ -54,6 +54,8 @@ var _font_pick: OptionButton
 var _size_pick: OptionButton
 var _color_idx := 0
 var _color_btns: Array = []
+var _use_custom := false      # a free-picked colour overrides the presets
+var _custom_color := Color(1, 1, 1)
 
 
 func _ready() -> void:
@@ -96,7 +98,7 @@ func _ready() -> void:
 		var steps := [1.0, 1.2, 1.4, 0.8]
 		_scale_idx = (_scale_idx + 1) % steps.size()
 		var s: float = steps[_scale_idx]
-		pivot_offset = size / 2.0
+		pivot_offset = Vector2(size.x / 2.0, 0.0)   # scale from the top so the top never leaves the screen
 		scale = Vector2(s, s)
 		size_btn.text = " ⤢ %d%% " % int(s * 100))
 	head.add_child(size_btn)
@@ -120,15 +122,32 @@ func _ready() -> void:
 	_frame_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_frame_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	frame_holder.add_child(_frame_rect)
-	# Instagram safe-zone guide: a dim band over the bottom ~320px (burn) the
-	# app UI covers — drag the caption to sit ABOVE it. Ignores mouse so it
-	# never blocks the caption drag.
-	var ig_guide := ColorRect.new()
-	ig_guide.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	ig_guide.offset_top = -320.0 * PREVIEW_SCALE
-	ig_guide.color = Color(0, 0, 0, 0.35)
-	ig_guide.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame_holder.add_child(ig_guide)
+	# Instagram safe-zone guide: a tinted band + bright top edge + label over
+	# the bottom ~320px (burn) IG's UI covers — drag the caption ABOVE it.
+	# Reddish so it shows on dark video; ignores mouse so it never blocks drag.
+	var band_top := -320.0 * PREVIEW_SCALE
+	var ig_band := ColorRect.new()
+	ig_band.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	ig_band.offset_top = band_top
+	ig_band.color = Color(0.95, 0.25, 0.35, 0.22)
+	ig_band.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame_holder.add_child(ig_band)
+	var ig_edge := ColorRect.new()
+	ig_edge.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	ig_edge.offset_top = band_top
+	ig_edge.offset_bottom = band_top + 2.0
+	ig_edge.color = Color(1.0, 0.45, 0.5, 0.9)
+	ig_edge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame_holder.add_child(ig_edge)
+	var ig_lbl := Label.new()
+	ig_lbl.text = "IG UI"
+	ig_lbl.add_theme_font_size_override("font_size", 11)
+	ig_lbl.modulate = Color(1, 0.75, 0.78, 0.95)
+	ig_lbl.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	ig_lbl.offset_top = band_top + 3.0
+	ig_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	ig_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame_holder.add_child(ig_lbl)
 	_cap_label = Label.new()
 	_cap_label.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	_cap_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -193,10 +212,21 @@ func _ready() -> void:
 		cb.add_theme_color_override("font_color", COLORS[i][3] as Color)
 		cb.pressed.connect(func() -> void:
 			_color_idx = i
+			_use_custom = false
 			_style_color_btns()
 			_apply_style())
 		cr.add_child(cb)
 		_color_btns.append(cb)
+	# free colour pick — any colour, not just the presets
+	var custom_pick := ColorPickerButton.new()
+	custom_pick.custom_minimum_size = Vector2(44, 0)
+	custom_pick.color = Color(1, 1, 1)
+	custom_pick.color_changed.connect(func(col: Color) -> void:
+		_use_custom = true
+		_custom_color = col
+		_style_color_btns()
+		_apply_style())
+	cr.add_child(custom_pick)
 	style_box.add_child(cr)
 	left.add_child(style_box)
 	mid.add_child(left)
@@ -386,16 +416,16 @@ func _apply_style() -> void:
 	font.load_dynamic_font(str(FONTS[_font_pick.selected][1]))
 	ls.font = font
 	ls.font_size = int(round(int(SIZES[_size_pick.selected][1]) * PREVIEW_SCALE))
-	ls.font_color = COLORS[_color_idx][3] as Color
+	ls.font_color = _custom_color if _use_custom else (COLORS[_color_idx][3] as Color)
 	ls.outline_size = maxi(1, int(round(3.0 * PREVIEW_SCALE)))
-	ls.outline_color = COLORS[_color_idx][4] as Color
+	ls.outline_color = Color(0, 0, 0) if _use_custom else (COLORS[_color_idx][4] as Color)
 	_cap_label.label_settings = ls
 	_show_time()
 
 
 func _style_color_btns() -> void:
 	for i in _color_btns.size():
-		(_color_btns[i] as Button).text = (" ◉ " if i == _color_idx else " ") \
+		(_color_btns[i] as Button).text = (" ◉ " if (i == _color_idx and not _use_custom) else " ") \
 			+ str(COLORS[i][0]) + " "
 
 
@@ -403,10 +433,15 @@ func style_dict() -> Dictionary:
 	return {
 		"font_name": str(FONTS[_font_pick.selected][0]),
 		"size": int(SIZES[_size_pick.selected][1]),
-		"primary": str(COLORS[_color_idx][1]),
-		"outline_col": str(COLORS[_color_idx][2]),
+		"primary": _ass_color(_custom_color) if _use_custom else str(COLORS[_color_idx][1]),
+		"outline_col": "&H00000000" if _use_custom else str(COLORS[_color_idx][2]),
 		"margin_v": int(round(_margin_v)),
 	}
+
+
+## Godot Color -> ASS &H00BBGGRR (opaque; libass colours are BGR).
+func _ass_color(c: Color) -> String:
+	return "&H00%02X%02X%02X" % [c.b8, c.g8, c.r8]
 
 
 func _resolve(action: String) -> void:
