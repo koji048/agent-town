@@ -19,7 +19,7 @@ if grep -qE "Lambda capture .* was freed" "$LOG"; then
 fi
 if grep -qiE "Cannot call method .* on a null|on a previously freed" "$LOG"; then
 	echo "FAIL: freed-object call detected:"
-	grep -niE "Cannot call method .* on a null|previously freed" "$LOG" | head
+	grep -niE "Cannot call method .* on a null|on a previously freed" "$LOG" | head
 	fail=1
 fi
 if ! grep -q "\[soak\] end" "$LOG"; then
@@ -41,5 +41,5 @@ else
 	fail=1
 fi
 
-if [[ "$fail" -eq 0 ]]; then echo "SOAK PASS"; else echo "SOAK FAIL (log: $LOG)"; fi
+if [[ "$fail" -eq 0 ]]; then rm -f "$LOG"; echo "SOAK PASS"; else echo "SOAK FAIL (log: $LOG)"; fi
 exit "$fail"
