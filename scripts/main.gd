@@ -262,6 +262,12 @@ func _ready() -> void:
 	var demo_dir := OS.get_environment("AGENT_TOWN_DEMO")
 	if not demo_dir.is_empty():
 		_run_demo_capture(demo_dir)
+	# Soak/guardrail: AGENT_TOWN_SOAK=<seconds> stresses the town headless
+	# (pipeline + costume cycling + focus toggles), prints an orphan census,
+	# and quits — tools/soak_test.sh fails on dangling captures or leak growth.
+	var soak := OS.get_environment("AGENT_TOWN_SOAK")
+	if not soak.is_empty():
+		_run_soak(int(soak))
 
 
 const VIDEO_EXT := ["mov", "mp4", "m4v", "mkv", "webm"]
@@ -528,10 +534,53 @@ func _confetti(pos: Vector3) -> void:
 	get_tree().create_timer(4.0).timeout.connect(p.queue_free)
 
 
+## Bounded headless stress run (see tools/soak_test.sh). Drives the pipeline in
+## simulate mode, cycles costumes (forces _model.queue_free + reload), and
+## toggles focus (the display-sleep path) — surfacing dangling lambda captures
+## and node leaks. Prints an orphan census and quits.
+func _run_soak(seconds: int) -> void:
+	Config.provider_resolved = "simulate"
+	seconds = clampi(seconds, 5, 120)
+	await get_tree().create_timer(3.0).timeout   # let boot settle
+	var start_orphans := int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT))
+	print("[soak] start orphans=%d" % start_orphans)
+	var classes: Array = Costumes.SETS[Costumes.current_set()].get("classes", [])
+	var deadline := Time.get_ticks_msec() + seconds * 1000
+	var last_costume := 0
+	var last_focus := 0
+	var tick := 0
+	EventBus.request_received.emit({"topic": "soak stress 0"})
+	while Time.get_ticks_msec() < deadline:
+		await get_tree().create_timer(0.5).timeout
+		tick += 1
+		var now := Time.get_ticks_msec()
+		# throttle costume reloads to ~1/1.5s WALL (frees _model) — no thrash
+		if now - last_costume > 1500 and not classes.is_empty():
+			last_costume = now
+			for a in get_tree().get_nodes_in_group("agents"):
+				var ag := a as TownAgent3D
+				var c: Dictionary = (ag.costume as Dictionary).duplicate(true)
+				c["class"] = str(classes[(tick + abs(hash(ag.role))) % classes.size()])
+				ag.apply_costume(c)
+		# throttle focus toggles to ~1/1s WALL (the display-sleep path)
+		if now - last_focus > 1000:
+			last_focus = now
+			notification(NOTIFICATION_APPLICATION_FOCUS_OUT)
+			await get_tree().create_timer(0.2).timeout
+			notification(NOTIFICATION_APPLICATION_FOCUS_IN)
+		# keep the pipeline busy (many concurrent cascades)
+		if tick % 3 == 0:
+			EventBus.request_received.emit({"topic": "soak stress %d" % tick})
+	var end_orphans := int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT))
+	print("[soak] end orphans=%d" % end_orphans)
+	await get_tree().create_timer(0.3).timeout
+	get_tree().quit()
+
+
 func _run_demo_capture(dir: String) -> void:
 	DirAccess.make_dir_recursive_absolute(dir)
 	var done := [false]
-	EventBus.request_completed.connect(func(_r: Dictionary, _o: String) -> void: done[0] = true)
+	EventBus.request_completed.connect(func(_r: Dictionary, _o: String) -> void: done[0] = true, CONNECT_ONE_SHOT)
 	var i := 0
 	await get_tree().create_timer(2.0).timeout
 	while not done[0] and i < 80:

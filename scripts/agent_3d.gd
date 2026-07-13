@@ -244,17 +244,11 @@ func _ready() -> void:
 
 	EventBus.stage_started.connect(_on_stage_started)
 	EventBus.stage_completed.connect(_on_stage_completed)
-	EventBus.meeting_called.connect(func(_req: Dictionary) -> void:
-		if state == State.WORKING or _target_is_work:
-			return
-		_meeting = true
-		_celebrating = false
-		_break_ad = {}
-		_wander_timer.stop()
-		walk_to(MEETING_SPOTS.get(role, Vector2i(3, 3))))
-	EventBus.agent_say.connect(func(r: String, text: String) -> void:
-		if r == role:
-			_say(text))
+	# method connections (NOT node-capturing lambdas): Godot auto-disconnects
+	# these when the agent is freed, so a freed agent can never dangle on a
+	# persistent EventBus signal (the sustainable convention for long-lived signals)
+	EventBus.meeting_called.connect(_on_meeting_called)
+	EventBus.agent_say.connect(_on_agent_say)
 
 
 func _process(delta: float) -> void:
@@ -405,6 +399,21 @@ func _on_path_done() -> void:
 		_set_state(State.IDLE)
 		_play("Idle")
 		_restart_wander()
+
+
+func _on_meeting_called(_req: Dictionary) -> void:
+	if state == State.WORKING or _target_is_work:
+		return
+	_meeting = true
+	_celebrating = false
+	_break_ad = {}
+	_wander_timer.stop()
+	walk_to(MEETING_SPOTS.get(role, Vector2i(3, 3)))
+
+
+func _on_agent_say(r: String, text: String) -> void:
+	if r == role:
+		_say(text)
 
 
 func _on_stage_started(stage: String, r: String, _request: Dictionary) -> void:
