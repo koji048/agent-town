@@ -303,17 +303,10 @@ func _ready() -> void:
 	_timeline.draw.connect(_draw_timeline)
 	_timeline.gui_input.connect(_timeline_input)
 	root.add_child(_timeline)
-	# a fixed-height viewport: content taller than this scrolls, so the
-	# Burn button stays reachable (content is ~1050px; screen may be less)
-	var scroll_outer := ScrollContainer.new()
-	scroll_outer.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	var vh := DisplayServer.window_get_size().y
-	# cap so the fixed ZOOM-scaled panel still fits the screen; content scrolls
-	scroll_outer.custom_minimum_size = Vector2(0, minf(820.0, (vh - 60.0) / ZOOM - 30.0))
-	scroll_outer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll_outer.add_child(root)
-	add_child(scroll_outer)
+	# NO whole-frame scroll: only the cue LIST scrolls (its own inner
+	# ScrollContainer). The preview and timeline stay put, so scrolling the
+	# caption list never shifts the timeline while you're editing it.
+	add_child(root)
 	# fixed 120% zoom, scaled from the top edge so the top never leaves screen
 	pivot_offset = Vector2(custom_minimum_size.x / 2.0, 0.0)
 	scale = Vector2(ZOOM, ZOOM)
