@@ -35,6 +35,13 @@ func _run() -> void:
 	_check("first cue start >= 0", cs.cues[0]["start"] >= 0.0)
 	_check("last cue end <= duration", cs.cues[0]["end"] <= 3.0 + 0.001)
 
+	# sub-MIN_DUR window: a contiguous <0.2s middle cue must NOT overlap/invert
+	cs.cues = [{"start": 0.0, "end": 1.0, "text": "a"}, {"start": 1.0, "end": 1.1, "text": "b"}, {"start": 1.1, "end": 2.0, "text": "c"}]
+	cs._set_cue_time(1, 0.5, 5.0)
+	_check("tiny cue start >= prev end", cs.cues[1]["start"] >= 1.0 - 0.001)
+	_check("tiny cue end <= next start", cs.cues[1]["end"] <= 1.1 + 0.001)
+	_check("tiny cue start <= end (no inversion)", cs.cues[1]["start"] <= cs.cues[1]["end"] + 0.001)
+
 	print("\n=== cue retime tests: %d passed, %d failed ===" % [_passes, _fails])
 	quit(1 if _fails > 0 else 0)
 

@@ -340,6 +340,9 @@ func open_clip(srt_path: String, frames_dir: String) -> void:
 	# reset only the position per clip; font / size / colour persist across clips
 	_margin_v = 360.0
 	_place_caption()
+	if _start_spin:
+		_start_spin.max_value = _duration
+		_end_spin.max_value = _duration
 	_rebuild_cue_list()
 	_apply_style()
 	_show_time()
@@ -427,8 +430,15 @@ func _set_cue_time(i: int, ns: float, ne: float) -> void:
 		return
 	var lo := 0.0 if i == 0 else float(cues[i - 1]["end"])
 	var hi := _duration if i == cues.size() - 1 else float(cues[i + 1]["start"])
-	ne = clampf(ne, lo + MIN_DUR, hi)
-	ns = clampf(ns, lo, ne - MIN_DUR)
+	if hi < lo:            # degenerate source (already-overlapping neighbors)
+		hi = lo
+	# keep both edges inside [lo, hi] with start <= end...
+	ne = clampf(ne, lo, hi)
+	ns = clampf(ns, lo, ne)
+	# ...then enforce the minimum duration only when the window can hold it
+	if hi - lo >= MIN_DUR and ne - ns < MIN_DUR:
+		ne = minf(ns + MIN_DUR, hi)
+		ns = maxf(ne - MIN_DUR, lo)
 	cues[i]["start"] = ns
 	cues[i]["end"] = ne
 
@@ -644,7 +654,10 @@ func _update_timeline_drag(px: float, w: float) -> void:
 			_set_cue_time(_drag_cue, float(c["start"]), t)
 		"move":
 			var dur := float(c["end"]) - float(c["start"])
-			var ns := t - _drag_grab
+			var mlo := 0.0 if _drag_cue == 0 else float(cues[_drag_cue - 1]["end"])
+			var mhi := _duration if _drag_cue == cues.size() - 1 else float(cues[_drag_cue + 1]["start"])
+			# clamp the shift so the cue keeps its duration and parks at the wall
+			var ns := clampf(t - _drag_grab, mlo, maxf(mhi - dur, mlo))
 			_set_cue_time(_drag_cue, ns, ns + dur)
 	_sync_time_fields()
 	_timeline.queue_redraw()
