@@ -20,7 +20,7 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,{font},{size},{primary},&H000000FF,{outline_col},&H78000000,0,0,0,0,100,100,0,0,1,{outline},1,2,70,70,220,1
+Style: Default,{font},{size},{primary},&H000000FF,{outline_col},&H78000000,0,0,0,0,100,100,0,0,1,{outline},1,2,70,70,{margin_v},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -178,6 +178,7 @@ func write_ass(cues: Array, style: Dictionary, path: String) -> void:
 		"primary": str(style.get("primary", "&H00FFFFFF")),
 		"outline_col": str(style.get("outline_col", "&H00000000")),
 		"outline": 3,
+		"margin_v": int(style.get("margin_v", 360)),
 	}))
 	for c in cues:
 		f.store_string("Dialogue: 0,%s,%s,Default,,0,0,0,,%s\n" % [

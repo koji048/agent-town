@@ -356,9 +356,9 @@ func _apply_style() -> void:
 	var font := FontFile.new()
 	font.load_dynamic_font(str(FONTS[_font_pick.selected][1]))
 	ls.font = font
-	ls.font_size = int(round(int(SIZES[_size_pick.selected][1]) * PREVIEW_SCALE * 1.9))
+	ls.font_size = int(round(int(SIZES[_size_pick.selected][1]) * PREVIEW_SCALE))
 	ls.font_color = COLORS[_color_idx][3] as Color
-	ls.outline_size = 8
+	ls.outline_size = maxi(1, int(round(3.0 * PREVIEW_SCALE)))
 	ls.outline_color = COLORS[_color_idx][4] as Color
 	_cap_label.label_settings = ls
 	_show_time()
