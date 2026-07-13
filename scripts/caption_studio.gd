@@ -3,7 +3,7 @@
 ## scrubbing on a waveform timeline, cue-by-cue text editing (writes
 ## straight back to the batch's -clean.srt), and a live-styled caption
 ## overlay with font / size / colour choices that the burn honours.
-## Walk away and it burns the skill-standard style on a countdown.
+## It waits for your explicit Burn click — nothing auto-burns.
 class_name CaptionStudio
 extends PanelContainer
 
