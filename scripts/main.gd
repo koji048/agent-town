@@ -580,7 +580,7 @@ func _run_soak(seconds: int) -> void:
 func _run_demo_capture(dir: String) -> void:
 	DirAccess.make_dir_recursive_absolute(dir)
 	var done := [false]
-	EventBus.request_completed.connect(func(_r: Dictionary, _o: String) -> void: done[0] = true)
+	EventBus.request_completed.connect(func(_r: Dictionary, _o: String) -> void: done[0] = true, CONNECT_ONE_SHOT)
 	var i := 0
 	await get_tree().create_timer(2.0).timeout
 	while not done[0] and i < 80:
