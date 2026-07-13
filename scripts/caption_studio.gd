@@ -27,6 +27,7 @@ const PREVIEW_SCALE := 576.0 / 1920.0  # preview panel vs burn canvas
 const MARGIN_MIN := 120.0
 const MARGIN_MAX := 1400.0
 const CAP_BAND := 160.0   # preview-px height of the caption's grab band
+const ZOOM := 1.2         # studio renders at a fixed 120%
 
 var cues: Array = []
 var _srt_path := ""
@@ -37,7 +38,6 @@ var _t := 0.0
 var _playing := false
 var _sel := -1
 var _tex_cache: Dictionary = {}
-var _scale_idx := 0
 var _margin_v := 360.0    # burn-canvas px from the bottom; owner-draggable
 
 var _audio: AudioStreamPlayer
@@ -91,17 +91,6 @@ func _ready() -> void:
 		if ev is InputEventMouseMotion and (ev as InputEventMouseMotion).button_mask & MOUSE_BUTTON_MASK_LEFT:
 			position += (ev as InputEventMouseMotion).relative)
 	head.add_child(title)
-	# resize: cycle scale steps (the owner: "มันควรปรับขนาดได้")
-	var size_btn := Button.new()
-	size_btn.text = " ⤢ 100% "
-	size_btn.pressed.connect(func() -> void:
-		var steps := [1.0, 1.2, 1.4, 0.8]
-		_scale_idx = (_scale_idx + 1) % steps.size()
-		var s: float = steps[_scale_idx]
-		pivot_offset = Vector2(size.x / 2.0, 0.0)   # scale from the top so the top never leaves the screen
-		scale = Vector2(s, s)
-		size_btn.text = " ⤢ %d%% " % int(s * 100))
-	head.add_child(size_btn)
 	root.add_child(head)
 
 	var mid := HBoxContainer.new()
@@ -148,6 +137,15 @@ func _ready() -> void:
 	ig_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	ig_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	frame_holder.add_child(ig_lbl)
+	# IG's right-hand action-button column (like / comment / share) — lower-right
+	var ig_right := ColorRect.new()
+	ig_right.set_anchors_preset(Control.PRESET_RIGHT_WIDE)
+	ig_right.offset_left = -130.0 * PREVIEW_SCALE
+	ig_right.offset_top = 576.0 * 0.42
+	ig_right.offset_bottom = band_top
+	ig_right.color = Color(0.95, 0.25, 0.35, 0.18)
+	ig_right.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame_holder.add_child(ig_right)
 	_cap_label = Label.new()
 	_cap_label.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	_cap_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -285,11 +283,15 @@ func _ready() -> void:
 	var scroll_outer := ScrollContainer.new()
 	scroll_outer.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	var vh := DisplayServer.window_get_size().y
-	scroll_outer.custom_minimum_size = Vector2(0, minf(920.0, vh - 120.0))
+	# cap so the fixed ZOOM-scaled panel still fits the screen; content scrolls
+	scroll_outer.custom_minimum_size = Vector2(0, minf(820.0, (vh - 60.0) / ZOOM - 30.0))
 	scroll_outer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll_outer.add_child(root)
 	add_child(scroll_outer)
+	# fixed 120% zoom, scaled from the top edge so the top never leaves screen
+	pivot_offset = Vector2(1300.0 / 2.0, 0.0)
+	scale = Vector2(ZOOM, ZOOM)
 	_style_color_btns()
 
 
