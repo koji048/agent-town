@@ -315,6 +315,7 @@ func _run_clip_reels(request: Dictionary) -> void:
 					decided[1] = a
 					decided[2] = s
 				EventBus.clip_review_resolved.connect(cb)
+				request["_ep"] = ep
 				EventBus.clip_review_requested.emit(request, srt_path, prev_dir)
 				while not decided[0]:
 					await get_tree().create_timer(0.25).timeout
@@ -337,6 +338,8 @@ func _run_clip_reels(request: Dictionary) -> void:
 					var base := srt_path.get_file().trim_suffix("-clean.srt")
 					mp4 = exports.path_join(base + ".mp4")
 					var cues: Array = PreviewMaker.parse_srt(FileAccess.get_file_as_string(srt_path))
+					style["ep"] = ep
+					style["title"] = topic
 					r = await PreviewMaker.burn_custom(footage, cues, style, mp4)
 					if int(r[1]) != 0 or not FileAccess.file_exists(mp4):
 						mp4 = ""
