@@ -10,11 +10,7 @@ extends PanelContainer
 ## [ASS family name, preview ttf] — the ASS Fontname MUST be the font
 ## FAMILY (libass matches family, not file/full names; "Kanit SemiBold"
 ## silently fell back to a default font — the owner's "font ยังไม่ได้").
-const FONTS := [
-	["Anuphan", "res://assets/fonts/Anuphan.ttf"],
-	["Kanit", "res://assets/fonts/Kanit-SemiBold.ttf"],
-	["Sarabun", "res://assets/fonts/Sarabun-Bold.ttf"],
-]
+var FONTS: Array = []   # [family, path] pairs, discovered from assets/fonts/
 const SIZES := [["S", 58], ["M", 72], ["L", 86]]
 ## [label, ASS primary (BGR), ASS outline, preview colour, preview outline]
 const COLORS := [
@@ -60,6 +56,7 @@ var _custom_color := Color(1, 1, 1)
 
 func _ready() -> void:
 	visible = false
+	FONTS = _discover_fonts()
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = Color(0.07, 0.07, 0.10, 0.97)
 	sb.border_color = Color(1.0, 0.78, 0.32)
@@ -111,41 +108,31 @@ func _ready() -> void:
 	_frame_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_frame_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	frame_holder.add_child(_frame_rect)
-	# Instagram safe-zone guide: a tinted band + bright top edge + label over
-	# the bottom ~320px (burn) IG's UI covers — drag the caption ABOVE it.
-	# Reddish so it shows on dark video; ignores mouse so it never blocks drag.
-	var band_top := -320.0 * PREVIEW_SCALE
-	var ig_band := ColorRect.new()
-	ig_band.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	ig_band.offset_top = band_top
-	ig_band.color = Color(0.95, 0.25, 0.35, 0.22)
-	ig_band.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame_holder.add_child(ig_band)
-	var ig_edge := ColorRect.new()
-	ig_edge.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	ig_edge.offset_top = band_top
-	ig_edge.offset_bottom = band_top + 2.0
-	ig_edge.color = Color(1.0, 0.45, 0.5, 0.9)
-	ig_edge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame_holder.add_child(ig_edge)
+	# Instagram Reels safe-zone guides (yellow, CapCut-style) — the areas IG's
+	# own UI covers; keep captions/logos out of them. Research (1080x1920):
+	# bottom ~420px (caption, @handle, audio, CTA), top ~250px (progress +
+	# profile), right ~130px action-button column. Mouse-transparent.
+	var ps := PREVIEW_SCALE
+	var fill := Color(1.0, 0.85, 0.12, 0.13)
+	var edge := Color(1.0, 0.88, 0.22, 0.85)
+	# bottom band + top edge line
+	_ig_guide(frame_holder, Control.PRESET_BOTTOM_WIDE, 0, -420.0 * ps, 0, 0, fill)
+	_ig_guide(frame_holder, Control.PRESET_BOTTOM_WIDE, 0, -420.0 * ps, 0, -420.0 * ps + 2.0, edge)
+	# top band + bottom edge line
+	_ig_guide(frame_holder, Control.PRESET_TOP_WIDE, 0, 0, 0, 250.0 * ps, fill)
+	_ig_guide(frame_holder, Control.PRESET_TOP_WIDE, 0, 250.0 * ps - 2.0, 0, 250.0 * ps, edge)
+	# right action-button column (lower) + left edge line
+	_ig_guide(frame_holder, Control.PRESET_RIGHT_WIDE, -130.0 * ps, 230.0, 0, -420.0 * ps, fill)
+	_ig_guide(frame_holder, Control.PRESET_RIGHT_WIDE, -130.0 * ps, 230.0, -130.0 * ps + 2.0, -420.0 * ps, edge)
 	var ig_lbl := Label.new()
-	ig_lbl.text = "IG UI"
-	ig_lbl.add_theme_font_size_override("font_size", 11)
-	ig_lbl.modulate = Color(1, 0.75, 0.78, 0.95)
-	ig_lbl.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	ig_lbl.offset_top = band_top + 3.0
+	ig_lbl.text = "IG safe zone"
+	ig_lbl.add_theme_font_size_override("font_size", 10)
+	ig_lbl.modulate = Color(1.0, 0.9, 0.4, 0.9)
+	ig_lbl.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	ig_lbl.offset_top = 250.0 * ps + 2.0
 	ig_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	ig_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	frame_holder.add_child(ig_lbl)
-	# IG's right-hand action-button column (like / comment / share) — lower-right
-	var ig_right := ColorRect.new()
-	ig_right.set_anchors_preset(Control.PRESET_RIGHT_WIDE)
-	ig_right.offset_left = -130.0 * PREVIEW_SCALE
-	ig_right.offset_top = 576.0 * 0.42
-	ig_right.offset_bottom = band_top
-	ig_right.color = Color(0.95, 0.25, 0.35, 0.18)
-	ig_right.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame_holder.add_child(ig_right)
 	_cap_label = Label.new()
 	_cap_label.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	_cap_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -403,6 +390,44 @@ func _save_cue() -> void:
 	Sfx.play_ui("paper", -10.0)
 	_rebuild_cue_list()
 	_show_time()
+
+
+## Discover every font file in assets/fonts/ so the picker offers them all —
+## drop a .ttf/.otf in that folder to add a choice. The ASS Fontname must be
+## the FAMILY, so strip the style suffix Godot appends (e.g. "Kanit SemiBold"
+## -> "Kanit"); libass matches the family via the same fontsdir.
+func _discover_fonts() -> Array:
+	var out: Array = []
+	var d := DirAccess.open("res://assets/fonts")
+	if d:
+		var files := d.get_files()
+		files.sort()
+		for f in files:
+			if f.get_extension().to_lower() in ["ttf", "otf"]:
+				var path := "res://assets/fonts/" + f
+				var ff := FontFile.new()
+				if ff.load_dynamic_font(path) == OK:
+					var fam := ff.get_font_name()
+					var sty := ff.get_font_style_name()
+					if sty != "" and sty != "Regular" and fam.ends_with(" " + sty):
+						fam = fam.trim_suffix(" " + sty)
+					out.append([fam, path])
+	if out.is_empty():
+		out = [["Anuphan", "res://assets/fonts/Anuphan.ttf"]]
+	return out
+
+
+## A mouse-transparent guide rect for a safe-zone overlay.
+func _ig_guide(parent: Control, at: int, l: float, t: float, r: float, b: float, col: Color) -> void:
+	var g := ColorRect.new()
+	g.set_anchors_preset(at)
+	g.offset_left = l
+	g.offset_top = t
+	g.offset_right = r
+	g.offset_bottom = b
+	g.color = col
+	g.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(g)
 
 
 ## Position the preview caption from _margin_v (burn px), so what you see is
