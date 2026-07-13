@@ -10,11 +10,7 @@ extends PanelContainer
 ## [ASS family name, preview ttf] — the ASS Fontname MUST be the font
 ## FAMILY (libass matches family, not file/full names; "Kanit SemiBold"
 ## silently fell back to a default font — the owner's "font ยังไม่ได้").
-const FONTS := [
-	["Anuphan", "res://assets/fonts/Anuphan.ttf"],
-	["Kanit", "res://assets/fonts/Kanit-SemiBold.ttf"],
-	["Sarabun", "res://assets/fonts/Sarabun-Bold.ttf"],
-]
+var FONTS: Array = []   # [family, path] pairs, discovered from assets/fonts/
 const SIZES := [["S", 58], ["M", 72], ["L", 86]]
 ## [label, ASS primary (BGR), ASS outline, preview colour, preview outline]
 const COLORS := [
@@ -24,6 +20,10 @@ const COLORS := [
 	["ดำ", "&H00141414", "&H00FFFFFF", Color(0.08, 0.08, 0.08), Color(1, 1, 1)],
 ]
 const PREVIEW_SCALE := 576.0 / 1920.0  # preview panel vs burn canvas
+const MARGIN_MIN := 120.0
+const MARGIN_MAX := 1400.0
+const CAP_BAND := 160.0   # preview-px height of the caption's grab band
+const ZOOM := 1.2         # studio renders at a fixed 120%
 
 var cues: Array = []
 var _srt_path := ""
@@ -34,7 +34,7 @@ var _t := 0.0
 var _playing := false
 var _sel := -1
 var _tex_cache: Dictionary = {}
-var _scale_idx := 0
+var _margin_v := 360.0    # burn-canvas px from the bottom; owner-draggable
 
 var _audio: AudioStreamPlayer
 var _wave: PackedFloat32Array
@@ -50,10 +50,13 @@ var _font_pick: OptionButton
 var _size_pick: OptionButton
 var _color_idx := 0
 var _color_btns: Array = []
+var _use_custom := false      # a free-picked colour overrides the presets
+var _custom_color := Color(1, 1, 1)
 
 
 func _ready() -> void:
 	visible = false
+	FONTS = _discover_fonts()
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = Color(0.07, 0.07, 0.10, 0.97)
 	sb.border_color = Color(1.0, 0.78, 0.32)
@@ -85,17 +88,6 @@ func _ready() -> void:
 		if ev is InputEventMouseMotion and (ev as InputEventMouseMotion).button_mask & MOUSE_BUTTON_MASK_LEFT:
 			position += (ev as InputEventMouseMotion).relative)
 	head.add_child(title)
-	# resize: cycle scale steps (the owner: "มันควรปรับขนาดได้")
-	var size_btn := Button.new()
-	size_btn.text = " ⤢ 100% "
-	size_btn.pressed.connect(func() -> void:
-		var steps := [1.0, 1.2, 1.4, 0.8]
-		_scale_idx = (_scale_idx + 1) % steps.size()
-		var s: float = steps[_scale_idx]
-		pivot_offset = size / 2.0
-		scale = Vector2(s, s)
-		size_btn.text = " ⤢ %d%% " % int(s * 100))
-	head.add_child(size_btn)
 	root.add_child(head)
 
 	var mid := HBoxContainer.new()
@@ -116,14 +108,46 @@ func _ready() -> void:
 	_frame_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_frame_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	frame_holder.add_child(_frame_rect)
+	# Instagram Reels safe-zone guides (yellow, CapCut-style) — the areas IG's
+	# own UI covers; keep captions/logos out of them. Research (1080x1920):
+	# bottom ~420px (caption, @handle, audio, CTA), top ~250px (progress +
+	# profile), right ~130px action-button column. Mouse-transparent.
+	var ps := PREVIEW_SCALE
+	var fill := Color(1.0, 0.85, 0.12, 0.13)
+	var edge := Color(1.0, 0.88, 0.22, 0.85)
+	# bottom band + top edge line
+	_ig_guide(frame_holder, Control.PRESET_BOTTOM_WIDE, 0, -420.0 * ps, 0, 0, fill)
+	_ig_guide(frame_holder, Control.PRESET_BOTTOM_WIDE, 0, -420.0 * ps, 0, -420.0 * ps + 2.0, edge)
+	# top band + bottom edge line
+	_ig_guide(frame_holder, Control.PRESET_TOP_WIDE, 0, 0, 0, 250.0 * ps, fill)
+	_ig_guide(frame_holder, Control.PRESET_TOP_WIDE, 0, 250.0 * ps - 2.0, 0, 250.0 * ps, edge)
+	# right action-button column (lower) + left edge line
+	_ig_guide(frame_holder, Control.PRESET_RIGHT_WIDE, -130.0 * ps, 770.0 * ps, 0, -420.0 * ps, fill)
+	_ig_guide(frame_holder, Control.PRESET_RIGHT_WIDE, -130.0 * ps, 770.0 * ps, -130.0 * ps + 2.0, -420.0 * ps, edge)
+	var ig_lbl := Label.new()
+	ig_lbl.text = "IG safe zone"
+	ig_lbl.add_theme_font_size_override("font_size", 10)
+	ig_lbl.modulate = Color(1.0, 0.9, 0.4, 0.9)
+	ig_lbl.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	ig_lbl.offset_top = 250.0 * ps + 2.0
+	ig_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	ig_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame_holder.add_child(ig_lbl)
 	_cap_label = Label.new()
 	_cap_label.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	_cap_label.offset_top = -170
-	_cap_label.offset_bottom = -66  # MarginV 220 * preview scale
 	_cap_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_cap_label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
 	_cap_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	# drag the caption up/down to choose where it burns (CapCut-style)
+	_cap_label.mouse_filter = Control.MOUSE_FILTER_STOP
+	_cap_label.mouse_default_cursor_shape = Control.CURSOR_VSIZE
+	_cap_label.gui_input.connect(func(ev: InputEvent) -> void:
+		if ev is InputEventMouseMotion and (ev as InputEventMouseMotion).button_mask & MOUSE_BUTTON_MASK_LEFT:
+			var dy := (ev as InputEventMouseMotion).relative.y
+			_margin_v = clampf(_margin_v - dy / PREVIEW_SCALE, MARGIN_MIN, MARGIN_MAX)
+			_place_caption())
 	frame_holder.add_child(_cap_label)
+	_place_caption()
 	left.add_child(frame_holder)
 
 	var transport := HBoxContainer.new()
@@ -173,10 +197,21 @@ func _ready() -> void:
 		cb.add_theme_color_override("font_color", COLORS[i][3] as Color)
 		cb.pressed.connect(func() -> void:
 			_color_idx = i
+			_use_custom = false
 			_style_color_btns()
 			_apply_style())
 		cr.add_child(cb)
 		_color_btns.append(cb)
+	# free colour pick — any colour, not just the presets
+	var custom_pick := ColorPickerButton.new()
+	custom_pick.custom_minimum_size = Vector2(44, 0)
+	custom_pick.color = Color(1, 1, 1)
+	custom_pick.color_changed.connect(func(col: Color) -> void:
+		_use_custom = true
+		_custom_color = col
+		_style_color_btns()
+		_apply_style())
+	cr.add_child(custom_pick)
 	style_box.add_child(cr)
 	left.add_child(style_box)
 	mid.add_child(left)
@@ -235,11 +270,15 @@ func _ready() -> void:
 	var scroll_outer := ScrollContainer.new()
 	scroll_outer.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	var vh := DisplayServer.window_get_size().y
-	scroll_outer.custom_minimum_size = Vector2(0, minf(920.0, vh - 120.0))
+	# cap so the fixed ZOOM-scaled panel still fits the screen; content scrolls
+	scroll_outer.custom_minimum_size = Vector2(0, minf(820.0, (vh - 60.0) / ZOOM - 30.0))
 	scroll_outer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll_outer.add_child(root)
 	add_child(scroll_outer)
+	# fixed 120% zoom, scaled from the top edge so the top never leaves screen
+	pivot_offset = Vector2(custom_minimum_size.x / 2.0, 0.0)
+	scale = Vector2(ZOOM, ZOOM)
 	_style_color_btns()
 
 
@@ -260,6 +299,9 @@ func open_clip(srt_path: String, frames_dir: String) -> void:
 	_sel = -1
 	_playing = false
 	_tex_cache.clear()
+	# reset only the position per clip; font / size / colour persist across clips
+	_margin_v = 360.0
+	_place_caption()
 	_rebuild_cue_list()
 	_apply_style()
 	_show_time()
@@ -351,22 +393,67 @@ func _save_cue() -> void:
 	_show_time()
 
 
+## Discover every font file in assets/fonts/ so the picker offers them all —
+## drop a .ttf/.otf in that folder to add a choice. The ASS Fontname must be
+## the FAMILY, so strip the style suffix Godot appends (e.g. "Kanit SemiBold"
+## -> "Kanit"); libass matches the family via the same fontsdir.
+func _discover_fonts() -> Array:
+	var out: Array = []
+	var d := DirAccess.open("res://assets/fonts")
+	if d:
+		var files := d.get_files()
+		files.sort()
+		for f in files:
+			if f.get_extension().to_lower() in ["ttf", "otf"]:
+				var path := "res://assets/fonts/" + f
+				var ff := FontFile.new()
+				if ff.load_dynamic_font(path) == OK:
+					var fam := ff.get_font_name()
+					var sty := ff.get_font_style_name()
+					if sty != "" and sty != "Regular" and fam.ends_with(" " + sty):
+						fam = fam.trim_suffix(" " + sty)
+					out.append([fam, path])
+	if out.is_empty():
+		out = [["Anuphan", "res://assets/fonts/Anuphan.ttf"]]
+	return out
+
+
+## A mouse-transparent guide rect for a safe-zone overlay.
+func _ig_guide(parent: Control, at: int, l: float, t: float, r: float, b: float, col: Color) -> void:
+	var g := ColorRect.new()
+	g.set_anchors_preset(at)
+	g.offset_left = l
+	g.offset_top = t
+	g.offset_right = r
+	g.offset_bottom = b
+	g.color = col
+	g.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(g)
+
+
+## Position the preview caption from _margin_v (burn px), so what you see is
+## exactly where it burns.
+func _place_caption() -> void:
+	_cap_label.offset_bottom = -_margin_v * PREVIEW_SCALE
+	_cap_label.offset_top = _cap_label.offset_bottom - CAP_BAND
+
+
 func _apply_style() -> void:
 	var ls := LabelSettings.new()
 	var font := FontFile.new()
 	font.load_dynamic_font(str(FONTS[_font_pick.selected][1]))
 	ls.font = font
-	ls.font_size = int(round(int(SIZES[_size_pick.selected][1]) * PREVIEW_SCALE * 1.9))
-	ls.font_color = COLORS[_color_idx][3] as Color
-	ls.outline_size = 8
-	ls.outline_color = COLORS[_color_idx][4] as Color
+	ls.font_size = int(round(int(SIZES[_size_pick.selected][1]) * PREVIEW_SCALE))
+	ls.font_color = _custom_color if _use_custom else (COLORS[_color_idx][3] as Color)
+	ls.outline_size = maxi(1, int(round(3.0 * PREVIEW_SCALE)))
+	ls.outline_color = Color(0, 0, 0) if _use_custom else (COLORS[_color_idx][4] as Color)
 	_cap_label.label_settings = ls
 	_show_time()
 
 
 func _style_color_btns() -> void:
 	for i in _color_btns.size():
-		(_color_btns[i] as Button).text = (" ◉ " if i == _color_idx else " ") \
+		(_color_btns[i] as Button).text = (" ◉ " if (i == _color_idx and not _use_custom) else " ") \
 			+ str(COLORS[i][0]) + " "
 
 
@@ -374,9 +461,15 @@ func style_dict() -> Dictionary:
 	return {
 		"font_name": str(FONTS[_font_pick.selected][0]),
 		"size": int(SIZES[_size_pick.selected][1]),
-		"primary": str(COLORS[_color_idx][1]),
-		"outline_col": str(COLORS[_color_idx][2]),
+		"primary": _ass_color(_custom_color) if _use_custom else str(COLORS[_color_idx][1]),
+		"outline_col": "&H00000000" if _use_custom else str(COLORS[_color_idx][2]),
+		"margin_v": int(round(_margin_v)),
 	}
+
+
+## Godot Color -> ASS &H00BBGGRR (opaque; libass colours are BGR).
+func _ass_color(c: Color) -> String:
+	return "&H00%02X%02X%02X" % [c.b8, c.g8, c.r8]
 
 
 func _resolve(action: String) -> void:
