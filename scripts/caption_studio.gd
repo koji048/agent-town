@@ -25,6 +25,7 @@ const MARGIN_MAX := 1400.0
 const CAP_BAND := 160.0   # preview-px height of the caption's grab band
 const ZOOM := 1.2         # studio renders at a fixed 120%
 const MIN_DUR := 0.2      # shortest allowed cue, seconds
+const EDGE_PX := 7.0      # grab tolerance for a cue's start/end edge, in px
 
 var cues: Array = []
 var _srt_path := ""
@@ -42,6 +43,9 @@ var _wave: PackedFloat32Array
 var _frame_rect: TextureRect
 var _cap_label: Label
 var _timeline: Control
+var _drag_mode := ""    # "" | "seek" | "start" | "end" | "move"
+var _drag_cue := -1
+var _drag_grab := 0.0   # for "move": grab offset within the cue, seconds
 var _time_label: Label
 var _play_btn: Button
 var _cue_list: VBoxContainer
@@ -566,22 +570,81 @@ func _draw_timeline() -> void:
 			var h := _wave[i] * (size_v.y * 0.52)
 			_timeline.draw_line(Vector2(x, size_v.y * 0.55 - h),
 				Vector2(x, size_v.y * 0.55 + h), Color(0.35, 0.45, 0.55), 1.0)
-	# cue blocks along the bottom
+	# cue blocks (draggable) along the bottom; taller so edges are grabbable
+	var band_h := 22.0
+	var by := size_v.y - band_h
 	for i in cues.size():
 		var c: Dictionary = cues[i]
 		var x0: float = float(c["start"]) / _duration * size_v.x
 		var x1: float = float(c["end"]) / _duration * size_v.x
-		var col := Color(1.0, 0.78, 0.32, 0.85) if i == _sel else Color(0.55, 0.75, 1.0, 0.6)
-		_timeline.draw_rect(Rect2(x0, size_v.y - 14, maxf(x1 - x0 - 1.0, 2.0), 11), col)
+		var col := Color(1.0, 0.78, 0.32, 0.85) if i == _sel else Color(0.55, 0.75, 1.0, 0.55)
+		_timeline.draw_rect(Rect2(x0, by, maxf(x1 - x0 - 1.0, 2.0), band_h), col)
+		if i == _sel:
+			var hc := Color(1.0, 0.95, 0.6, 0.95)
+			_timeline.draw_rect(Rect2(x0, by, 3.0, band_h), hc)
+			_timeline.draw_rect(Rect2(x1 - 3.0, by, 3.0, band_h), hc)
 	# playhead
 	var px := _t / _duration * size_v.x
 	_timeline.draw_line(Vector2(px, 0), Vector2(px, size_v.y), Color(0.95, 0.45, 0.33), 2.0)
 
 
 func _timeline_input(ev: InputEvent) -> void:
-	var drag := ev is InputEventMouseMotion and (ev as InputEventMouseMotion).button_mask & MOUSE_BUTTON_MASK_LEFT
-	var click := ev is InputEventMouseButton and (ev as InputEventMouseButton).pressed \
-		and (ev as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT
-	if click or drag:
-		var x: float = (ev as InputEventMouse).position.x
-		_seek(x / _timeline.size.x * _duration)
+	var w := _timeline.size.x
+	if ev is InputEventMouseButton and (ev as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+		var mb := ev as InputEventMouseButton
+		if mb.pressed:
+			_begin_timeline_drag(mb.position.x, w)
+		else:
+			if _drag_mode in ["start", "end", "move"]:
+				_commit_cues()
+			_drag_mode = ""
+			_drag_cue = -1
+	elif ev is InputEventMouseMotion and (ev as InputEventMouseMotion).button_mask & MOUSE_BUTTON_MASK_LEFT:
+		_update_timeline_drag((ev as InputEventMouseMotion).position.x, w)
+
+
+## Decide what the press grabbed: a cue edge, a cue body, or empty (seek).
+func _begin_timeline_drag(px: float, w: float) -> void:
+	var t := px / w * _duration
+	for i in cues.size():
+		var x0: float = float(cues[i]["start"]) / _duration * w
+		var x1: float = float(cues[i]["end"]) / _duration * w
+		if absf(px - x0) <= EDGE_PX:
+			_drag_mode = "start"
+		elif absf(px - x1) <= EDGE_PX:
+			_drag_mode = "end"
+		elif px > x0 and px < x1:
+			_drag_mode = "move"
+			_drag_grab = t - float(cues[i]["start"])
+		else:
+			continue
+		_drag_cue = i
+		_sel = i
+		_cue_edit.text = str(cues[i]["text"])
+		_sync_time_fields()
+		_timeline.queue_redraw()
+		return
+	_drag_mode = "seek"
+	_seek(t)
+
+
+## Apply the in-progress drag (redraw + field sync live; SRT written on release).
+func _update_timeline_drag(px: float, w: float) -> void:
+	var t := px / w * _duration
+	if _drag_mode == "seek":
+		_seek(t)
+		return
+	if _drag_cue < 0 or _drag_cue >= cues.size():
+		return
+	var c: Dictionary = cues[_drag_cue]
+	match _drag_mode:
+		"start":
+			_set_cue_time(_drag_cue, t, float(c["end"]))
+		"end":
+			_set_cue_time(_drag_cue, float(c["start"]), t)
+		"move":
+			var dur := float(c["end"]) - float(c["start"])
+			var ns := t - _drag_grab
+			_set_cue_time(_drag_cue, ns, ns + dur)
+	_sync_time_fields()
+	_timeline.queue_redraw()
