@@ -44,8 +44,8 @@ var _wave: PackedFloat32Array
 var _frame_rect: TextureRect
 var _cap_label: Label
 var _title_label: Label
+var _title_edit: LineEdit
 var _title_text := ""
-var _target := "caption"                 # PROTOTYPE: style controls act on this element
 var _title_color := Color(1.0, 0.9, 0.15)
 var _title_pos := Vector2(162.0, 200.0)  # preview-px centre of the title box
 var _title_font_idx := 0
@@ -163,9 +163,8 @@ func _ready() -> void:
 			_place_caption())
 	frame_holder.add_child(_cap_label)
 	_place_caption()
-	# EP opening title card — centered yellow Anuphan over the first TITLE_SEC
-	# seconds (matches the burn's Alignment-5 title)
-	# PROTOTYPE: the EP title is a 2D-draggable, styleable text box (CapCut-like)
+	# EP title: a 2D-draggable, styleable text box (CapCut-like); its text /
+	# font / colour come from the EP Title strip in the right column
 	_title_label = Label.new()
 	_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -175,7 +174,6 @@ func _ready() -> void:
 	_title_label.mouse_default_cursor_shape = Control.CURSOR_MOVE
 	_title_label.gui_input.connect(func(ev: InputEvent) -> void:
 		if ev is InputEventMouseMotion and (ev as InputEventMouseMotion).button_mask & MOUSE_BUTTON_MASK_LEFT:
-			_target = "title"
 			_title_pos += (ev as InputEventMouseMotion).relative
 			_place_title())
 	_title_label.visible = false
@@ -208,12 +206,7 @@ func _ready() -> void:
 	_font_pick = OptionButton.new()
 	for fdef in FONTS:
 		_font_pick.add_item(str(fdef[0]))
-	_font_pick.item_selected.connect(func(i: int) -> void:
-		if _target == "title":
-			_title_font_idx = i
-			_apply_title_style()
-		else:
-			_apply_style())
+	_font_pick.item_selected.connect(func(_i: int) -> void: _apply_style())
 	fr.add_child(_font_pick)
 	var sl := Label.new()
 	I18n.reg(sl, "text", "studio_size")
@@ -225,24 +218,6 @@ func _ready() -> void:
 	_size_pick.item_selected.connect(func(_i: int) -> void: _apply_style())
 	fr.add_child(_size_pick)
 	style_box.add_child(fr)
-	# PROTOTYPE: pick which element the font/size/colour controls act on
-	var target_row := HBoxContainer.new()
-	target_row.add_theme_constant_override("separation", 6)
-	var cap_btn := Button.new()
-	cap_btn.text = " Caption "
-	cap_btn.pressed.connect(func() -> void:
-		_target = "caption"
-		if _sel >= 0 and _sel < cues.size():
-			_cue_edit.text = str(cues[_sel]["text"]))
-	target_row.add_child(cap_btn)
-	var title_btn := Button.new()
-	title_btn.text = " Title "
-	title_btn.pressed.connect(func() -> void:
-		_target = "title"
-		_cue_edit.text = _title_text
-		_font_pick.select(_title_font_idx))
-	target_row.add_child(title_btn)
-	style_box.add_child(target_row)
 	var cr := HBoxContainer.new()
 	cr.add_theme_constant_override("separation", 6)
 	var cl := Label.new()
@@ -253,10 +228,6 @@ func _ready() -> void:
 		cb.text = " " + str(COLORS[i][0]) + " "
 		cb.add_theme_color_override("font_color", COLORS[i][3] as Color)
 		cb.pressed.connect(func() -> void:
-			if _target == "title":
-				_title_color = COLORS[i][3] as Color
-				_apply_title_style()
-				return
 			_color_idx = i
 			_use_custom = false
 			_style_color_btns()
@@ -268,10 +239,6 @@ func _ready() -> void:
 	custom_pick.custom_minimum_size = Vector2(44, 0)
 	custom_pick.color = Color(1, 1, 1)
 	custom_pick.color_changed.connect(func(col: Color) -> void:
-		if _target == "title":
-			_title_color = col
-			_apply_title_style()
-			return
 		_use_custom = true
 		_custom_color = col
 		_style_color_btns()
@@ -290,6 +257,39 @@ func _ready() -> void:
 	hint.add_theme_font_size_override("font_size", 12)
 	hint.modulate = Color(0.7, 0.7, 0.76)
 	right.add_child(hint)
+	# ---- EP Title strip: its own text + font + colour, separate from captions
+	var title_row := HBoxContainer.new()
+	title_row.add_theme_constant_override("separation", 6)
+	var tlbl := Label.new()
+	tlbl.text = "EP Title:"
+	tlbl.add_theme_font_size_override("font_size", 13)
+	tlbl.modulate = Color(1.0, 0.9, 0.4)
+	title_row.add_child(tlbl)
+	_title_edit = LineEdit.new()
+	_title_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_title_edit.placeholder_text = "EP title text"
+	_title_edit.text_changed.connect(func(t: String) -> void:
+		_title_text = t
+		if _title_label:
+			_title_label.text = t
+		_apply_title_style()
+		_place_title())
+	title_row.add_child(_title_edit)
+	var tfp := OptionButton.new()
+	for fdef in FONTS:
+		tfp.add_item(str(fdef[0]))
+	tfp.item_selected.connect(func(i: int) -> void:
+		_title_font_idx = i
+		_apply_title_style())
+	title_row.add_child(tfp)
+	var tcp := ColorPickerButton.new()
+	tcp.custom_minimum_size = Vector2(40, 0)
+	tcp.color = _title_color
+	tcp.color_changed.connect(func(col: Color) -> void:
+		_title_color = col
+		_apply_title_style())
+	title_row.add_child(tcp)
+	right.add_child(title_row)
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.custom_minimum_size = Vector2(0, 380)
@@ -375,6 +375,8 @@ func open_clip(srt_path: String, frames_dir: String, title := "") -> void:
 	_title_text = title
 	if _title_label:
 		_title_label.text = title
+	if _title_edit:
+		_title_edit.text = title
 	_frames_dir = frames_dir
 	cues = PreviewMaker.parse_srt(FileAccess.get_file_as_string(srt_path))
 	_frame_total = PreviewMaker.frame_count(frames_dir)
@@ -444,7 +446,7 @@ func _show_time() -> void:
 			_frame_rect.texture = _tex_cache[idx]
 	_cap_label.text = _cue_text_at(_t)
 	if _title_label:
-		_title_label.visible = (_t < TITLE_SEC or _target == "title") and not _title_text.is_empty()
+		_title_label.visible = not _title_text.is_empty()
 	_timeline.queue_redraw()
 
 
@@ -526,12 +528,6 @@ func _sync_time_fields() -> void:
 
 
 func _save_cue() -> void:
-	if _target == "title":
-		_title_text = _cue_edit.text.strip_edges()
-		_title_label.text = _title_text
-		_apply_title_style()
-		_place_title()
-		return
 	if _sel < 0 or _sel >= cues.size():
 		return
 	cues[_sel]["text"] = _cue_edit.text.strip_edges()
@@ -580,7 +576,7 @@ func _ig_guide(parent: Control, at: int, l: float, t: float, r: float, b: float,
 	parent.add_child(g)
 
 
-## PROTOTYPE: style the title text box from the title state.
+## Style the title text box from the title state (font, colour, size).
 func _apply_title_style() -> void:
 	if not _title_label:
 		return
@@ -595,7 +591,7 @@ func _apply_title_style() -> void:
 	_title_label.label_settings = ls
 
 
-## PROTOTYPE: position the title box centred on _title_pos (preview px).
+## Position the title box centred on _title_pos (preview px).
 func _place_title() -> void:
 	if _title_label:
 		_title_label.position = _title_pos - _title_label.size / 2.0
@@ -634,6 +630,13 @@ func style_dict() -> Dictionary:
 		"primary": _ass_color(_custom_color) if _use_custom else str(COLORS[_color_idx][1]),
 		"outline_col": "&H00000000" if _use_custom else str(COLORS[_color_idx][2]),
 		"margin_v": int(round(_margin_v)),
+		# EP title element: its own text, font, colour and 2D position
+		"title_text": _title_text,
+		"title_font": str(FONTS[_title_font_idx][0]),
+		"title_size": 86,
+		"title_primary": _ass_color(_title_color),
+		"title_x": int(round(_title_pos.x / PREVIEW_SCALE)),
+		"title_y": int(round(_title_pos.y / PREVIEW_SCALE)),
 	}
 
 

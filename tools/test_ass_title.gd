@@ -1,5 +1,6 @@
-## Headless test: PreviewMaker.write_ass emits the EP title Dialogue when the
-## style carries ep+title, and nothing when it doesn't. Run:
+## Headless test: PreviewMaker.write_ass emits a styled, positioned EP title
+## event from the studio's title fields (edited text + font/colour/pos), falls
+## back to EP.. : topic, and emits nothing without either. Run:
 ##   godot --headless --path . -s res://tools/test_ass_title.gd
 extends SceneTree
 
@@ -16,14 +17,23 @@ func _run() -> void:
 	var cues := [{"start": 0.0, "end": 1.0, "text": "x"}]
 	var p := ProjectSettings.globalize_path("user://_tmp_title.ass")
 
-	pm.write_ass(cues, {"ep": 7, "title": "hi there"}, p)
+	# edited title with its own font / colour / position
+	pm.write_ass(cues, {
+		"title_text": "EP7 HELLO", "title_font": "Kanit", "title_size": 90,
+		"title_primary": "&H000000FF", "title_x": 300, "title_y": 800}, p)
 	var t := FileAccess.get_file_as_string(p)
-	_check("Title style in header", t.contains("Style: Title,Anuphan"))
-	_check("EP07 title event present", t.contains(",Title,,0,0,0,,EP07 : hi there"))
+	_check("Title style uses the chosen font/size/colour", t.contains("Style: Title,Kanit,90,&H000000FF"))
+	_check("title event: \\pos + edited text", t.contains(",Title,,0,0,0,,{\\pos(300,800)}EP7 HELLO"))
 
-	pm.write_ass(cues, {}, p)   # no ep/title -> no title event
+	# fallback: no title_text -> build EP.. : topic, default centre
+	pm.write_ass(cues, {"ep": 7, "title": "hi"}, p)
 	t = FileAccess.get_file_as_string(p)
-	_check("no title event without ep/title", not t.contains(",Title,,0,0,0,,"))
+	_check("fallback EP07 : hi at default \\pos", t.contains(",Title,,0,0,0,,{\\pos(540,960)}EP07 : hi"))
+
+	# nothing -> no title event
+	pm.write_ass(cues, {}, p)
+	t = FileAccess.get_file_as_string(p)
+	_check("no title event without text/ep", not t.contains(",Title,,0,0,0,,"))
 
 	DirAccess.remove_absolute(p)
 	print("\n=== ass title tests: %d passed, %d failed ===" % [_passes, _fails])

@@ -21,7 +21,7 @@ ScaledBorderAndShadow: yes
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
 Style: Default,{font},{size},{primary},&H000000FF,{outline_col},&H78000000,0,0,0,0,100,100,0,0,1,{outline},1,2,70,70,{margin_v},1
-Style: Title,Anuphan,100,&H0000FFFF,&H00000000,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,4,0,5,60,60,60,1
+Style: Title,{title_font},{title_size},{title_primary},&H00000000,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,4,0,5,60,60,60,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -180,13 +180,23 @@ func write_ass(cues: Array, style: Dictionary, path: String) -> void:
 		"outline_col": str(style.get("outline_col", "&H00000000")),
 		"outline": 3,
 		"margin_v": int(style.get("margin_v", 360)),
+		"title_font": str(style.get("title_font", "Anuphan")),
+		"title_size": int(style.get("title_size", 86)),
+		"title_primary": str(style.get("title_primary", "&H0000FFFF")),
 	}))
-	# EP opening title card: a centered yellow Anuphan event over the first 2.5s
-	var ep: int = int(style.get("ep", 0))
-	var ttl: String = str(style.get("title", ""))
-	if ep > 0 and not ttl.is_empty():
-		f.store_string("Dialogue: 0,0:00:00.00,0:00:02.50,Title,,0,0,0,,EP%02d : %s\n" % [
-			ep, ttl.left(60).replace("\n", " ")])
+	# EP opening title card over the first 2.5s: the studio's edited text (else
+	# EP.. : topic), styled by the Title style, placed at its chosen centre via \pos
+	var title_text: String = str(style.get("title_text", ""))
+	if title_text.is_empty():
+		var ep: int = int(style.get("ep", 0))
+		var ttl: String = str(style.get("title", ""))
+		if ep > 0 and not ttl.is_empty():
+			title_text = "EP%02d : %s" % [ep, ttl.left(60)]
+	if not title_text.is_empty():
+		var tx: int = int(style.get("title_x", 540))
+		var ty: int = int(style.get("title_y", 960))
+		f.store_string("Dialogue: 0,0:00:00.00,0:00:02.50,Title,,0,0,0,,{\\pos(%d,%d)}%s\n" % [
+			tx, ty, title_text.left(80).replace("\n", " ")])
 	for c in cues:
 		f.store_string("Dialogue: 0,%s,%s,Default,,0,0,0,,%s\n" % [
 			_fmt_ass(float(c["start"])), _fmt_ass(float(c["end"])),
