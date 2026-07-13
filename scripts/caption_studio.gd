@@ -24,6 +24,7 @@ const MARGIN_MIN := 120.0
 const MARGIN_MAX := 1400.0
 const CAP_BAND := 160.0   # preview-px height of the caption's grab band
 const ZOOM := 1.2         # studio renders at a fixed 120%
+const MIN_DUR := 0.2      # shortest allowed cue, seconds
 
 var cues: Array = []
 var _srt_path := ""
@@ -45,6 +46,9 @@ var _time_label: Label
 var _play_btn: Button
 var _cue_list: VBoxContainer
 var _cue_edit: TextEdit
+var _start_spin: SpinBox
+var _end_spin: SpinBox
+var _syncing := false
 var _auto_label: Label
 var _font_pick: OptionButton
 var _size_pick: OptionButton
@@ -236,6 +240,36 @@ func _ready() -> void:
 	_cue_edit.custom_minimum_size = Vector2(0, 84)
 	_cue_edit.add_theme_font_size_override("font_size", 16)
 	right.add_child(_cue_edit)
+	# type exact start/end seconds for the selected cue
+	var trow := HBoxContainer.new()
+	trow.add_theme_constant_override("separation", 6)
+	var tl := Label.new()
+	tl.text = "⏱"
+	trow.add_child(tl)
+	_start_spin = SpinBox.new()
+	_start_spin.step = 0.05
+	_start_spin.min_value = 0.0
+	_start_spin.max_value = 99999.0
+	_start_spin.suffix = "s"
+	_start_spin.custom_minimum_size = Vector2(96, 0)
+	_start_spin.value_changed.connect(func(_v: float) -> void:
+		if not _syncing:
+			_apply_time_fields())
+	trow.add_child(_start_spin)
+	var arrow := Label.new()
+	arrow.text = "→"
+	trow.add_child(arrow)
+	_end_spin = SpinBox.new()
+	_end_spin.step = 0.05
+	_end_spin.min_value = 0.0
+	_end_spin.max_value = 99999.0
+	_end_spin.suffix = "s"
+	_end_spin.custom_minimum_size = Vector2(96, 0)
+	_end_spin.value_changed.connect(func(_v: float) -> void:
+		if not _syncing:
+			_apply_time_fields())
+	trow.add_child(_end_spin)
+	right.add_child(trow)
 	var save := Button.new()
 	I18n.reg(save, "text", "btn_save_cue")
 	save.pressed.connect(_save_cue)
@@ -373,6 +407,7 @@ func _rebuild_cue_list() -> void:
 		b.pressed.connect(func() -> void:
 			_sel = i
 			_cue_edit.text = str(cues[i]["text"])
+			_sync_time_fields()
 			_seek(float(cues[i]["start"]))
 			_rebuild_cue_list())
 		_cue_list.add_child(b)
@@ -380,6 +415,45 @@ func _rebuild_cue_list() -> void:
 
 func _mmss(t: float) -> String:
 	return "%d:%04.1f" % [int(t) / 60, fmod(t, 60.0)]
+
+
+## Clamp a cue's new start/end against its neighbors and MIN_DUR, then set it.
+func _set_cue_time(i: int, ns: float, ne: float) -> void:
+	if i < 0 or i >= cues.size():
+		return
+	var lo := 0.0 if i == 0 else float(cues[i - 1]["end"])
+	var hi := _duration if i == cues.size() - 1 else float(cues[i + 1]["start"])
+	ne = clampf(ne, lo + MIN_DUR, hi)
+	ns = clampf(ns, lo, ne - MIN_DUR)
+	cues[i]["start"] = ns
+	cues[i]["end"] = ne
+
+
+## Persist edited cues to the .srt and refresh the list, fields and timeline.
+func _commit_cues() -> void:
+	PreviewMaker.write_srt(cues, _srt_path)
+	_rebuild_cue_list()
+	_sync_time_fields()
+	_show_time()
+	_timeline.queue_redraw()
+
+
+## Push the spin values into the selected cue (with clamping), then persist.
+func _apply_time_fields() -> void:
+	if _sel < 0 or _sel >= cues.size():
+		return
+	_set_cue_time(_sel, _start_spin.value, _end_spin.value)
+	_commit_cues()
+
+
+## Reflect the selected cue's start/end into the spins without re-triggering.
+func _sync_time_fields() -> void:
+	if not _start_spin or _sel < 0 or _sel >= cues.size():
+		return
+	_syncing = true
+	_start_spin.value = float(cues[_sel]["start"])
+	_end_spin.value = float(cues[_sel]["end"])
+	_syncing = false
 
 
 func _save_cue() -> void:
