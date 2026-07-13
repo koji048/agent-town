@@ -32,6 +32,12 @@ signal _cli_finished(text: String, code: int)
 ## caller can check limited() instead of burning more calls.
 var limit_until := 0
 
+## Test-only override. When valid, complete() returns
+## str(test_hook.call(sim_stage)) and does nothing else — the sole seam
+## the headless pipeline tests use to force a stage to fail. Production
+## never sets this, so behaviour is unchanged when it is unset.
+var test_hook: Callable = Callable()
+
 
 func limited() -> bool:
 	return limit_until > int(Time.get_unix_time_from_system())
@@ -74,6 +80,8 @@ func limit_reset_text() -> String:
 
 
 func complete(system_prompt: String, user_prompt: String, sim_stage: String = "") -> String:
+	if test_hook.is_valid():
+		return str(test_hook.call(sim_stage))
 	if Config.provider_resolved == "simulate":
 		await get_tree().create_timer(randf_range(2.5, 5.0)).timeout
 		return SIM_TEXT.get(sim_stage, "[demo] done.")
