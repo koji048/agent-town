@@ -24,6 +24,9 @@ const COLORS := [
 	["ดำ", "&H00141414", "&H00FFFFFF", Color(0.08, 0.08, 0.08), Color(1, 1, 1)],
 ]
 const PREVIEW_SCALE := 576.0 / 1920.0  # preview panel vs burn canvas
+const MARGIN_MIN := 120.0
+const MARGIN_MAX := 1400.0
+const CAP_BAND := 160.0   # preview-px height of the caption's grab band
 
 var cues: Array = []
 var _srt_path := ""
@@ -35,6 +38,7 @@ var _playing := false
 var _sel := -1
 var _tex_cache: Dictionary = {}
 var _scale_idx := 0
+var _margin_v := 360.0    # burn-canvas px from the bottom; owner-draggable
 
 var _audio: AudioStreamPlayer
 var _wave: PackedFloat32Array
@@ -116,14 +120,30 @@ func _ready() -> void:
 	_frame_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_frame_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	frame_holder.add_child(_frame_rect)
+	# Instagram safe-zone guide: a dim band over the bottom ~320px (burn) the
+	# app UI covers — drag the caption to sit ABOVE it. Ignores mouse so it
+	# never blocks the caption drag.
+	var ig_guide := ColorRect.new()
+	ig_guide.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	ig_guide.offset_top = -320.0 * PREVIEW_SCALE
+	ig_guide.color = Color(0, 0, 0, 0.35)
+	ig_guide.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame_holder.add_child(ig_guide)
 	_cap_label = Label.new()
 	_cap_label.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	_cap_label.offset_top = -170
-	_cap_label.offset_bottom = -66  # MarginV 220 * preview scale
 	_cap_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_cap_label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
 	_cap_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	# drag the caption up/down to choose where it burns (CapCut-style)
+	_cap_label.mouse_filter = Control.MOUSE_FILTER_STOP
+	_cap_label.mouse_default_cursor_shape = Control.CURSOR_VSIZE
+	_cap_label.gui_input.connect(func(ev: InputEvent) -> void:
+		if ev is InputEventMouseMotion and (ev as InputEventMouseMotion).button_mask & MOUSE_BUTTON_MASK_LEFT:
+			var dy := (ev as InputEventMouseMotion).relative.y
+			_margin_v = clampf(_margin_v - dy / PREVIEW_SCALE, MARGIN_MIN, MARGIN_MAX)
+			_place_caption())
 	frame_holder.add_child(_cap_label)
+	_place_caption()
 	left.add_child(frame_holder)
 
 	var transport := HBoxContainer.new()
@@ -260,6 +280,8 @@ func open_clip(srt_path: String, frames_dir: String) -> void:
 	_sel = -1
 	_playing = false
 	_tex_cache.clear()
+	_margin_v = 360.0
+	_place_caption()
 	_rebuild_cue_list()
 	_apply_style()
 	_show_time()
@@ -351,6 +373,13 @@ func _save_cue() -> void:
 	_show_time()
 
 
+## Position the preview caption from _margin_v (burn px), so what you see is
+## exactly where it burns.
+func _place_caption() -> void:
+	_cap_label.offset_bottom = -_margin_v * PREVIEW_SCALE
+	_cap_label.offset_top = _cap_label.offset_bottom - CAP_BAND
+
+
 func _apply_style() -> void:
 	var ls := LabelSettings.new()
 	var font := FontFile.new()
@@ -376,6 +405,7 @@ func style_dict() -> Dictionary:
 		"size": int(SIZES[_size_pick.selected][1]),
 		"primary": str(COLORS[_color_idx][1]),
 		"outline_col": str(COLORS[_color_idx][2]),
+		"margin_v": int(round(_margin_v)),
 	}
 
 
