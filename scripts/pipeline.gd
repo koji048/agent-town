@@ -369,15 +369,17 @@ func _run_clip_reels(request: Dictionary) -> void:
 
 	results["review"] = "EP%d files live in:\n%s" % [ep, batch]
 	request["_batch"] = batch  # so a typed fix can revise the REAL files
-	var out_dir: String = OutputWriter.write_package(request, results)
+	# one clip = one folder: text deliverables land IN the batch's 05_EXPORTS
+	# beside the real -clean.srt and .mp4 (no separate town package copy)
+	OutputWriter.write_clip_extras(exports, request, results)
 	var done_dest := clip.get_base_dir().path_join("done").path_join(clip.get_file())
 	if FileAccess.file_exists(clip):
 		DirAccess.rename_absolute(clip, done_dest)
 	TaskQueue.finish(request)
-	# deliver the REAL folder: the batch 05_EXPORTS, not the town package
-	EventBus.request_completed.emit(request, out_dir)
-	EventBus.log_line.emit("📦 EP%d -> %s" % [ep, batch.path_join("05_EXPORTS")])
-	OS.shell_open(batch.path_join("05_EXPORTS"))
+	# deliver the REAL folder: the batch 05_EXPORTS
+	EventBus.request_completed.emit(request, exports)
+	EventBus.log_line.emit("📦 EP%d -> %s" % [ep, exports])
+	OS.shell_open(exports)
 
 
 ## Newest media file inside a folder (the ingested footage).

@@ -42,6 +42,37 @@ func write_package(request: Dictionary, results: Dictionary) -> String:
 	return dir_path
 
 
+## Write the town's text deliverables INTO an existing folder (a reels clip's
+## 05_EXPORTS) so a clip lands as ONE folder: the real -clean.srt/.mp4 plus the
+## post caption and working papers. Deliberately does NOT write a script.md or
+## caption.srt — the batch's own -clean.srt IS the clip's script/caption, and
+## duplicating it was the "caption and script in different folders" confusion.
+func write_clip_extras(dir_path: String, request: Dictionary, results: Dictionary) -> String:
+	var behind := dir_path.path_join("_เบื้องหลัง")
+	DirAccess.make_dir_recursive_absolute(behind)
+	var clean := request.duplicate()
+	clean.erase("_file")
+	clean.erase("_partial")
+	clean.erase("_batch")
+	_write(behind.path_join("request.json"), JSON.stringify(clean, "  "))
+	var post: String = str(results.get("publish", ""))
+	if not post.is_empty():
+		_write(dir_path.path_join("3_โพสต์.txt"), post)
+	var combined := "# Clip Package — %s\n" % str(request.get("topic", "clip"))
+	for stage in BEHIND:
+		var text: String = str(results.get(stage, ""))
+		if text.is_empty():
+			continue
+		_write(behind.path_join(BEHIND[stage]), text)
+		combined += "\n\n---\n\n## %s\n\n%s" % [str(stage).capitalize(), text]
+	var burn: String = str(results.get("burn_note", ""))
+	if not burn.is_empty():
+		_write(behind.path_join("การเผา.md"), burn)
+		combined += "\n\n---\n\n## Burn\n\n%s" % burn
+	_write(behind.path_join("รวมทุกขั้น.md"), combined)
+	return dir_path
+
+
 func _slug(topic: String) -> String:
 	# keep Thai characters — folder names should read like the job did
 	var s := topic.to_lower().strip_edges().replace(" ", "-")
