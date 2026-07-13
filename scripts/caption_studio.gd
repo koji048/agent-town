@@ -26,6 +26,7 @@ const CAP_BAND := 160.0   # preview-px height of the caption's grab band
 const ZOOM := 1.2         # studio renders at a fixed 120%
 const MIN_DUR := 0.2      # shortest allowed cue, seconds
 const EDGE_PX := 7.0      # grab tolerance for a cue's start/end edge, in px
+const TITLE_SEC := 2.5    # EP title card shows over the first 2.5s (matches burn)
 
 var cues: Array = []
 var _srt_path := ""
@@ -42,6 +43,8 @@ var _audio: AudioStreamPlayer
 var _wave: PackedFloat32Array
 var _frame_rect: TextureRect
 var _cap_label: Label
+var _title_label: Label
+var _title_text := ""
 var _timeline: Control
 var _drag_mode := ""    # "" | "seek" | "start" | "end" | "move"
 var _drag_cue := -1
@@ -156,6 +159,25 @@ func _ready() -> void:
 			_place_caption())
 	frame_holder.add_child(_cap_label)
 	_place_caption()
+	# EP opening title card — centered yellow Anuphan over the first TITLE_SEC
+	# seconds (matches the burn's Alignment-5 title)
+	_title_label = Label.new()
+	_title_label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_title_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_title_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var tls := LabelSettings.new()
+	var tfont := FontFile.new()
+	tfont.load_dynamic_font("res://assets/fonts/Anuphan.ttf")
+	tls.font = tfont
+	tls.font_size = int(round(100.0 * PREVIEW_SCALE))
+	tls.font_color = Color(1.0, 0.9, 0.15)
+	tls.outline_size = 4
+	tls.outline_color = Color(0, 0, 0)
+	_title_label.label_settings = tls
+	_title_label.visible = false
+	frame_holder.add_child(_title_label)
 	left.add_child(frame_holder)
 
 	var transport := HBoxContainer.new()
@@ -313,8 +335,11 @@ func _ready() -> void:
 	_style_color_btns()
 
 
-func open_clip(srt_path: String, frames_dir: String) -> void:
+func open_clip(srt_path: String, frames_dir: String, title := "") -> void:
 	_srt_path = srt_path
+	_title_text = title
+	if _title_label:
+		_title_label.text = title
 	_frames_dir = frames_dir
 	cues = PreviewMaker.parse_srt(FileAccess.get_file_as_string(srt_path))
 	_frame_total = PreviewMaker.frame_count(frames_dir)
@@ -383,6 +408,8 @@ func _show_time() -> void:
 		if _tex_cache.has(idx):
 			_frame_rect.texture = _tex_cache[idx]
 	_cap_label.text = _cue_text_at(_t)
+	if _title_label:
+		_title_label.visible = _t < TITLE_SEC and not _title_text.is_empty()
 	_timeline.queue_redraw()
 
 
