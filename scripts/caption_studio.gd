@@ -45,6 +45,10 @@ var _frame_rect: TextureRect
 var _cap_label: Label
 var _title_label: Label
 var _title_text := ""
+var _target := "caption"                 # PROTOTYPE: style controls act on this element
+var _title_color := Color(1.0, 0.9, 0.15)
+var _title_pos := Vector2(162.0, 200.0)  # preview-px centre of the title box
+var _title_font_idx := 0
 var _timeline: Control
 var _drag_mode := ""    # "" | "seek" | "start" | "end" | "move"
 var _drag_cue := -1
@@ -161,23 +165,23 @@ func _ready() -> void:
 	_place_caption()
 	# EP opening title card — centered yellow Anuphan over the first TITLE_SEC
 	# seconds (matches the burn's Alignment-5 title)
+	# PROTOTYPE: the EP title is a 2D-draggable, styleable text box (CapCut-like)
 	_title_label = Label.new()
-	_title_label.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_title_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_title_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var tls := LabelSettings.new()
-	var tfont := FontFile.new()
-	tfont.load_dynamic_font("res://assets/fonts/Anuphan.ttf")
-	tls.font = tfont
-	tls.font_size = int(round(100.0 * PREVIEW_SCALE))
-	tls.font_color = Color(1.0, 0.9, 0.15)
-	tls.outline_size = 4
-	tls.outline_color = Color(0, 0, 0)
-	_title_label.label_settings = tls
+	_title_label.size = Vector2(300, 64)
+	_title_label.mouse_filter = Control.MOUSE_FILTER_STOP
+	_title_label.mouse_default_cursor_shape = Control.CURSOR_MOVE
+	_title_label.gui_input.connect(func(ev: InputEvent) -> void:
+		if ev is InputEventMouseMotion and (ev as InputEventMouseMotion).button_mask & MOUSE_BUTTON_MASK_LEFT:
+			_target = "title"
+			_title_pos += (ev as InputEventMouseMotion).relative
+			_place_title())
 	_title_label.visible = false
 	frame_holder.add_child(_title_label)
+	_apply_title_style()
+	_place_title()
 	left.add_child(frame_holder)
 
 	var transport := HBoxContainer.new()
@@ -204,7 +208,12 @@ func _ready() -> void:
 	_font_pick = OptionButton.new()
 	for fdef in FONTS:
 		_font_pick.add_item(str(fdef[0]))
-	_font_pick.item_selected.connect(func(_i: int) -> void: _apply_style())
+	_font_pick.item_selected.connect(func(i: int) -> void:
+		if _target == "title":
+			_title_font_idx = i
+			_apply_title_style()
+		else:
+			_apply_style())
 	fr.add_child(_font_pick)
 	var sl := Label.new()
 	I18n.reg(sl, "text", "studio_size")
@@ -216,6 +225,24 @@ func _ready() -> void:
 	_size_pick.item_selected.connect(func(_i: int) -> void: _apply_style())
 	fr.add_child(_size_pick)
 	style_box.add_child(fr)
+	# PROTOTYPE: pick which element the font/size/colour controls act on
+	var target_row := HBoxContainer.new()
+	target_row.add_theme_constant_override("separation", 6)
+	var cap_btn := Button.new()
+	cap_btn.text = " Caption "
+	cap_btn.pressed.connect(func() -> void:
+		_target = "caption"
+		if _sel >= 0 and _sel < cues.size():
+			_cue_edit.text = str(cues[_sel]["text"]))
+	target_row.add_child(cap_btn)
+	var title_btn := Button.new()
+	title_btn.text = " Title "
+	title_btn.pressed.connect(func() -> void:
+		_target = "title"
+		_cue_edit.text = _title_text
+		_font_pick.select(_title_font_idx))
+	target_row.add_child(title_btn)
+	style_box.add_child(target_row)
 	var cr := HBoxContainer.new()
 	cr.add_theme_constant_override("separation", 6)
 	var cl := Label.new()
@@ -226,6 +253,10 @@ func _ready() -> void:
 		cb.text = " " + str(COLORS[i][0]) + " "
 		cb.add_theme_color_override("font_color", COLORS[i][3] as Color)
 		cb.pressed.connect(func() -> void:
+			if _target == "title":
+				_title_color = COLORS[i][3] as Color
+				_apply_title_style()
+				return
 			_color_idx = i
 			_use_custom = false
 			_style_color_btns()
@@ -237,6 +268,10 @@ func _ready() -> void:
 	custom_pick.custom_minimum_size = Vector2(44, 0)
 	custom_pick.color = Color(1, 1, 1)
 	custom_pick.color_changed.connect(func(col: Color) -> void:
+		if _target == "title":
+			_title_color = col
+			_apply_title_style()
+			return
 		_use_custom = true
 		_custom_color = col
 		_style_color_btns()
@@ -409,7 +444,7 @@ func _show_time() -> void:
 			_frame_rect.texture = _tex_cache[idx]
 	_cap_label.text = _cue_text_at(_t)
 	if _title_label:
-		_title_label.visible = _t < TITLE_SEC and not _title_text.is_empty()
+		_title_label.visible = (_t < TITLE_SEC or _target == "title") and not _title_text.is_empty()
 	_timeline.queue_redraw()
 
 
@@ -491,6 +526,12 @@ func _sync_time_fields() -> void:
 
 
 func _save_cue() -> void:
+	if _target == "title":
+		_title_text = _cue_edit.text.strip_edges()
+		_title_label.text = _title_text
+		_apply_title_style()
+		_place_title()
+		return
 	if _sel < 0 or _sel >= cues.size():
 		return
 	cues[_sel]["text"] = _cue_edit.text.strip_edges()
@@ -537,6 +578,27 @@ func _ig_guide(parent: Control, at: int, l: float, t: float, r: float, b: float,
 	g.color = col
 	g.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(g)
+
+
+## PROTOTYPE: style the title text box from the title state.
+func _apply_title_style() -> void:
+	if not _title_label:
+		return
+	var ls := LabelSettings.new()
+	var font := FontFile.new()
+	font.load_dynamic_font(str(FONTS[_title_font_idx][1]))
+	ls.font = font
+	ls.font_size = int(round(86.0 * PREVIEW_SCALE))
+	ls.font_color = _title_color
+	ls.outline_size = 3
+	ls.outline_color = Color(0, 0, 0)
+	_title_label.label_settings = ls
+
+
+## PROTOTYPE: position the title box centred on _title_pos (preview px).
+func _place_title() -> void:
+	if _title_label:
+		_title_label.position = _title_pos - _title_label.size / 2.0
 
 
 ## Position the preview caption from _margin_v (burn px), so what you see is
