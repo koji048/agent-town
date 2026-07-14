@@ -82,9 +82,10 @@ func _run() -> void:
 	# move_span (MOVE): keeps duration, parks at the wall
 	var m0 := TimelineView.move_span(cues, 1, 0.0, D)  # b(dur 2) pushed left, parks at a.end=2.0
 	_check("move parks at left wall", is_equal_approx(m0[0], 2.0) and is_equal_approx(m0[1], 4.0))
-	var m1 := TimelineView.move_span(cues, 0, 2.5, D)  # a(dur 1) parks before b.start=4.0
+	var m1 := TimelineView.move_span(cues, 0, 2.5, D)  # a(dur 1) placed in open space
 	_check("move keeps duration", is_equal_approx(m1[1] - m1[0], 1.0))
-	_check("move parks at right wall", is_equal_approx(m1[1], 3.0))
+	var m2 := TimelineView.move_span(cues, 0, 9.0, D)  # a(dur 1) pushed right, parks at b.start=4.0
+	_check("move parks at right wall", is_equal_approx(m2[0], 3.0) and is_equal_approx(m2[1], 4.0))
 
 	# split_span
 	var sp := TimelineView.split_span(4.0, 6.0, 5.0)
