@@ -212,3 +212,87 @@ func delete_selected() -> void:
 	cue_deleted.emit(i)
 	selection_cleared.emit()
 	queue_redraw()
+
+
+func _init() -> void:
+	mouse_filter = Control.MOUSE_FILTER_STOP
+	focus_mode = Control.FOCUS_CLICK
+	custom_minimum_size = Vector2(0, 120)
+
+
+func _gui_input(ev: InputEvent) -> void:
+	if ev is InputEventMouseButton:
+		var mb := ev as InputEventMouseButton
+		if mb.button_index == MOUSE_BUTTON_LEFT:
+			if mb.pressed:
+				grab_focus()
+				press(mb.position)
+			else:
+				release()
+	elif ev is InputEventMouseMotion and (ev as InputEventMouseMotion).button_mask & MOUSE_BUTTON_MASK_LEFT:
+		motion((ev as InputEventMouseMotion).position)
+	elif ev is InputEventKey and (ev as InputEventKey).pressed:
+		var k := ev as InputEventKey
+		if k.keycode == KEY_DELETE or k.keycode == KEY_BACKSPACE:
+			delete_selected()
+			edit_committed.emit()
+		elif k.keycode == KEY_S:
+			cut_at_playhead()
+			edit_committed.emit()
+
+
+func _draw() -> void:
+	var sz := size
+	draw_rect(Rect2(Vector2.ZERO, sz), Color(0.10, 0.10, 0.14))
+	var w := sz.x
+
+	# ruler ticks (every ~2s)
+	var step := 2.0
+	var t := 0.0
+	while t <= duration:
+		var rx := time_to_x(t, w, duration)
+		draw_line(Vector2(rx, 0), Vector2(rx, RULER_H), Color(0.3, 0.32, 0.4), 1.0)
+		t += step
+
+	# title row: one box start..start+TITLE_SEC
+	if not title_text.is_empty():
+		var ty := title_row_y()
+		var tx0 := time_to_x(title_start, w, duration)
+		var tx1 := time_to_x(title_start + TITLE_SEC, w, duration)
+		var tcol := Color(1.0, 0.85, 0.35, 0.9) if sel_kind == "title" else Color(1.0, 0.85, 0.35, 0.55)
+		draw_rect(Rect2(tx0, ty, maxf(tx1 - tx0, 3.0), ROW_H), tcol)
+		draw_string(get_theme_default_font(), Vector2(tx0 + 4, ty + ROW_H - 6),
+			"EP", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(0.1, 0.1, 0.12))
+
+	# caption row: one box per cue
+	var cy := caption_row_y()
+	for i in cues.size():
+		var x0 := time_to_x(float(cues[i]["start"]), w, duration)
+		var x1 := time_to_x(float(cues[i]["end"]), w, duration)
+		var col := Color(1.0, 0.78, 0.32, 0.9) if (sel_kind == "cue" and i == sel_cue) else Color(0.55, 0.75, 1.0, 0.6)
+		draw_rect(Rect2(x0, cy, maxf(x1 - x0 - 1.0, 2.0), ROW_H), col)
+		if sel_kind == "cue" and i == sel_cue:
+			var hc := Color(1.0, 0.95, 0.6, 0.95)
+			draw_rect(Rect2(x0, cy, 3.0, ROW_H), hc)
+			draw_rect(Rect2(x1 - 3.0, cy, 3.0, ROW_H), hc)
+
+	# media row: filmstrip thumbnails (if any) + waveform
+	var my := media_row_y()
+	var mh := maxf(sz.y - my, 8.0)
+	if not frames.is_empty():
+		var fw := w / frames.size()
+		for i in frames.size():
+			var tex := frames[i] as Texture2D
+			if tex:
+				draw_texture_rect(tex, Rect2(i * fw, my, fw, mh), false)
+	if not wave.is_empty():
+		var n := wave.size()
+		var mid := my + mh * 0.5
+		for i in n:
+			var x := i * w / n
+			var h := wave[i] * (mh * 0.48)
+			draw_line(Vector2(x, mid - h), Vector2(x, mid + h), Color(0.35, 0.45, 0.55, 0.9), 1.0)
+
+	# playhead across all rows
+	var px := time_to_x(playhead, w, duration)
+	draw_line(Vector2(px, 0), Vector2(px, sz.y), Color(0.95, 0.45, 0.33), 2.0)
