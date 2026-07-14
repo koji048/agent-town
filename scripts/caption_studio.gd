@@ -50,6 +50,8 @@ var _title_color := Color(1.0, 0.9, 0.15)
 var _title_pos := Vector2(162.0, 200.0)  # preview-px centre of the title box
 var _title_font_idx := 0
 var _title_start := 0.0    # EP title window start on the timeline, seconds
+var _title_inspector: HBoxContainer
+var _title_font_pick: OptionButton
 var _timeline: TimelineView
 var _time_label: Label
 var _play_btn: Button
@@ -255,7 +257,8 @@ func _ready() -> void:
 	hint.modulate = Color(0.7, 0.7, 0.76)
 	right.add_child(hint)
 	# ---- EP Title strip: its own text + font + colour, separate from captions
-	var title_row := HBoxContainer.new()
+	_title_inspector = HBoxContainer.new()
+	var title_row := _title_inspector
 	title_row.add_theme_constant_override("separation", 6)
 	var tlbl := Label.new()
 	tlbl.text = "EP Title:"
@@ -272,7 +275,8 @@ func _ready() -> void:
 		_apply_title_style()
 		_place_title())
 	title_row.add_child(_title_edit)
-	var tfp := OptionButton.new()
+	_title_font_pick = OptionButton.new()
+	var tfp := _title_font_pick
 	for fdef in FONTS:
 		tfp.add_item(str(fdef[0]))
 	tfp.item_selected.connect(func(i: int) -> void:
@@ -287,6 +291,7 @@ func _ready() -> void:
 		_apply_title_style())
 	title_row.add_child(tcp)
 	right.add_child(title_row)
+	_title_inspector.visible = false
 	_cue_edit = TextEdit.new()
 	_cue_edit.custom_minimum_size = Vector2(0, 84)
 	_cue_edit.add_theme_font_size_override("font_size", 16)
@@ -353,6 +358,9 @@ func _ready() -> void:
 	_timeline.cue_split.connect(_on_cue_split)
 	_timeline.cue_deleted.connect(_on_cue_deleted)
 	_timeline.seek.connect(_seek)
+	_timeline.title_selected.connect(_on_title_selected)
+	_timeline.selection_cleared.connect(_on_selection_cleared)
+	_timeline.title_time_changed.connect(_on_title_time_changed)
 	root.add_child(_timeline)
 	# NO whole-frame scroll: only the cue LIST scrolls (its own inner
 	# ScrollContainer). The preview and timeline stay put, so scrolling the
@@ -401,6 +409,7 @@ func open_clip(srt_path: String, frames_dir: String, title := "") -> void:
 	_timeline.title_start = _title_start
 	_timeline.sel_kind = "none"
 	_timeline.sel_cue = -1
+	_show_inspector("none")
 	_apply_style()
 	_show_time()
 	visible = true
@@ -507,6 +516,24 @@ func _on_cue_deleted(_i: int) -> void:
 	PreviewMaker.write_srt(cues, _srt_path)
 	_sel = -1
 	_show_inspector("none")
+
+
+## The title box was clicked: show the EP Title strip in the Inspector.
+func _on_title_selected() -> void:
+	_sel = -1
+	_show_inspector("title")
+
+
+## Empty space was clicked: nothing selected, show just the hint.
+func _on_selection_cleared() -> void:
+	_sel = -1
+	_show_inspector("none")
+
+
+## Live drag of the title box along the timeline: reflect its new start time.
+func _on_title_time_changed(start: float) -> void:
+	_title_start = start
+	_show_time()
 
 
 ## Push the spin values into the selected cue (clamped), persist, redraw.
@@ -660,6 +687,12 @@ func _resolve(action: String) -> void:
 		style_dict() if action == "custom" else {})
 
 
-## Show the editor for the current selection. Full title branch in Task 7.
+## Show only the editor widgets for the current selection.
+##   "caption" -> text edit + timing spins (+ the shared style bar on the left)
+##   "title"   -> the EP Title strip (text + font + colour)
+##   "none"    -> neither; just the hint
 func _show_inspector(kind: String) -> void:
 	_cue_edit.visible = kind == "caption"
+	_start_spin.get_parent().visible = kind == "caption"
+	if _title_inspector:
+		_title_inspector.visible = kind == "title"
