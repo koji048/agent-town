@@ -49,13 +49,10 @@ var _title_text := ""
 var _title_color := Color(1.0, 0.9, 0.15)
 var _title_pos := Vector2(162.0, 200.0)  # preview-px centre of the title box
 var _title_font_idx := 0
-var _timeline: Control
-var _drag_mode := ""    # "" | "seek" | "start" | "end" | "move"
-var _drag_cue := -1
-var _drag_grab := 0.0   # for "move": grab offset within the cue, seconds
+var _title_start := 0.0    # EP title window start on the timeline, seconds
+var _timeline: TimelineView
 var _time_label: Label
 var _play_btn: Button
-var _cue_list: VBoxContainer
 var _cue_edit: TextEdit
 var _start_spin: SpinBox
 var _end_spin: SpinBox
@@ -290,13 +287,6 @@ func _ready() -> void:
 		_apply_title_style())
 	title_row.add_child(tcp)
 	right.add_child(title_row)
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.custom_minimum_size = Vector2(0, 380)
-	_cue_list = VBoxContainer.new()
-	_cue_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(_cue_list)
-	right.add_child(scroll)
 	_cue_edit = TextEdit.new()
 	_cue_edit.custom_minimum_size = Vector2(0, 84)
 	_cue_edit.add_theme_font_size_override("font_size", 16)
@@ -354,11 +344,15 @@ func _ready() -> void:
 	mid.add_child(right)
 	root.add_child(mid)
 
-	# ---- bottom: waveform timeline with cue blocks + playhead
-	_timeline = Control.new()
-	_timeline.custom_minimum_size = Vector2(0, 96)
-	_timeline.draw.connect(_draw_timeline)
-	_timeline.gui_input.connect(_timeline_input)
+	# ---- bottom: 3-row timeline (Title / Caption / Media)
+	_timeline = TimelineView.new()
+	_timeline.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_timeline.cue_selected.connect(_on_cue_selected)
+	_timeline.cue_time_changed.connect(_on_cue_time_changed)
+	_timeline.edit_committed.connect(_on_edit_committed)
+	_timeline.cue_split.connect(_on_cue_split)
+	_timeline.cue_deleted.connect(_on_cue_deleted)
+	_timeline.seek.connect(_seek)
 	root.add_child(_timeline)
 	# NO whole-frame scroll: only the cue LIST scrolls (its own inner
 	# ScrollContainer). The preview and timeline stay put, so scrolling the
@@ -398,7 +392,15 @@ func open_clip(srt_path: String, frames_dir: String, title := "") -> void:
 	if _start_spin:
 		_start_spin.max_value = _duration
 		_end_spin.max_value = _duration
-	_rebuild_cue_list()
+	_title_start = 0.0
+	_timeline.cues = cues
+	_timeline.duration = _duration
+	_timeline.wave = _wave
+	_timeline.frames = _sample_strip()
+	_timeline.title_text = _title_text
+	_timeline.title_start = _title_start
+	_timeline.sel_kind = "none"
+	_timeline.sel_cue = -1
 	_apply_style()
 	_show_time()
 	visible = true
@@ -447,6 +449,8 @@ func _show_time() -> void:
 	_cap_label.text = _cue_text_at(_t)
 	if _title_label:
 		_title_label.visible = not _title_text.is_empty()
+	_timeline.playhead = _t
+	_timeline.title_start = _title_start
 	_timeline.queue_redraw()
 
 
@@ -457,64 +461,64 @@ func _cue_text_at(t: float) -> String:
 	return ""
 
 
-func _rebuild_cue_list() -> void:
-	for c in _cue_list.get_children():
-		c.queue_free()
-	for i in cues.size():
-		var c: Dictionary = cues[i]
-		var b := Button.new()
-		b.text = "%s  %s" % [_mmss(float(c["start"])), str(c["text"]).left(44)]
-		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		b.add_theme_font_size_override("font_size", 14)
-		if i == _sel:
-			b.add_theme_color_override("font_color", Color(1.0, 0.85, 0.4))
-		b.pressed.connect(func() -> void:
-			_sel = i
-			_cue_edit.text = str(cues[i]["text"])
-			_sync_time_fields()
-			_seek(float(cues[i]["start"]))
-			_rebuild_cue_list())
-		_cue_list.add_child(b)
+## Up to 12 evenly-spaced filmstrip thumbnails for the timeline's Media row.
+func _sample_strip() -> Array:
+	var out: Array = []
+	if _frame_total <= 0:
+		return out
+	var count := mini(12, _frame_total)
+	for k in count:
+		var idx := clampi(int(float(k) / count * _frame_total) + 1, 1, _frame_total)
+		var img := Image.new()
+		if img.load(_frames_dir.path_join("f_%05d.jpg" % idx)) == OK:
+			out.append(ImageTexture.create_from_image(img))
+	return out
 
 
-func _mmss(t: float) -> String:
-	return "%d:%04.1f" % [int(t) / 60, fmod(t, 60.0)]
-
-
-## Clamp a cue's new start/end against its neighbors and MIN_DUR, then set it.
-func _set_cue_time(i: int, ns: float, ne: float) -> void:
-	if i < 0 or i >= cues.size():
-		return
-	var lo := 0.0 if i == 0 else float(cues[i - 1]["end"])
-	var hi := _duration if i == cues.size() - 1 else float(cues[i + 1]["start"])
-	if hi < lo:            # degenerate source (already-overlapping neighbors)
-		hi = lo
-	# keep both edges inside [lo, hi] with start <= end...
-	ne = clampf(ne, lo, hi)
-	ns = clampf(ns, lo, ne)
-	# ...then enforce the minimum duration only when the window can hold it
-	if hi - lo >= MIN_DUR and ne - ns < MIN_DUR:
-		ne = minf(ns + MIN_DUR, hi)
-		ns = maxf(ne - MIN_DUR, lo)
-	cues[i]["start"] = ns
-	cues[i]["end"] = ne
-
-
-## Persist edited cues to the .srt and refresh the list, fields and timeline.
-func _commit_cues() -> void:
-	PreviewMaker.write_srt(cues, _srt_path)
-	_rebuild_cue_list()
+## A caption box was clicked: load it into the Inspector and seek to its start.
+func _on_cue_selected(i: int) -> void:
+	_sel = i
+	_cue_edit.text = str(cues[i]["text"])
 	_sync_time_fields()
+	_show_inspector("caption")
+	_seek(float(cues[i]["start"]))
+
+
+## Live drag of a caption edge/body: reflect timing into the spins + preview.
+func _on_cue_time_changed(i: int, _s: float, _e: float) -> void:
+	if i == _sel:
+		_sync_time_fields()
 	_show_time()
-	_timeline.queue_redraw()
 
 
-## Push the spin values into the selected cue (with clamping), then persist.
+## Drag/keyboard edit finished: persist the cues to the .srt.
+func _on_edit_committed() -> void:
+	PreviewMaker.write_srt(cues, _srt_path)
+
+
+## A caption was split: persist, keep the left half selected, refresh Inspector.
+func _on_cue_split(i: int, _at: float) -> void:
+	PreviewMaker.write_srt(cues, _srt_path)
+	_on_cue_selected(i)
+
+
+## A caption was deleted: persist and clear the Inspector.
+func _on_cue_deleted(_i: int) -> void:
+	PreviewMaker.write_srt(cues, _srt_path)
+	_sel = -1
+	_show_inspector("none")
+
+
+## Push the spin values into the selected cue (clamped), persist, redraw.
 func _apply_time_fields() -> void:
 	if _sel < 0 or _sel >= cues.size():
 		return
-	_set_cue_time(_sel, _start_spin.value, _end_spin.value)
-	_commit_cues()
+	var sp := TimelineView.clamp_span(cues, _sel, _start_spin.value, _end_spin.value, _duration)
+	cues[_sel]["start"] = sp[0]
+	cues[_sel]["end"] = sp[1]
+	PreviewMaker.write_srt(cues, _srt_path)
+	_sync_time_fields()
+	_show_time()
 
 
 ## Reflect the selected cue's start/end into the spins without re-triggering.
@@ -534,7 +538,8 @@ func _save_cue() -> void:
 	PreviewMaker.write_srt(cues, _srt_path)
 	EventBus.log_line.emit("✏ Caption %d fixed -> %s" % [_sel + 1, _srt_path.get_file()])
 	Sfx.play_ui("paper", -10.0)
-	_rebuild_cue_list()
+	_timeline.title_text = _title_text
+	_timeline.queue_redraw()
 	_show_time()
 
 
@@ -637,6 +642,8 @@ func style_dict() -> Dictionary:
 		"title_primary": _ass_color(_title_color),
 		"title_x": int(round(_title_pos.x / PREVIEW_SCALE)),
 		"title_y": int(round(_title_pos.y / PREVIEW_SCALE)),
+		"title_start": _title_start,
+		"title_end": _title_start + TITLE_SEC,
 	}
 
 
@@ -653,96 +660,6 @@ func _resolve(action: String) -> void:
 		style_dict() if action == "custom" else {})
 
 
-## ---- timeline ----
-func _draw_timeline() -> void:
-	var size_v := _timeline.size
-	_timeline.draw_rect(Rect2(Vector2.ZERO, size_v), Color(0.10, 0.10, 0.14))
-	# waveform
-	if not _wave.is_empty():
-		var n := _wave.size()
-		for i in n:
-			var x := i * size_v.x / n
-			var h := _wave[i] * (size_v.y * 0.52)
-			_timeline.draw_line(Vector2(x, size_v.y * 0.55 - h),
-				Vector2(x, size_v.y * 0.55 + h), Color(0.35, 0.45, 0.55), 1.0)
-	# cue blocks (draggable) along the bottom; taller so edges are grabbable
-	var band_h := 22.0
-	var by := size_v.y - band_h
-	for i in cues.size():
-		var c: Dictionary = cues[i]
-		var x0: float = float(c["start"]) / _duration * size_v.x
-		var x1: float = float(c["end"]) / _duration * size_v.x
-		var col := Color(1.0, 0.78, 0.32, 0.85) if i == _sel else Color(0.55, 0.75, 1.0, 0.55)
-		_timeline.draw_rect(Rect2(x0, by, maxf(x1 - x0 - 1.0, 2.0), band_h), col)
-		if i == _sel:
-			var hc := Color(1.0, 0.95, 0.6, 0.95)
-			_timeline.draw_rect(Rect2(x0, by, 3.0, band_h), hc)
-			_timeline.draw_rect(Rect2(x1 - 3.0, by, 3.0, band_h), hc)
-	# playhead
-	var px := _t / _duration * size_v.x
-	_timeline.draw_line(Vector2(px, 0), Vector2(px, size_v.y), Color(0.95, 0.45, 0.33), 2.0)
-
-
-func _timeline_input(ev: InputEvent) -> void:
-	var w := _timeline.size.x
-	if ev is InputEventMouseButton and (ev as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
-		var mb := ev as InputEventMouseButton
-		if mb.pressed:
-			_begin_timeline_drag(mb.position.x, w)
-		else:
-			if _drag_mode in ["start", "end", "move"]:
-				_commit_cues()
-			_drag_mode = ""
-			_drag_cue = -1
-	elif ev is InputEventMouseMotion and (ev as InputEventMouseMotion).button_mask & MOUSE_BUTTON_MASK_LEFT:
-		_update_timeline_drag((ev as InputEventMouseMotion).position.x, w)
-
-
-## Decide what the press grabbed: a cue edge, a cue body, or empty (seek).
-func _begin_timeline_drag(px: float, w: float) -> void:
-	var t := px / w * _duration
-	for i in cues.size():
-		var x0: float = float(cues[i]["start"]) / _duration * w
-		var x1: float = float(cues[i]["end"]) / _duration * w
-		if absf(px - x0) <= EDGE_PX:
-			_drag_mode = "start"
-		elif absf(px - x1) <= EDGE_PX:
-			_drag_mode = "end"
-		elif px > x0 and px < x1:
-			_drag_mode = "move"
-			_drag_grab = t - float(cues[i]["start"])
-		else:
-			continue
-		_drag_cue = i
-		_sel = i
-		_cue_edit.text = str(cues[i]["text"])
-		_sync_time_fields()
-		_timeline.queue_redraw()
-		return
-	_drag_mode = "seek"
-	_seek(t)
-
-
-## Apply the in-progress drag (redraw + field sync live; SRT written on release).
-func _update_timeline_drag(px: float, w: float) -> void:
-	var t := px / w * _duration
-	if _drag_mode == "seek":
-		_seek(t)
-		return
-	if _drag_cue < 0 or _drag_cue >= cues.size():
-		return
-	var c: Dictionary = cues[_drag_cue]
-	match _drag_mode:
-		"start":
-			_set_cue_time(_drag_cue, t, float(c["end"]))
-		"end":
-			_set_cue_time(_drag_cue, float(c["start"]), t)
-		"move":
-			var dur := float(c["end"]) - float(c["start"])
-			var mlo := 0.0 if _drag_cue == 0 else float(cues[_drag_cue - 1]["end"])
-			var mhi := _duration if _drag_cue == cues.size() - 1 else float(cues[_drag_cue + 1]["start"])
-			# clamp the shift so the cue keeps its duration and parks at the wall
-			var ns := clampf(t - _drag_grab, mlo, maxf(mhi - dur, mlo))
-			_set_cue_time(_drag_cue, ns, ns + dur)
-	_sync_time_fields()
-	_timeline.queue_redraw()
+## Show the editor for the current selection. Full title branch in Task 7.
+func _show_inspector(kind: String) -> void:
+	_cue_edit.visible = kind == "caption"
