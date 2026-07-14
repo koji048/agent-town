@@ -52,6 +52,44 @@ func _run() -> void:
 	_check("split rejects tiny left", TimelineView.split_span(4.0, 6.0, 4.1).is_empty())
 	_check("split rejects tiny right", TimelineView.split_span(4.0, 6.0, 5.95).is_empty())
 
+	# --- drag logic (call press/motion/release directly, assert on signals) ---
+	var tv = TimelineView.new()
+	tv.size = Vector2(1000.0, 120.0)
+	tv.duration = D
+	tv.cues = [
+		{"start": 1.0, "end": 2.0, "text": "a"},
+		{"start": 4.0, "end": 6.0, "text": "b"},
+	]
+	tv.title_start = 0.0
+	tv.title_text = "EP7"
+	tv.playhead = 5.0
+
+	var got := {"sel": -99, "title": false, "seek": -1.0, "cleared": false}
+	tv.cue_selected.connect(func(i: int) -> void: got["sel"] = i)
+	tv.title_selected.connect(func() -> void: got["title"] = true)
+	tv.selection_cleared.connect(func() -> void: got["cleared"] = true)
+	tv.seek.connect(func(t: float) -> void: got["seek"] = t)
+
+	# press inside caption b's body -> selects cue 1
+	tv.press(Vector2(500.0, tv.caption_row_y() + 4.0))
+	_check("press selects caption", got["sel"] == 1 and tv.sel_kind == "cue")
+	# move b left toward the wall -> keeps duration, parks at a.end = 2.0
+	tv.motion(Vector2(50.0, tv.caption_row_y() + 4.0))
+	_check("drag-move parks at wall", is_equal_approx(float(tv.cues[1]["start"]), 2.0))
+	tv.release()
+
+	# press on the title box -> title_selected
+	tv.press(Vector2(100.0, tv.title_row_y() + 4.0))
+	_check("press selects title", got["title"] and tv.sel_kind == "title")
+	# drag the title along time
+	tv.motion(Vector2(600.0, tv.title_row_y() + 4.0))
+	_check("title drag moves start", tv.title_start > 0.0)
+	tv.release()
+
+	# press on the ruler -> seek, clears selection stays cue? ruler seeks only
+	tv.press(Vector2(200.0, 2.0))
+	_check("ruler press seeks", is_equal_approx(got["seek"], 2.0))
+
 	print("\n=== timeline view tests: %d passed, %d failed ===" % [_passes, _fails])
 	quit(1 if _fails > 0 else 0)
 
