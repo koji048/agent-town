@@ -299,6 +299,7 @@ In `tools/test_timeline_view.gd`, add a new block just before the final `print(.
 		{"start": 4.0, "end": 6.0, "text": "b"},
 	]
 	tv.title_start = 0.0
+	tv.title_text = "EP7"   # title box is only hit-testable when it has text (matches _draw)
 	tv.playhead = 5.0
 
 	var got := {"sel": -99, "title": false, "seek": -1.0, "cleared": false}
