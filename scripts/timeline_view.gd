@@ -195,9 +195,11 @@ func cut_at_playhead() -> void:
 	var parts := split_span(float(c["start"]), float(c["end"]), playhead)
 	if parts.is_empty():
 		return
+	var cut_text := str(cues[sel_cue]["text"])
 	cues[sel_cue]["end"] = parts[0][1]
-	cues.insert(sel_cue + 1, {"start": parts[1][0], "end": parts[1][1], "text": str(c["text"])})
+	cues.insert(sel_cue + 1, {"start": parts[1][0], "end": parts[1][1], "text": cut_text})
 	cue_split.emit(sel_cue, playhead)
+	_drag_mode = ""
 	queue_redraw()
 
 
@@ -209,6 +211,7 @@ func delete_selected() -> void:
 	cues.remove_at(i)
 	sel_kind = "none"
 	sel_cue = -1
+	_drag_mode = ""
 	cue_deleted.emit(i)
 	selection_cleared.emit()
 	queue_redraw()

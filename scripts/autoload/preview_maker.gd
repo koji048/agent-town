@@ -181,7 +181,7 @@ func write_ass(cues: Array, style: Dictionary, path: String) -> void:
 		"outline": 3,
 		"margin_v": int(style.get("margin_v", 360)),
 		"title_font": str(style.get("title_font", "Anuphan")),
-		"title_size": int(style.get("title_size", 86)),
+		"title_size": int(style.get("title_size", 100)),
 		"title_primary": str(style.get("title_primary", "&H0000FFFF")),
 	}))
 	# EP opening title card over the first 2.5s: the studio's edited text (else

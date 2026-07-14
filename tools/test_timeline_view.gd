@@ -90,6 +90,32 @@ func _run() -> void:
 	tv.press(Vector2(200.0, 2.0))
 	_check("ruler press seeks", is_equal_approx(got["seek"], 2.0))
 
+	# --- phantom-box guard: an empty title_text must never be hit-testable ---
+	var tv3 = TimelineView.new()
+	tv3.size = Vector2(1000.0, 120.0)
+	tv3.duration = D
+	tv3.cues = []
+	tv3.title_start = 0.0
+	tv3.title_text = ""   # cleared title -> no box to hit
+	var cleared3 := {"fired": false}
+	tv3.selection_cleared.connect(func() -> void: cleared3["fired"] = true)
+	# press squarely on where the (empty) title box would have been
+	tv3.press(Vector2(100.0, tv3.title_row_y() + 4.0))
+	_check("empty title never selects", tv3.sel_kind != "title")
+	_check("empty title falls through to none", tv3.sel_kind == "none")
+	_check("empty title press clears selection", cleared3["fired"])
+
+	# --- empty-space press elsewhere also clears selection ---
+	var tv4 = TimelineView.new()
+	tv4.size = Vector2(1000.0, 120.0)
+	tv4.duration = D
+	tv4.cues = []
+	tv4.title_text = ""
+	var cleared4 := {"fired": false}
+	tv4.selection_cleared.connect(func() -> void: cleared4["fired"] = true)
+	tv4.press(Vector2(500.0, tv4.media_row_y() + 4.0))  # media row: empty space
+	_check("empty-space press emits selection_cleared", cleared4["fired"])
+
 	# --- cut / delete ---
 	var tv2 = TimelineView.new()
 	tv2.size = Vector2(1000.0, 120.0)

@@ -24,8 +24,6 @@ const MARGIN_MIN := 120.0
 const MARGIN_MAX := 1400.0
 const CAP_BAND := 160.0   # preview-px height of the caption's grab band
 const ZOOM := 1.2         # studio renders at a fixed 120%
-const MIN_DUR := 0.2      # shortest allowed cue, seconds
-const EDGE_PX := 7.0      # grab tolerance for a cue's start/end edge, in px
 const TITLE_SEC := 2.5    # EP title card shows over the first 2.5s (matches burn)
 
 var cues: Array = []
@@ -272,8 +270,11 @@ func _ready() -> void:
 		_title_text = t
 		if _title_label:
 			_title_label.text = t
+		if _timeline:
+			_timeline.title_text = t
 		_apply_title_style()
-		_place_title())
+		_place_title()
+		_show_time())
 	title_row.add_child(_title_edit)
 	_title_font_pick = OptionButton.new()
 	var tfp := _title_font_pick
@@ -362,9 +363,8 @@ func _ready() -> void:
 	_timeline.selection_cleared.connect(_on_selection_cleared)
 	_timeline.title_time_changed.connect(_on_title_time_changed)
 	root.add_child(_timeline)
-	# NO whole-frame scroll: only the cue LIST scrolls (its own inner
-	# ScrollContainer). The preview and timeline stay put, so scrolling the
-	# caption list never shifts the timeline while you're editing it.
+	# Timing is edited on the TimelineView strip below (drag/trim/cut/delete),
+	# not a scrollable cue list — there is no cue list in this layout.
 	add_child(root)
 	# fixed 120% zoom, scaled from the top edge so the top never leaves screen
 	pivot_offset = Vector2(custom_minimum_size.x / 2.0, 0.0)
@@ -616,7 +616,7 @@ func _apply_title_style() -> void:
 	var font := FontFile.new()
 	font.load_dynamic_font(str(FONTS[_title_font_idx][1]))
 	ls.font = font
-	ls.font_size = int(round(86.0 * PREVIEW_SCALE))
+	ls.font_size = int(round(100.0 * PREVIEW_SCALE))
 	ls.font_color = _title_color
 	ls.outline_size = 3
 	ls.outline_color = Color(0, 0, 0)
@@ -665,7 +665,7 @@ func style_dict() -> Dictionary:
 		# EP title element: its own text, font, colour and 2D position
 		"title_text": _title_text,
 		"title_font": str(FONTS[_title_font_idx][0]),
-		"title_size": 86,
+		"title_size": 100,
 		"title_primary": _ass_color(_title_color),
 		"title_x": int(round(_title_pos.x / PREVIEW_SCALE)),
 		"title_y": int(round(_title_pos.y / PREVIEW_SCALE)),
