@@ -6,7 +6,7 @@
 
 **Architecture:** A new `TimelineView` (`Control` subclass) owns all timeline geometry, hit-testing, drag/trim/cut/delete and the playhead, exposing pure static math (`time_to_x`, `x_to_time`, `cue_at`, `clamp_span`, `move_span`, `split_span`) and callable input methods (`press`/`motion`/`release`/`cut_at_playhead`/`delete_selected`) so the interaction logic is unit-testable headless. `caption_studio.gd` becomes the wiring hub + single source of truth (`cues`, `_title_*`), feeding data down and reacting to signals; the scrolling cue list and always-on EP Title strip are removed in favour of a selection-driven Inspector. The burn path is unchanged except the title `Dialogue` start/end now derive from a `title_start` field.
 
-**Tech Stack:** Godot 4 / GDScript. Headless SceneTree test scripts run via `godot --headless --path . -s res://tools/<script>.gd`.
+**Tech Stack:** Godot 4 / GDScript. Headless SceneTree test scripts run via `godot --headless --path . --quit-after 600 -s res://tools/<script>.gd` (or `tools/run_test.sh <script>`). The `--quit-after 600` ceiling is mandatory: `-s` boots the whole project (autoloads included), so a test that errors before its `quit()` would otherwise loop forever and leak to OOM — this exact failure once ballooned an orphaned test process to 150 GB and OOM-killed the editor. Never launch a headless test without it.
 
 ## Global Constraints
 
@@ -41,7 +41,7 @@ Create `tools/test_timeline_view.gd`:
 
 ```gdscript
 ## Headless test: TimelineView pure geometry + span helpers.
-##   godot --headless --path . -s res://tools/test_timeline_view.gd
+##   godot --headless --path . --quit-after 600 -s res://tools/test_timeline_view.gd
 extends SceneTree
 
 var _passes := 0
@@ -107,7 +107,7 @@ func _check(name: String, cond: bool) -> void:
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd /Users/thanakorn/agent-town-1 && godot --headless --path . -s res://tools/test_timeline_view.gd`
+Run: `cd /Users/thanakorn/agent-town-1 && godot --headless --path . --quit-after 600 -s res://tools/test_timeline_view.gd`
 Expected: parse/identifier error — `TimelineView` not found (the class doesn't exist yet).
 
 - [ ] **Step 3: Write the minimal implementation**
@@ -185,7 +185,7 @@ static func split_span(s: float, e: float, at: float) -> Array:
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `cd /Users/thanakorn/agent-town-1 && godot --headless --path . -s res://tools/test_timeline_view.gd`
+Run: `cd /Users/thanakorn/agent-town-1 && godot --headless --path . --quit-after 600 -s res://tools/test_timeline_view.gd`
 Expected: `=== timeline view tests: 15 passed, 0 failed ===`, exit 0.
 
 - [ ] **Step 5: Commit**
@@ -228,7 +228,7 @@ In `tools/test_ass_title.gd`, add these two lines immediately after the existing
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd /Users/thanakorn/agent-town-1 && godot --headless --path . -s res://tools/test_ass_title.gd`
+Run: `cd /Users/thanakorn/agent-town-1 && godot --headless --path . --quit-after 600 -s res://tools/test_ass_title.gd`
 Expected: FAIL on "title honours title_start/title_end" (still emits the hard-coded `0:00:00.00,0:00:02.50`).
 
 - [ ] **Step 3: Write the implementation**
@@ -257,7 +257,7 @@ with:
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `cd /Users/thanakorn/agent-town-1 && godot --headless --path . -s res://tools/test_ass_title.gd`
+Run: `cd /Users/thanakorn/agent-town-1 && godot --headless --path . --quit-after 600 -s res://tools/test_ass_title.gd`
 Expected: `=== ass title tests: 6 passed, 0 failed ===`, exit 0.
 
 - [ ] **Step 5: Commit**
@@ -329,7 +329,7 @@ In `tools/test_timeline_view.gd`, add a new block just before the final `print(.
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd /Users/thanakorn/agent-town-1 && godot --headless --path . -s res://tools/test_timeline_view.gd`
+Run: `cd /Users/thanakorn/agent-town-1 && godot --headless --path . --quit-after 600 -s res://tools/test_timeline_view.gd`
 Expected: FAIL — `caption_row_y`/`press`/signals not defined yet.
 
 - [ ] **Step 3: Write the implementation**
@@ -463,7 +463,7 @@ func release() -> void:
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `cd /Users/thanakorn/agent-town-1 && godot --headless --path . -s res://tools/test_timeline_view.gd`
+Run: `cd /Users/thanakorn/agent-town-1 && godot --headless --path . --quit-after 600 -s res://tools/test_timeline_view.gd`
 Expected: `=== timeline view tests: 21 passed, 0 failed ===`, exit 0.
 
 - [ ] **Step 5: Commit**
@@ -527,7 +527,7 @@ In `tools/test_timeline_view.gd`, add before the final `print(...)`:
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd /Users/thanakorn/agent-town-1 && godot --headless --path . -s res://tools/test_timeline_view.gd`
+Run: `cd /Users/thanakorn/agent-town-1 && godot --headless --path . --quit-after 600 -s res://tools/test_timeline_view.gd`
 Expected: FAIL — `cut_at_playhead`/`delete_selected` not defined.
 
 - [ ] **Step 3: Write the implementation**
@@ -565,7 +565,7 @@ func delete_selected() -> void:
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `cd /Users/thanakorn/agent-town-1 && godot --headless --path . -s res://tools/test_timeline_view.gd`
+Run: `cd /Users/thanakorn/agent-town-1 && godot --headless --path . --quit-after 600 -s res://tools/test_timeline_view.gd`
 Expected: `=== timeline view tests: 30 passed, 0 failed ===`, exit 0.
 
 - [ ] **Step 5: Commit**
@@ -679,10 +679,10 @@ func _draw() -> void:
 
 - [ ] **Step 2: Verify it parses (ci_check) and tests still pass**
 
-Run: `cd /Users/thanakorn/agent-town-1 && godot --headless --path . -s res://tools/ci_check.gd`
+Run: `cd /Users/thanakorn/agent-town-1 && godot --headless --path . --quit-after 600 -s res://tools/ci_check.gd`
 Expected: no `SCRIPT ERROR`; ci_check reports success.
 
-Run: `cd /Users/thanakorn/agent-town-1 && godot --headless --path . -s res://tools/test_timeline_view.gd`
+Run: `cd /Users/thanakorn/agent-town-1 && godot --headless --path . --quit-after 600 -s res://tools/test_timeline_view.gd`
 Expected: `=== timeline view tests: 30 passed, 0 failed ===` (adding `_init`/`_draw` must not change logic).
 
 - [ ] **Step 3: Commit**
@@ -910,7 +910,7 @@ func _show_inspector(kind: String) -> void:
 
 - [ ] **Step 12: Verify parse + run studio**
 
-Run: `cd /Users/thanakorn/agent-town-1 && godot --headless --path . -s res://tools/ci_check.gd`
+Run: `cd /Users/thanakorn/agent-town-1 && godot --headless --path . --quit-after 600 -s res://tools/ci_check.gd`
 Expected: no `SCRIPT ERROR`.
 
 Manual: launch the studio with a seeded clip and confirm the 3-row timeline shows, the cue list is gone, clicking a caption box loads it into the edit box + spins, dragging a caption body/edge works and no longer overlaps, `S` splits at the playhead, `Delete` removes a caption, and Burn still works:
@@ -1028,7 +1028,7 @@ And in `_ready`, immediately after `right.add_child(title_row)` (line 292), hide
 
 - [ ] **Step 6: Verify parse + run studio**
 
-Run: `cd /Users/thanakorn/agent-town-1 && godot --headless --path . -s res://tools/ci_check.gd`
+Run: `cd /Users/thanakorn/agent-town-1 && godot --headless --path . --quit-after 600 -s res://tools/ci_check.gd`
 Expected: no `SCRIPT ERROR`.
 
 Manual (same hook as Task 6, Step 12): confirm that on open the Inspector shows the hint only; clicking a **caption** box shows the text box + timing spins; clicking the **title** box shows the EP Title strip (text/font/colour) and hides the caption widgets; dragging the title box along the timeline moves its window and the burn preview; nothing shows both at once.
@@ -1052,9 +1052,9 @@ git commit -m "$(printf 'feat: selection-driven Inspector (caption vs title); dr
 
 ```bash
 cd /Users/thanakorn/agent-town-1
-godot --headless --path . -s res://tools/test_timeline_view.gd
-godot --headless --path . -s res://tools/test_ass_title.gd
-godot --headless --path . -s res://tools/ci_check.gd
+godot --headless --path . --quit-after 600 -s res://tools/test_timeline_view.gd
+godot --headless --path . --quit-after 600 -s res://tools/test_ass_title.gd
+godot --headless --path . --quit-after 600 -s res://tools/ci_check.gd
 ```
 Expected: `30 passed, 0 failed`; `6 passed, 0 failed`; ci_check clean.
 
