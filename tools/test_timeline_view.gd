@@ -90,6 +90,39 @@ func _run() -> void:
 	tv.press(Vector2(200.0, 2.0))
 	_check("ruler press seeks", is_equal_approx(got["seek"], 2.0))
 
+	# --- cut / delete ---
+	var tv2 = TimelineView.new()
+	tv2.size = Vector2(1000.0, 120.0)
+	tv2.duration = D
+	tv2.cues = [{"start": 4.0, "end": 6.0, "text": "b"}]
+	tv2.sel_kind = "cue"
+	tv2.sel_cue = 0
+	var ev := {"split": -1, "del": -1}
+	tv2.cue_split.connect(func(i: int, _at: float) -> void: ev["split"] = i)
+	tv2.cue_deleted.connect(func(i: int) -> void: ev["del"] = i)
+
+	tv2.playhead = 5.0
+	tv2.cut_at_playhead()
+	_check("cut splits into two", tv2.cues.size() == 2)
+	_check("cut left half ends at playhead", is_equal_approx(float(tv2.cues[0]["end"]), 5.0))
+	_check("cut right half starts at playhead", is_equal_approx(float(tv2.cues[1]["start"]), 5.0))
+	_check("cut copies text", str(tv2.cues[1]["text"]) == "b")
+	_check("cut emits signal", ev["split"] == 0)
+
+	# cut too close to an edge -> no-op
+	tv2.sel_cue = 0
+	tv2.playhead = 4.05
+	tv2.cut_at_playhead()
+	_check("cut near edge is a no-op", tv2.cues.size() == 2)
+
+	# delete selected
+	tv2.sel_kind = "cue"
+	tv2.sel_cue = 1
+	tv2.delete_selected()
+	_check("delete removes cue", tv2.cues.size() == 1)
+	_check("delete emits signal", ev["del"] == 1)
+	_check("delete clears selection", tv2.sel_kind == "none")
+
 	print("\n=== timeline view tests: %d passed, %d failed ===" % [_passes, _fails])
 	quit(1 if _fails > 0 else 0)
 

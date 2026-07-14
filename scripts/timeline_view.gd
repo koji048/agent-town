@@ -184,3 +184,31 @@ func release() -> void:
 	if _drag_mode in ["start", "end", "move", "title"]:
 		edit_committed.emit()
 	_drag_mode = ""
+
+
+## Blade: split the selected caption at the playhead into two adjacent cues,
+## each inheriting the text. No-op unless the playhead is well inside the box.
+func cut_at_playhead() -> void:
+	if sel_kind != "cue" or sel_cue < 0 or sel_cue >= cues.size():
+		return
+	var c: Dictionary = cues[sel_cue]
+	var parts := split_span(float(c["start"]), float(c["end"]), playhead)
+	if parts.is_empty():
+		return
+	cues[sel_cue]["end"] = parts[0][1]
+	cues.insert(sel_cue + 1, {"start": parts[1][0], "end": parts[1][1], "text": str(c["text"])})
+	cue_split.emit(sel_cue, playhead)
+	queue_redraw()
+
+
+## Remove the selected caption cue.
+func delete_selected() -> void:
+	if sel_kind != "cue" or sel_cue < 0 or sel_cue >= cues.size():
+		return
+	var i := sel_cue
+	cues.remove_at(i)
+	sel_kind = "none"
+	sel_cue = -1
+	cue_deleted.emit(i)
+	selection_cleared.emit()
+	queue_redraw()
