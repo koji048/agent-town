@@ -195,8 +195,10 @@ func write_ass(cues: Array, style: Dictionary, path: String) -> void:
 	if not title_text.is_empty():
 		var tx: int = int(style.get("title_x", 540))
 		var ty: int = int(style.get("title_y", 960))
-		f.store_string("Dialogue: 0,0:00:00.00,0:00:02.50,Title,,0,0,0,,{\\pos(%d,%d)}%s\n" % [
-			tx, ty, title_text.left(80).replace("\n", " ")])
+		var t_start: float = float(style.get("title_start", 0.0))
+		var t_end: float = float(style.get("title_end", t_start + 2.5))
+		f.store_string("Dialogue: 0,%s,%s,Title,,0,0,0,,{\\pos(%d,%d)}%s\n" % [
+			_fmt_ass(t_start), _fmt_ass(t_end), tx, ty, title_text.left(80).replace("\n", " ")])
 	for c in cues:
 		f.store_string("Dialogue: 0,%s,%s,Default,,0,0,0,,%s\n" % [
 			_fmt_ass(float(c["start"])), _fmt_ass(float(c["end"])),

@@ -30,6 +30,18 @@ func _run() -> void:
 	t = FileAccess.get_file_as_string(p)
 	_check("fallback EP07 : hi at default \\pos", t.contains(",Title,,0,0,0,,{\\pos(540,960)}EP07 : hi"))
 
+	# shifted title window: title_start / title_end move the Dialogue timing
+	pm.write_ass(cues, {"title_text": "EP7 HELLO", "title_start": 3.0, "title_end": 5.5}, p)
+	t = FileAccess.get_file_as_string(p)
+	_check("title honours title_start/title_end",
+		t.contains("Dialogue: 0,0:00:03.00,0:00:05.50,Title,,0,0,0,,"))
+
+	# default (no title_start) still burns 0:00:00.00 -> 0:00:02.50
+	pm.write_ass(cues, {"title_text": "EP7 HELLO"}, p)
+	t = FileAccess.get_file_as_string(p)
+	_check("title default window unchanged",
+		t.contains("Dialogue: 0,0:00:00.00,0:00:02.50,Title,,0,0,0,,"))
+
 	# nothing -> no title event
 	pm.write_ass(cues, {}, p)
 	t = FileAccess.get_file_as_string(p)
