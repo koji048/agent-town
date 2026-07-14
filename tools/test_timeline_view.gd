@@ -123,6 +123,26 @@ func _run() -> void:
 	_check("delete emits signal", ev["del"] == 1)
 	_check("delete clears selection", tv2.sel_kind == "none")
 
+	# --- clamp_span edge cases (ported from the retired test_cue_retime.gd, which
+	# exercised the old CaptionStudio._set_cue_time; that logic now lives here) ---
+	var cd := 3.0
+	var cc := [{"start": 0.0, "end": 1.0, "text": "a"}, {"start": 1.0, "end": 2.0, "text": "b"}, {"start": 2.0, "end": 3.0, "text": "c"}]
+	var r0: Array = TimelineView.clamp_span(cc, 1, 0.5, 2.0, cd)   # start can't cross prev end (1.0)
+	_check("clamp start >= prev end", r0[0] >= 1.0 - 0.001)
+	var r1: Array = TimelineView.clamp_span(cc, 1, 1.0, 2.5, cd)   # end can't cross next start (2.0)
+	_check("clamp end <= next start", r1[1] <= 2.0 + 0.001)
+	var r2: Array = TimelineView.clamp_span(cc, 1, 1.95, 2.0, cd)  # MIN_DUR enforced when window allows
+	_check("clamp enforces MIN_DUR", r2[1] - r2[0] >= 0.2 - 0.001)
+	var single := [{"start": 0.5, "end": 1.0, "text": "a"}]
+	var r3: Array = TimelineView.clamp_span(single, 0, -1.0, 5.0, cd)  # lone cue clamps to [0, duration]
+	_check("clamp lone start >= 0", r3[0] >= 0.0 - 0.001)
+	_check("clamp lone end <= duration", r3[1] <= cd + 0.001)
+	var tiny := [{"start": 0.0, "end": 1.0, "text": "a"}, {"start": 1.0, "end": 1.1, "text": "b"}, {"start": 1.1, "end": 2.0, "text": "c"}]
+	var r4: Array = TimelineView.clamp_span(tiny, 1, 0.5, 5.0, cd)  # sub-MIN_DUR window: no overlap/inversion
+	_check("clamp tiny start >= prev end", r4[0] >= 1.0 - 0.001)
+	_check("clamp tiny end <= next start", r4[1] <= 1.1 + 0.001)
+	_check("clamp tiny start <= end (no inversion)", r4[0] <= r4[1] + 0.001)
+
 	print("\n=== timeline view tests: %d passed, %d failed ===" % [_passes, _fails])
 	quit(1 if _fails > 0 else 0)
 
