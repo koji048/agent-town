@@ -216,11 +216,17 @@ func burn_custom(video: String, cues: Array, style: Dictionary, final_mp4: Strin
 		vf = "crop=ih*9/16:ih:(iw-ih*9/16)/2+0:0,scale=1080:1920,setsar=1,fps=30"
 	vf += ",subtitles=filename=%s:fontsdir=%s" % [ass,
 		ProjectSettings.globalize_path("res://assets/fonts")]
+	# Audio normalized for TikTok/IG Android players: 48 kHz stereo (platform
+	# spec; 44.1k passthrough correlated with Android-only silence on a posted
+	# EP) and timestamps starting at 0 (iPhone sources carry a negative-pts
+	# edit list that some Android decoders mute on). Mirrors burn.py.
 	return await run_cmd(ffmpeg_bin(), PackedStringArray([
 		"-y", "-i", video, "-vf", vf,
 		"-c:v", "libx264", "-preset", "medium", "-crf", "20",
 		"-pix_fmt", "yuv420p", "-movflags", "+faststart",
-		"-c:a", "aac", "-b:a", "192k", "-r", "30", final_mp4]))
+		"-af", "aresample=async=1:first_pts=0",
+		"-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "2",
+		"-r", "30", final_mp4]))
 
 
 ## ---- runtime WAV (16-bit PCM mono) ----
