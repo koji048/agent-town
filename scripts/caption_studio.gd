@@ -49,6 +49,12 @@ var _title_pos := Vector2(162.0, 200.0)  # preview-px centre of the title box
 var _title_font_idx := 0
 var _title_start := 0.0    # EP title window start on the timeline, seconds
 var _title_dur := TITLE_SEC   # EP title window length, seconds; owner-resizable
+var _segments: Array = []          # EDL: [{src_start, src_end}] in source seconds
+var _segments_snapshot: Array = []
+var _cues_snapshot: Array = []     # cues as opened (for ↺ reset)
+var _play_seg := 0                 # segment currently playing (audio hop)
+var _seg_row: HBoxContainer
+var _seg_info: Label
 var _title_inspector: HBoxContainer
 var _title_font_pick: OptionButton
 var _timeline: TimelineView
@@ -300,6 +306,15 @@ func _ready() -> void:
 	title_row.add_child(tcp)
 	right.add_child(title_row)
 	_title_inspector.visible = false
+	_seg_row = HBoxContainer.new()
+	var sg_ic := Label.new()
+	sg_ic.text = "🎞"
+	_seg_row.add_child(sg_ic)
+	_seg_info = Label.new()
+	_seg_info.add_theme_font_size_override("font_size", 13)
+	_seg_row.add_child(_seg_info)
+	_seg_row.visible = false
+	right.add_child(_seg_row)
 	_cue_edit = TextEdit.new()
 	_cue_edit.custom_minimum_size = Vector2(0, 84)
 	_cue_edit.add_theme_font_size_override("font_size", 16)
@@ -384,6 +399,8 @@ func _ready() -> void:
 	_timeline.title_selected.connect(_on_title_selected)
 	_timeline.selection_cleared.connect(_on_selection_cleared)
 	_timeline.title_time_changed.connect(_on_title_time_changed)
+	_timeline.segment_selected.connect(_on_segment_selected)
+	_timeline.segments_changed.connect(_on_segments_changed)
 
 	var tools := HBoxContainer.new()
 	tools.add_theme_constant_override("separation", 6)
@@ -399,6 +416,10 @@ func _ready() -> void:
 	all_btn.text = "⬚ เลือกทั้งหมด"
 	all_btn.pressed.connect(func() -> void: _timeline.select_all())
 	tools.add_child(all_btn)
+	var reset_btn := Button.new()
+	reset_btn.text = "↺ เริ่มตัดใหม่"
+	reset_btn.pressed.connect(func() -> void: _reset_edit())
+	tools.add_child(reset_btn)
 	var thint := Label.new()
 	thint.text = "ตัด/ลบที่หัวอ่าน · เลือกทั้งหมดแล้วลากเพื่อเลื่อนทั้งชุด"
 	thint.add_theme_font_size_override("font_size", 11)
@@ -432,6 +453,14 @@ func open_clip(srt_path: String, frames_dir: String, title := "") -> void:
 	if wav:
 		_audio.stream = wav
 		_duration = maxf(_duration, wav.data.size() / 2.0 / 22050.0)
+	_segments = _load_edl()
+	if _segments.is_empty():
+		_segments = [{"src_start": 0.0, "src_end": _duration}]
+	_segments_snapshot = _segments.duplicate(true)
+	_cues_snapshot = []
+	for c in cues:
+		_cues_snapshot.append(c.duplicate())
+	_play_seg = 0
 	_wave = PreviewMaker.wave_buckets(frames_dir.path_join("preview.wav"), 900)
 	_t = 0.0
 	_sel = -1
@@ -440,13 +469,15 @@ func open_clip(srt_path: String, frames_dir: String, title := "") -> void:
 	# reset only the position per clip; font / size / colour persist across clips
 	_margin_v = 360.0
 	_place_caption()
-	if _start_spin:
-		_start_spin.max_value = _duration
-		_end_spin.max_value = _duration
 	_title_start = 0.0
 	_title_dur = TITLE_SEC
 	_timeline.cues = cues
-	_timeline.duration = _duration
+	_timeline.segments = _segments
+	_timeline.src_duration = _duration
+	_timeline.duration = _out_dur()
+	if _start_spin:
+		_start_spin.max_value = _out_dur()
+		_end_spin.max_value = _out_dur()
 	_timeline.wave = _wave
 	_timeline.frames = _sample_strip()
 	_timeline.title_text = _title_text
@@ -466,8 +497,22 @@ func _process(_delta: float) -> void:
 	if not visible:
 		return
 	if _playing:
-		_t = _audio.get_playback_position()
-		if _t >= _duration - 0.05:
+		var sp := _audio.get_playback_position()
+		if _segments.is_empty():
+			_t = sp
+		else:
+			_play_seg = clampi(_play_seg, 0, _segments.size() - 1)
+			var seg: Dictionary = _segments[_play_seg]
+			if sp >= float(seg["src_end"]) - 0.03:
+				if _play_seg + 1 < _segments.size():
+					_play_seg += 1
+					seg = _segments[_play_seg]
+					_audio.play(float(seg["src_start"]))
+					sp = float(seg["src_start"])
+				else:
+					sp = float(seg["src_end"])
+			_t = TimelineView.out_start(_segments, _play_seg) + maxf(sp - float(seg["src_start"]), 0.0)
+		if _t >= _out_dur() - 0.05:
 			_playing = false
 			_audio.stop()
 			_play_btn.text = "▶"
@@ -477,7 +522,8 @@ func _process(_delta: float) -> void:
 func _toggle_play() -> void:
 	_playing = not _playing
 	if _playing:
-		_audio.play(_t)
+		_play_seg = maxi(TimelineView.seg_at_out(_segments, _t), 0)
+		_audio.play(TimelineView.out_to_src(_segments, _t))
 		_play_btn.text = "⏸"
 	else:
 		_audio.stop()
@@ -485,15 +531,72 @@ func _toggle_play() -> void:
 
 
 func _seek(t: float) -> void:
-	_t = clampf(t, 0.0, _duration)
+	_t = clampf(t, 0.0, _out_dur())
+	_play_seg = maxi(TimelineView.seg_at_out(_segments, _t), 0)
 	if _playing:
-		_audio.play(_t)
+		_audio.play(TimelineView.out_to_src(_segments, _t))
 	_show_time()
 
 
+## Output duration of the current edit (falls back to the source length).
+func _out_dur() -> float:
+	return TimelineView.out_len(_segments) if not _segments.is_empty() else _duration
+
+
+func _edl_path() -> String:
+	return _srt_path + ".edl.json"
+
+
+func _save_edl() -> void:
+	var arr: Array = []
+	for sg in _segments:
+		arr.append([float(sg["src_start"]), float(sg["src_end"])])
+	var f := FileAccess.open(_edl_path(), FileAccess.WRITE)
+	if f:
+		f.store_string(JSON.stringify({"segments": arr}))
+
+
+## Load a saved EDL; [] when absent or invalid (caller falls back to full clip).
+func _load_edl() -> Array:
+	if not FileAccess.file_exists(_edl_path()):
+		return []
+	var data: Variant = JSON.parse_string(FileAccess.get_file_as_string(_edl_path()))
+	if not (data is Dictionary) or not data.has("segments"):
+		return []
+	var out: Array = []
+	for pair in data["segments"]:
+		if not (pair is Array) or pair.size() != 2:
+			return []
+		var s := float(pair[0])
+		var e := float(pair[1])
+		if s < 0.0 or e <= s or e > _duration + 0.5:
+			return []
+		out.append({"src_start": s, "src_end": e})
+	return out
+
+
+## ↺ back to the state the clip was opened with (EDL + cues).
+func _reset_edit() -> void:
+	_segments = _segments_snapshot.duplicate(true)
+	cues = []
+	for c in _cues_snapshot:
+		cues.append(c.duplicate())
+	_timeline.cues = cues
+	_timeline.segments = _segments
+	_timeline.sel_kind = "none"
+	_timeline.sel_cue = -1
+	_timeline.sel_seg = -1
+	_sel = -1
+	PreviewMaker.write_srt(cues, _srt_path)
+	_save_edl()
+	_on_segments_changed_shared()
+	_show_inspector("none")
+	EventBus.log_line.emit("↺ กลับสภาพตอนเปิดคลิป (ตัดต่อ + ซับ)")
+
+
 func _show_time() -> void:
-	_time_label.text = "%.1f / %.1fs" % [_t, _duration]
-	var idx := clampi(int(_t * PreviewMaker.FRAME_FPS) + 1, 1, maxi(_frame_total, 1))
+	_time_label.text = "%.1f / %.1fs" % [_t, _out_dur()]
+	var idx := clampi(int(TimelineView.out_to_src(_segments, _t) * PreviewMaker.FRAME_FPS) + 1, 1, maxi(_frame_total, 1))
 	if _frame_total > 0:
 		if not _tex_cache.has(idx):
 			var img := Image.new()
@@ -538,6 +641,40 @@ func _on_cue_selected(i: int) -> void:
 	_sync_time_fields()
 	_show_inspector("caption")
 	_seek(float(cues[i]["start"]))
+	_refresh_list()
+
+
+## A footage segment was clicked: show its source range in the Inspector.
+func _on_segment_selected(i: int) -> void:
+	_sel = -1
+	if i >= 0 and i < _segments.size():
+		var sg: Dictionary = _segments[i]
+		_seg_info.text = "ท่อน %d/%d · ต้นฉบับ %s – %s (%.1fs)" % [
+			i + 1, _segments.size(), _mmss2(float(sg["src_start"])),
+			_mmss2(float(sg["src_end"])),
+			float(sg["src_end"]) - float(sg["src_start"])]
+	_show_inspector("segment")
+
+
+func _mmss2(t: float) -> String:
+	return "%d:%04.1f" % [int(t) / 60, fmod(t, 60.0)]
+
+
+## Footage edit happened (cut/delete/reorder): persist + re-derive durations.
+func _on_segments_changed() -> void:
+	PreviewMaker.write_srt(cues, _srt_path)
+	_save_edl()
+	_on_segments_changed_shared()
+
+
+func _on_segments_changed_shared() -> void:
+	_timeline.duration = _out_dur()
+	if _start_spin:
+		_start_spin.max_value = _out_dur()
+		_end_spin.max_value = _out_dur()
+	_t = clampf(_t, 0.0, _out_dur())
+	_play_seg = maxi(TimelineView.seg_at_out(_segments, _t), 0)
+	_show_time()
 	_refresh_list()
 
 
@@ -774,7 +911,20 @@ func style_dict() -> Dictionary:
 		"title_y": int(round(_title_pos.y / PREVIEW_SCALE)),
 		"title_start": _title_start,
 		"title_end": _title_start + _title_dur,
+		"edl": _edl_for_burn(),
 	}
+
+
+## The EDL for the burn — [] when the edit is trivial (whole clip, one piece).
+func _edl_for_burn() -> Array:
+	if _segments.size() == 1 \
+			and absf(float(_segments[0]["src_start"])) < 0.01 \
+			and absf(float(_segments[0]["src_end"]) - _duration) < 0.01:
+		return []
+	var out: Array = []
+	for sg in _segments:
+		out.append([float(sg["src_start"]), float(sg["src_end"])])
+	return out
 
 
 ## Godot Color -> ASS &H00BBGGRR (opaque; libass colours are BGR).
@@ -829,3 +979,5 @@ func _show_inspector(kind: String) -> void:
 	_start_spin.get_parent().visible = kind == "caption"
 	if _title_inspector:
 		_title_inspector.visible = kind == "title"
+	if _seg_row:
+		_seg_row.visible = kind == "segment"
