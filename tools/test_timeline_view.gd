@@ -293,6 +293,14 @@ func _run() -> void:
 	_check("A now second block", str(rcs[1]["text"]) == "A" and is_equal_approx(float(rcs[1]["start"]), 5.0))
 	_check("reorder same index no-op", not TimelineView.reorder_segment(rs, rcs, 0, 0))
 	_check("reorder bad index no-op", not TimelineView.reorder_segment(rs, rcs, 0, 5))
+	# seam-spanning cue: assigned by MIDPOINT (seam belongs to the right segment),
+	# trimmed to that segment's old range, then travels with it — pinned so the
+	# trim-on-reorder semantics stay intentional
+	var rs2 := [{"src_start": 0.0, "src_end": 4.0}, {"src_start": 4.0, "src_end": 8.0}]
+	var rc2 := [{"start": 3.0, "end": 5.0, "text": "S"}]   # spans the seam at 4.0, mid=4.0
+	TimelineView.reorder_segment(rs2, rc2, 1, 0)
+	_check("seam-spanning cue trims to its midpoint segment and travels",
+		rc2.size() == 1 and is_equal_approx(float(rc2[0]["start"]), 0.0) and is_equal_approx(float(rc2[0]["end"]), 1.0))
 
 	# --- media segments: select + blade/delete routing ---
 	var tvs = TimelineView.new()

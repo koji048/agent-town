@@ -561,7 +561,7 @@ func _load_edl() -> Array:
 	if not FileAccess.file_exists(_edl_path()):
 		return []
 	var data: Variant = JSON.parse_string(FileAccess.get_file_as_string(_edl_path()))
-	if not (data is Dictionary) or not data.has("segments"):
+	if not (data is Dictionary) or not data.has("segments") or not (data["segments"] is Array):
 		return []
 	var out: Array = []
 	for pair in data["segments"]:
@@ -729,7 +729,7 @@ func _on_title_time_changed(start: float, dur: float) -> void:
 func _apply_time_fields() -> void:
 	if _sel < 0 or _sel >= cues.size():
 		return
-	var sp := TimelineView.clamp_span(cues, _sel, _start_spin.value, _end_spin.value, _duration)
+	var sp := TimelineView.clamp_span(cues, _sel, _start_spin.value, _end_spin.value, _out_dur())
 	cues[_sel]["start"] = sp[0]
 	cues[_sel]["end"] = sp[1]
 	PreviewMaker.write_srt(cues, _srt_path)
