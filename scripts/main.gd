@@ -285,7 +285,25 @@ func _on_files_dropped(files: PackedStringArray) -> void:
 
 func _ingest_dropped(path: String, opts: Dictionary = {}) -> void:
 	var dest := ProjectSettings.globalize_path("res://inbox").path_join(path.get_file())
+	# a drag from a not-yet-materialised source (iCloud placeholder, file still
+	# being written) can "succeed" as a 0-byte copy; ingest then crashes AFTER
+	# moving the empty file into the content tree. Verify the copy is real
+	# before the pipeline ever sees it.
+	var src_f := FileAccess.open(path, FileAccess.READ)
+	var src_len: int = src_f.get_length() if src_f else -1
+	if src_f:
+		src_f.close()
 	if DirAccess.copy_absolute(path, dest) == OK:
+		var dst_f := FileAccess.open(dest, FileAccess.READ)
+		var dst_len: int = dst_f.get_length() if dst_f else -1
+		if dst_f:
+			dst_f.close()
+		if dst_len <= 0 or dst_len != src_len:
+			DirAccess.remove_absolute(dest)
+			_append_log("⚠ คลิปคัดลอกไม่สมบูรณ์ (%d bytes): %s — ถ้าไฟล์อยู่บน iCloud ให้โหลดลงเครื่องก่อนแล้วลากใหม่" % [
+				maxi(dst_len, 0), path.get_file()])
+			Sfx.play_ui("chime", -8.0)
+			return
 		if not opts.is_empty():
 			var f := FileAccess.open(dest + ".opts.json", FileAccess.WRITE)
 			if f:
