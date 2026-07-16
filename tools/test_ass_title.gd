@@ -42,6 +42,12 @@ func _run() -> void:
 	_check("title default window unchanged",
 		t.contains("Dialogue: 0,0:00:00.00,0:00:02.50,Title,,0,0,0,,"))
 
+	# multi-line title: newlines become ASS \N (not spaces)
+	pm.write_ass(cues, {"title_text": "EP7 LINE1\nLINE2"}, p)
+	t = FileAccess.get_file_as_string(p)
+	_check("title newline -> \\N", t.contains(",Title,,0,0,0,,{\\pos(540,960)}EP7 LINE1\\NLINE2"))
+	_check("title has no flattened space", not t.contains("EP7 LINE1 LINE2"))
+
 	# nothing -> no title event
 	pm.write_ass(cues, {}, p)
 	t = FileAccess.get_file_as_string(p)

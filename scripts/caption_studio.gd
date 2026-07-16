@@ -42,12 +42,13 @@ var _wave: PackedFloat32Array
 var _frame_rect: TextureRect
 var _cap_label: Label
 var _title_label: Label
-var _title_edit: LineEdit
+var _title_edit: TextEdit
 var _title_text := ""
 var _title_color := Color(1.0, 0.9, 0.15)
 var _title_pos := Vector2(162.0, 200.0)  # preview-px centre of the title box
 var _title_font_idx := 0
 var _title_start := 0.0    # EP title window start on the timeline, seconds
+var _title_dur := TITLE_SEC   # EP title window length, seconds; owner-resizable
 var _title_inspector: HBoxContainer
 var _title_font_pick: OptionButton
 var _timeline: TimelineView
@@ -64,6 +65,9 @@ var _color_idx := 0
 var _color_btns: Array = []
 var _use_custom := false      # a free-picked colour overrides the presets
 var _custom_color := Color(1, 1, 1)
+var _list_toggle: CheckButton
+var _list_scroll: ScrollContainer
+var _list_box: VBoxContainer
 
 
 func _ready() -> void:
@@ -263,10 +267,13 @@ func _ready() -> void:
 	tlbl.add_theme_font_size_override("font_size", 13)
 	tlbl.modulate = Color(1.0, 0.9, 0.4)
 	title_row.add_child(tlbl)
-	_title_edit = LineEdit.new()
+	_title_edit = TextEdit.new()
 	_title_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_title_edit.custom_minimum_size = Vector2(0, 48)
 	_title_edit.placeholder_text = "EP title text"
-	_title_edit.text_changed.connect(func(t: String) -> void:
+	_title_edit.scroll_fit_content_height = true
+	_title_edit.text_changed.connect(func() -> void:
+		var t := _title_edit.text
 		_title_text = t
 		if _title_label:
 			_title_label.text = t
@@ -331,6 +338,21 @@ func _ready() -> void:
 	I18n.reg(save, "text", "btn_save_cue")
 	save.pressed.connect(_save_cue)
 	right.add_child(save)
+	_list_toggle = CheckButton.new()
+	_list_toggle.text = "📋 รายการซับ"
+	_list_toggle.toggled.connect(func(on: bool) -> void:
+		_list_scroll.visible = on
+		if on:
+			_rebuild_list_view())
+	right.add_child(_list_toggle)
+	_list_scroll = ScrollContainer.new()
+	_list_scroll.visible = false
+	_list_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_list_scroll.custom_minimum_size = Vector2(0, 240)
+	_list_box = VBoxContainer.new()
+	_list_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_list_scroll.add_child(_list_box)
+	right.add_child(_list_scroll)
 	# ONE burn button: what the preview shows is exactly what burns
 	# (two buttons made the font choice look ignored)
 	var actions := HBoxContainer.new()
@@ -362,6 +384,27 @@ func _ready() -> void:
 	_timeline.title_selected.connect(_on_title_selected)
 	_timeline.selection_cleared.connect(_on_selection_cleared)
 	_timeline.title_time_changed.connect(_on_title_time_changed)
+
+	var tools := HBoxContainer.new()
+	tools.add_theme_constant_override("separation", 6)
+	var cut_btn := Button.new()
+	cut_btn.text = "✂️ ตัด (S)"
+	cut_btn.pressed.connect(func() -> void: _timeline.cut_at_playhead())
+	tools.add_child(cut_btn)
+	var del_btn := Button.new()
+	del_btn.text = "🗑 ลบ (Del)"
+	del_btn.pressed.connect(func() -> void: _timeline.delete_selected())
+	tools.add_child(del_btn)
+	var all_btn := Button.new()
+	all_btn.text = "⬚ เลือกทั้งหมด"
+	all_btn.pressed.connect(func() -> void: _timeline.select_all())
+	tools.add_child(all_btn)
+	var thint := Label.new()
+	thint.text = "ตัด/ลบที่หัวอ่าน · เลือกทั้งหมดแล้วลากเพื่อเลื่อนทั้งชุด"
+	thint.add_theme_font_size_override("font_size", 11)
+	thint.modulate = Color(0.7, 0.7, 0.76)
+	tools.add_child(thint)
+	root.add_child(tools)
 	root.add_child(_timeline)
 	# Timing is edited on the TimelineView strip below (drag/trim/cut/delete),
 	# not a scrollable cue list — there is no cue list in this layout.
@@ -401,12 +444,14 @@ func open_clip(srt_path: String, frames_dir: String, title := "") -> void:
 		_start_spin.max_value = _duration
 		_end_spin.max_value = _duration
 	_title_start = 0.0
+	_title_dur = TITLE_SEC
 	_timeline.cues = cues
 	_timeline.duration = _duration
 	_timeline.wave = _wave
 	_timeline.frames = _sample_strip()
 	_timeline.title_text = _title_text
 	_timeline.title_start = _title_start
+	_timeline.title_dur = _title_dur
 	_timeline.sel_kind = "none"
 	_timeline.sel_cue = -1
 	_show_inspector("none")
@@ -414,6 +459,7 @@ func open_clip(srt_path: String, frames_dir: String, title := "") -> void:
 	_show_time()
 	visible = true
 	Sfx.play_ui("paper", -8.0)
+	_refresh_list()
 
 
 func _process(_delta: float) -> void:
@@ -460,6 +506,7 @@ func _show_time() -> void:
 		_title_label.visible = not _title_text.is_empty()
 	_timeline.playhead = _t
 	_timeline.title_start = _title_start
+	_timeline.title_dur = _title_dur
 	_timeline.queue_redraw()
 
 
@@ -491,6 +538,7 @@ func _on_cue_selected(i: int) -> void:
 	_sync_time_fields()
 	_show_inspector("caption")
 	_seek(float(cues[i]["start"]))
+	_refresh_list()
 
 
 ## Live drag of a caption edge/body: reflect timing into the spins + preview.
@@ -503,12 +551,14 @@ func _on_cue_time_changed(i: int, _s: float, _e: float) -> void:
 ## Drag/keyboard edit finished: persist the cues to the .srt.
 func _on_edit_committed() -> void:
 	PreviewMaker.write_srt(cues, _srt_path)
+	_refresh_list()
 
 
 ## A caption was split: persist, keep the left half selected, refresh Inspector.
 func _on_cue_split(i: int, _at: float) -> void:
 	PreviewMaker.write_srt(cues, _srt_path)
 	_on_cue_selected(i)
+	_refresh_list()
 
 
 ## A caption was deleted: persist and clear the Inspector.
@@ -516,6 +566,7 @@ func _on_cue_deleted(_i: int) -> void:
 	PreviewMaker.write_srt(cues, _srt_path)
 	_sel = -1
 	_show_inspector("none")
+	_refresh_list()
 
 
 ## The title box was clicked: show the EP Title strip in the Inspector.
@@ -530,9 +581,10 @@ func _on_selection_cleared() -> void:
 	_show_inspector("none")
 
 
-## Live drag of the title box along the timeline: reflect its new start time.
-func _on_title_time_changed(start: float) -> void:
+## Live drag/resize of the title box: reflect its new start + duration.
+func _on_title_time_changed(start: float, dur: float) -> void:
 	_title_start = start
+	_title_dur = dur
 	_show_time()
 
 
@@ -546,6 +598,7 @@ func _apply_time_fields() -> void:
 	PreviewMaker.write_srt(cues, _srt_path)
 	_sync_time_fields()
 	_show_time()
+	_refresh_list()
 
 
 ## Reflect the selected cue's start/end into the spins without re-triggering.
@@ -568,6 +621,7 @@ func _save_cue() -> void:
 	_timeline.title_text = _title_text
 	_timeline.queue_redraw()
 	_show_time()
+	_refresh_list()
 
 
 ## Discover every font file in assets/fonts/ so the picker offers them all —
@@ -719,7 +773,7 @@ func style_dict() -> Dictionary:
 		"title_x": int(round(_title_pos.x / PREVIEW_SCALE)),
 		"title_y": int(round(_title_pos.y / PREVIEW_SCALE)),
 		"title_start": _title_start,
-		"title_end": _title_start + TITLE_SEC,
+		"title_end": _title_start + _title_dur,
 	}
 
 
@@ -734,6 +788,36 @@ func _resolve(action: String) -> void:
 	_audio.stop()
 	EventBus.clip_review_resolved.emit(action,
 		style_dict() if action == "custom" else {})
+
+
+## Read-only list of every cue; click a row to select + seek it. Rebuilt only
+## while the panel is visible.
+func _rebuild_list_view() -> void:
+	if not _list_box:
+		return
+	for ch in _list_box.get_children():
+		ch.queue_free()
+	for i in cues.size():
+		var c: Dictionary = cues[i]
+		var b := Button.new()
+		b.text = "%d:%04.1f  %s" % [int(float(c["start"])) / 60, fmod(float(c["start"]), 60.0), str(c["text"]).left(40)]
+		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		b.add_theme_font_size_override("font_size", 13)
+		if i == _sel:
+			b.add_theme_color_override("font_color", Color(1.0, 0.85, 0.4))
+		var idx := i
+		b.pressed.connect(func() -> void:
+			_timeline.sel_kind = "cue"
+			_timeline.sel_cue = idx
+			_on_cue_selected(idx)
+			_timeline.queue_redraw())
+		_list_box.add_child(b)
+
+
+## Rebuild the list only if it is currently shown.
+func _refresh_list() -> void:
+	if _list_scroll and _list_scroll.visible:
+		_rebuild_list_view()
 
 
 ## Show only the editor widgets for the current selection.

@@ -141,11 +141,25 @@ func _run() -> void:
 	tv2.cut_at_playhead()
 	_check("cut near edge is a no-op", tv2.cues.size() == 2)
 
-	# delete selected
+	# blade semantics: NO selection needed — cut whatever is under the playhead
+	# (selecting a cue snaps the playhead to its start, so select-then-cut was
+	# always a silent no-op; the blade must work straight off the playhead)
+	tv2.sel_kind = "none"
+	tv2.sel_cue = -1
+	tv2.playhead = 5.5   # inside the right half [5.0, 6.0]
+	tv2.cut_at_playhead()
+	_check("blade cuts under playhead without selection", tv2.cues.size() == 3)
+	_check("blade selects the left half", tv2.sel_kind == "cue" and tv2.sel_cue == 1)
+	tv2.sel_kind = "none"
+	tv2.playhead = 2.0   # in the gap before the first cue
+	tv2.cut_at_playhead()
+	_check("blade in a gap is a no-op", tv2.cues.size() == 3)
+
+	# delete selected (3 cues remain after the blade block above)
 	tv2.sel_kind = "cue"
 	tv2.sel_cue = 1
 	tv2.delete_selected()
-	_check("delete removes cue", tv2.cues.size() == 1)
+	_check("delete removes cue", tv2.cues.size() == 2)
 	_check("delete emits signal", ev["del"] == 1)
 	_check("delete clears selection", tv2.sel_kind == "none")
 
@@ -168,6 +182,63 @@ func _run() -> void:
 	_check("clamp tiny start >= prev end", r4[0] >= 1.0 - 0.001)
 	_check("clamp tiny end <= next start", r4[1] <= 1.1 + 0.001)
 	_check("clamp tiny start <= end (no inversion)", r4[0] <= r4[1] + 0.001)
+
+	# --- shift_all_delta (group move: clamp one delta against the whole set) ---
+	var sc := [{"start": 1.0, "end": 2.0, "text": "a"}, {"start": 4.0, "end": 6.0, "text": "b"}]
+	# with title [0, 2.5]: min_start=0, max_end=6, duration=10 -> right room = 4
+	_check("shift right within room", is_equal_approx(TimelineView.shift_all_delta(sc, 0.0, 2.5, 3.0, 10.0, true), 3.0))
+	_check("shift right clamps at wall", is_equal_approx(TimelineView.shift_all_delta(sc, 0.0, 2.5, 9.0, 10.0, true), 4.0))
+	_check("shift left blocked by title at 0", is_equal_approx(TimelineView.shift_all_delta(sc, 0.0, 2.5, -1.0, 10.0, true), 0.0))
+	# without title: min_start=1 -> left room = 1
+	_check("shift left within room (no title)", is_equal_approx(TimelineView.shift_all_delta(sc, 0.0, 2.5, -1.0, 10.0, false), -1.0))
+	_check("shift left clamps (no title)", is_equal_approx(TimelineView.shift_all_delta(sc, 0.0, 2.5, -5.0, 10.0, false), -1.0))
+	_check("shift empty set is zero", is_equal_approx(TimelineView.shift_all_delta([], 0.0, 2.5, 3.0, 10.0, false), 0.0))
+
+	# --- title duration: edge-resize + move keep the box within [0, duration] ---
+	var tvt = TimelineView.new()
+	tvt.size = Vector2(1000.0, 120.0)
+	tvt.duration = D
+	tvt.title_text = "EP"
+	tvt.title_start = 2.0
+	tvt.title_dur = 2.5
+	var tgot := {"start": -1.0, "dur": -1.0}
+	tvt.title_time_changed.connect(func(s: float, du: float) -> void:
+		tgot["start"] = s; tgot["dur"] = du)
+	# grab the RIGHT edge (at title_start+dur = 4.5 -> x=450) and drag to t=6 -> dur grows to 4
+	tvt.press(Vector2(TimelineView.time_to_x(4.5, 1000.0, D), tvt.title_row_y() + 4.0))
+	tvt.motion(Vector2(600.0, tvt.title_row_y() + 4.0))
+	_check("title right-edge resizes dur", is_equal_approx(tvt.title_dur, 4.0) and is_equal_approx(tvt.title_start, 2.0))
+	# grab the LEFT edge (at 2.0 -> x=200) and drag to t=1 -> start moves, end (4.5) fixed -> dur 3.5
+	tvt.title_start = 2.0
+	tvt.title_dur = 2.5
+	tvt.press(Vector2(TimelineView.time_to_x(2.0, 1000.0, D), tvt.title_row_y() + 4.0))
+	tvt.motion(Vector2(TimelineView.time_to_x(1.0, 1000.0, D), tvt.title_row_y() + 4.0))
+	_check("title left-edge moves start keeps end", is_equal_approx(tvt.title_start, 1.0) and is_equal_approx(tvt.title_start + tvt.title_dur, 4.5))
+	# min duration: drag right edge left past MIN_TITLE_DUR
+	tvt.title_start = 2.0
+	tvt.title_dur = 2.5
+	tvt.press(Vector2(TimelineView.time_to_x(4.5, 1000.0, D), tvt.title_row_y() + 4.0))
+	tvt.motion(Vector2(TimelineView.time_to_x(2.0, 1000.0, D), tvt.title_row_y() + 4.0))
+	_check("title dur holds MIN_TITLE_DUR", tvt.title_dur >= 0.5 - 0.001)
+	tvt.release()
+
+	# --- select all + group move ---
+	var tva = TimelineView.new()
+	tva.size = Vector2(1000.0, 120.0)
+	tva.duration = D
+	tva.title_text = "EP"
+	tva.title_start = 0.0
+	tva.title_dur = 2.5
+	tva.cues = [{"start": 1.0, "end": 2.0, "text": "a"}, {"start": 4.0, "end": 6.0, "text": "b"}]
+	tva.select_all()
+	_check("select_all sets sel_kind all", tva.sel_kind == "all")
+	# grab anywhere on the caption row and drag +3s (from t=5 to t=8)
+	tva.press(Vector2(TimelineView.time_to_x(5.0, 1000.0, D), tva.caption_row_y() + 4.0))
+	tva.motion(Vector2(TimelineView.time_to_x(8.0, 1000.0, D), tva.caption_row_y() + 4.0))
+	_check("group move shifts cue a", is_equal_approx(float(tva.cues[0]["start"]), 4.0))
+	_check("group move shifts cue b end", is_equal_approx(float(tva.cues[1]["end"]), 9.0))
+	_check("group move shifts title", is_equal_approx(tva.title_start, 3.0))
+	tva.release()
 
 	print("\n=== timeline view tests: %d passed, %d failed ===" % [_passes, _fails])
 	quit(1 if _fails > 0 else 0)
