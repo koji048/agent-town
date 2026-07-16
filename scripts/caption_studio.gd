@@ -608,6 +608,54 @@ func _ig_guide(parent: Control, at: int, l: float, t: float, r: float, b: float,
 	parent.add_child(g)
 
 
+## libass sizes text by the GDI CELL height (OS/2 winAscent+winDescent), Godot
+## by em — so at the same number the burn renders SMALLER than a Godot Label,
+## by upem/(winAsc+winDesc), which varies per font (Anuphan 0.69, ChakraPetch
+## 0.55, Charmonman 0.39; measured: Fontsize 72 burns 40px tall vs Godot 60px).
+## Parse that ratio from the font file so the preview matches the real burn.
+## (sfnt tables are BIG-endian; PackedByteArray decode_* is little-endian.)
+static func ass_font_ratio(path: String) -> float:
+	var b := FileAccess.get_file_as_bytes(path)
+	if b.size() < 12:
+		return 1.0
+	var ntab := _be16(b, 4)
+	var head := -1
+	var os2 := -1
+	for i in ntab:
+		var off := 12 + i * 16
+		if off + 16 > b.size():
+			return 1.0
+		var tag := b.slice(off, off + 4).get_string_from_ascii()
+		if tag == "head":
+			head = _be32(b, off + 8)
+		elif tag == "OS/2":
+			os2 = _be32(b, off + 8)
+	if head < 0 or os2 < 0 or head + 20 > b.size() or os2 + 78 > b.size():
+		return 1.0
+	var upem := _be16(b, head + 18)
+	var cell := _be16(b, os2 + 74) + _be16(b, os2 + 76)
+	if upem == 0 or cell == 0:
+		return 1.0
+	return float(upem) / float(cell)
+
+
+static func _be16(b: PackedByteArray, o: int) -> int:
+	return (b[o] << 8) | b[o + 1]
+
+
+static func _be32(b: PackedByteArray, o: int) -> int:
+	return (b[o] << 24) | (b[o + 1] << 16) | (b[o + 2] << 8) | b[o + 3]
+
+
+var _ratio_cache: Dictionary = {}
+
+
+func _font_ratio(path: String) -> float:
+	if not _ratio_cache.has(path):
+		_ratio_cache[path] = ass_font_ratio(path)
+	return float(_ratio_cache[path])
+
+
 ## Style the title text box from the title state (font, colour, size).
 func _apply_title_style() -> void:
 	if not _title_label:
@@ -616,7 +664,7 @@ func _apply_title_style() -> void:
 	var font := FontFile.new()
 	font.load_dynamic_font(str(FONTS[_title_font_idx][1]))
 	ls.font = font
-	ls.font_size = int(round(100.0 * PREVIEW_SCALE))
+	ls.font_size = int(round(100.0 * PREVIEW_SCALE * _font_ratio(str(FONTS[_title_font_idx][1]))))
 	ls.font_color = _title_color
 	ls.outline_size = 3
 	ls.outline_color = Color(0, 0, 0)
@@ -641,7 +689,8 @@ func _apply_style() -> void:
 	var font := FontFile.new()
 	font.load_dynamic_font(str(FONTS[_font_pick.selected][1]))
 	ls.font = font
-	ls.font_size = int(round(int(SIZES[_size_pick.selected][1]) * PREVIEW_SCALE))
+	ls.font_size = int(round(int(SIZES[_size_pick.selected][1]) * PREVIEW_SCALE \
+		* _font_ratio(str(FONTS[_font_pick.selected][1]))))
 	ls.font_color = _custom_color if _use_custom else (COLORS[_color_idx][3] as Color)
 	ls.outline_size = maxi(1, int(round(3.0 * PREVIEW_SCALE)))
 	ls.outline_color = Color(0, 0, 0) if _use_custom else (COLORS[_color_idx][4] as Color)
