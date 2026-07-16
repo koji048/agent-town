@@ -169,6 +169,17 @@ func _run() -> void:
 	_check("clamp tiny end <= next start", r4[1] <= 1.1 + 0.001)
 	_check("clamp tiny start <= end (no inversion)", r4[0] <= r4[1] + 0.001)
 
+	# --- shift_all_delta (group move: clamp one delta against the whole set) ---
+	var sc := [{"start": 1.0, "end": 2.0, "text": "a"}, {"start": 4.0, "end": 6.0, "text": "b"}]
+	# with title [0, 2.5]: min_start=0, max_end=6, duration=10 -> right room = 4
+	_check("shift right within room", is_equal_approx(TimelineView.shift_all_delta(sc, 0.0, 2.5, 3.0, 10.0, true), 3.0))
+	_check("shift right clamps at wall", is_equal_approx(TimelineView.shift_all_delta(sc, 0.0, 2.5, 9.0, 10.0, true), 4.0))
+	_check("shift left blocked by title at 0", is_equal_approx(TimelineView.shift_all_delta(sc, 0.0, 2.5, -1.0, 10.0, true), 0.0))
+	# without title: min_start=1 -> left room = 1
+	_check("shift left within room (no title)", is_equal_approx(TimelineView.shift_all_delta(sc, 0.0, 2.5, -1.0, 10.0, false), -1.0))
+	_check("shift left clamps (no title)", is_equal_approx(TimelineView.shift_all_delta(sc, 0.0, 2.5, -5.0, 10.0, false), -1.0))
+	_check("shift empty set is zero", is_equal_approx(TimelineView.shift_all_delta([], 0.0, 2.5, 3.0, 10.0, false), 0.0))
+
 	print("\n=== timeline view tests: %d passed, %d failed ===" % [_passes, _fails])
 	quit(1 if _fails > 0 else 0)
 

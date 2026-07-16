@@ -106,6 +106,22 @@ static func split_span(s: float, e: float, at: float) -> Array:
 	return [[s, at], [at, e]]
 
 
+## Clamp `delta` so shifting every cue (and the title when `has_title`) by it
+## keeps the whole block inside [0, duration]. Returns the allowed shift.
+static func shift_all_delta(cues: Array, title_start: float, title_dur: float, delta: float, duration: float, has_title: bool) -> float:
+	var min_start := INF
+	var max_end := -INF
+	for c in cues:
+		min_start = minf(min_start, float(c["start"]))
+		max_end = maxf(max_end, float(c["end"]))
+	if has_title:
+		min_start = minf(min_start, title_start)
+		max_end = maxf(max_end, title_start + title_dur)
+	if min_start == INF:
+		return 0.0
+	return clampf(delta, -min_start, duration - max_end)
+
+
 ## Route a left-press to a title/caption box (select + arm drag), the ruler
 ## (seek), or empty space (clear selection + seek).
 func press(pos: Vector2) -> void:
