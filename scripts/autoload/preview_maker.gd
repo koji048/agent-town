@@ -209,6 +209,9 @@ func write_ass(cues: Array, style: Dictionary, path: String) -> void:
 ## A non-empty edl assembles first: per-segment trim/atrim (+PTS resets,
 ## per-segment audio timestamp normalisation), concat, then the reframe
 ## chain + subtitles over the assembled video. Output flags identical.
+## Audio is ALWAYS normalized to AAC 48kHz stereo with zeroed timestamps:
+## a posted EP burned at the source's 44.1kHz with the iPhone's negative-pts
+## edit list played SILENT on Android TikTok while fine on iPhone.
 static func build_burn_args(video: String, vf_reframe: String, ass_path: String, fonts_dir: String, edl: Array, final_mp4: String) -> PackedStringArray:
 	var subs := ",subtitles=filename=%s:fontsdir=%s" % [ass_path, fonts_dir]
 	var tail := PackedStringArray([
