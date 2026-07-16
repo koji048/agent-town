@@ -42,7 +42,7 @@ var _wave: PackedFloat32Array
 var _frame_rect: TextureRect
 var _cap_label: Label
 var _title_label: Label
-var _title_edit: LineEdit
+var _title_edit: TextEdit
 var _title_text := ""
 var _title_color := Color(1.0, 0.9, 0.15)
 var _title_pos := Vector2(162.0, 200.0)  # preview-px centre of the title box
@@ -263,10 +263,13 @@ func _ready() -> void:
 	tlbl.add_theme_font_size_override("font_size", 13)
 	tlbl.modulate = Color(1.0, 0.9, 0.4)
 	title_row.add_child(tlbl)
-	_title_edit = LineEdit.new()
+	_title_edit = TextEdit.new()
 	_title_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_title_edit.custom_minimum_size = Vector2(0, 48)
 	_title_edit.placeholder_text = "EP title text"
-	_title_edit.text_changed.connect(func(t: String) -> void:
+	_title_edit.scroll_fit_content_height = true
+	_title_edit.text_changed.connect(func() -> void:
+		var t := _title_edit.text
 		_title_text = t
 		if _title_label:
 			_title_label.text = t
