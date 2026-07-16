@@ -551,6 +551,7 @@ func _on_cue_time_changed(i: int, _s: float, _e: float) -> void:
 ## Drag/keyboard edit finished: persist the cues to the .srt.
 func _on_edit_committed() -> void:
 	PreviewMaker.write_srt(cues, _srt_path)
+	_refresh_list()
 
 
 ## A caption was split: persist, keep the left half selected, refresh Inspector.
