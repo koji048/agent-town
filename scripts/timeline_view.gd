@@ -9,6 +9,7 @@ const MIN_DUR := 0.2
 const EDGE_PX := 7.0
 const TITLE_SEC := 2.5
 const MIN_TITLE_DUR := 0.5
+const MIN_SEG_DUR := 0.5
 
 const RULER_H := 16.0
 const ROW_H := 22.0
@@ -122,6 +123,69 @@ static func shift_all_delta(cues: Array, title_start: float, title_dur: float, d
 	if min_start == INF:
 		return 0.0
 	return clampf(delta, -min_start, duration - max_end)
+
+
+## ---- EDL (Phase 2): the output timeline is the ordered concatenation of
+## source segments; the source footage itself is never touched. ----
+
+
+## Total output duration (sum of segment lengths).
+static func out_len(segments: Array) -> float:
+	var acc := 0.0
+	for seg in segments:
+		acc += float(seg["src_end"]) - float(seg["src_start"])
+	return acc
+
+
+## Output start time of segment i (prefix sum).
+static func out_start(segments: Array, i: int) -> float:
+	var acc := 0.0
+	for k in mini(i, segments.size()):
+		acc += float(segments[k]["src_end"]) - float(segments[k]["src_start"])
+	return acc
+
+
+## Which segment contains output time t (a seam belongs to the RIGHT segment);
+## -1 outside [0, out_len).
+static func seg_at_out(segments: Array, t: float) -> int:
+	if t < 0.0:
+		return -1
+	var acc := 0.0
+	for k in segments.size():
+		var l := float(segments[k]["src_end"]) - float(segments[k]["src_start"])
+		if t < acc + l:
+			return k
+		acc += l
+	return -1
+
+
+## Map an output position to the source position (clamps past the end).
+static func out_to_src(segments: Array, t: float) -> float:
+	if segments.is_empty():
+		return t
+	var acc := 0.0
+	for seg in segments:
+		var l := float(seg["src_end"]) - float(seg["src_start"])
+		if t < acc + l:
+			return float(seg["src_start"]) + maxf(t - acc, 0.0)
+		acc += l
+	return float(segments[-1]["src_end"])
+
+
+## Blade the footage: split the segment under at_out at the mapped source
+## position. False (no mutation) outside any segment or if a half < MIN_SEG_DUR.
+static func cut_footage(segments: Array, at_out: float) -> bool:
+	var i := seg_at_out(segments, at_out)
+	if i < 0:
+		return false
+	var s0 := float(segments[i]["src_start"])
+	var s1 := float(segments[i]["src_end"])
+	var split_src := s0 + (at_out - out_start(segments, i))
+	if split_src - s0 < MIN_SEG_DUR or s1 - split_src < MIN_SEG_DUR:
+		return false
+	segments[i]["src_end"] = split_src
+	segments.insert(i + 1, {"src_start": split_src, "src_end": s1})
+	return true
 
 
 ## Route a left-press to a title/caption box (select + arm drag), the ruler

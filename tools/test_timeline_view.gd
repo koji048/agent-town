@@ -240,6 +240,25 @@ func _run() -> void:
 	_check("group move shifts title", is_equal_approx(tva.title_start, 3.0))
 	tva.release()
 
+	# --- EDL statics: output<->source mapping ---
+	var eg := [{"src_start": 10.0, "src_end": 14.0}, {"src_start": 2.0, "src_end": 5.0}]
+	_check("out_len sums segments", is_equal_approx(TimelineView.out_len(eg), 7.0))
+	_check("out_len empty", is_equal_approx(TimelineView.out_len([]), 0.0))
+	_check("out_start first", is_equal_approx(TimelineView.out_start(eg, 0), 0.0))
+	_check("out_start second", is_equal_approx(TimelineView.out_start(eg, 1), 4.0))
+	_check("seg_at_out inside first", TimelineView.seg_at_out(eg, 1.0) == 0)
+	_check("seg_at_out at seam -> right segment", TimelineView.seg_at_out(eg, 4.0) == 1)
+	_check("seg_at_out past end", TimelineView.seg_at_out(eg, 7.5) == -1)
+	_check("seg_at_out negative", TimelineView.seg_at_out(eg, -0.1) == -1)
+	_check("out_to_src first", is_equal_approx(TimelineView.out_to_src(eg, 1.0), 11.0))
+	_check("out_to_src across seam", is_equal_approx(TimelineView.out_to_src(eg, 5.0), 3.0))
+	_check("out_to_src end clamps", is_equal_approx(TimelineView.out_to_src(eg, 99.0), 5.0))
+	var eg2 := [{"src_start": 0.0, "src_end": 10.0}]
+	_check("cut splits segment", TimelineView.cut_footage(eg2, 4.0) and eg2.size() == 2)
+	_check("cut halves correct", is_equal_approx(float(eg2[0]["src_end"]), 4.0) and is_equal_approx(float(eg2[1]["src_start"]), 4.0))
+	_check("cut near edge no-op", not TimelineView.cut_footage(eg2, 0.2) and eg2.size() == 2)
+	_check("cut maps through seam to source", TimelineView.cut_footage(eg2, 6.0) and eg2.size() == 3 and is_equal_approx(float(eg2[1]["src_end"]), 6.0))
+
 	print("\n=== timeline view tests: %d passed, %d failed ===" % [_passes, _fails])
 	quit(1 if _fails > 0 else 0)
 
