@@ -188,6 +188,94 @@ static func cut_footage(segments: Array, at_out: float) -> bool:
 	return true
 
 
+## Ripple-delete segment i (never the last). Cues are OUTPUT-time and mutate
+## in place: inside the removed range -> dropped; straddling in -> tail-trim;
+## straddling out -> head-trim + ripple; spanning -> shrink; after -> shift.
+## Trims shorter than MIN_DUR are dropped.
+static func delete_segment(segments: Array, cues: Array, i: int) -> bool:
+	if segments.size() <= 1 or i < 0 or i >= segments.size():
+		return false
+	var o0 := out_start(segments, i)
+	var seg_l := float(segments[i]["src_end"]) - float(segments[i]["src_start"])
+	var o1 := o0 + seg_l
+	segments.remove_at(i)
+	var kept: Array = []
+	for c in cues:
+		var s := float(c["start"])
+		var e := float(c["end"])
+		if s >= o0 and e <= o1:
+			continue
+		if s < o0 and e > o0 and e <= o1:
+			e = o0
+		elif s >= o0 and s < o1 and e > o1:
+			s = o1 - seg_l
+			e = e - seg_l
+		elif s < o0 and e > o1:
+			e = e - seg_l
+		elif s >= o1:
+			s = s - seg_l
+			e = e - seg_l
+		if e - s < MIN_DUR:
+			continue
+		c["start"] = s
+		c["end"] = e
+		kept.append(c)
+	cues.clear()
+	for c in kept:
+		cues.append(c)
+	return true
+
+
+## Move segment from_i to to_i. Each cue is assigned to the segment holding
+## its midpoint, trimmed to that segment's old output range (drop < MIN_DUR),
+## and shifted by its segment's block offset; result re-sorted.
+static func reorder_segment(segments: Array, cues: Array, from_i: int, to_i: int) -> bool:
+	var n := segments.size()
+	if from_i == to_i or from_i < 0 or from_i >= n or to_i < 0 or to_i >= n:
+		return false
+	var old_start: Array = []
+	var old_len: Array = []
+	for k in n:
+		old_start.append(out_start(segments, k))
+		old_len.append(float(segments[k]["src_end"]) - float(segments[k]["src_start"]))
+	var assign: Array = []
+	for c in cues:
+		assign.append(seg_at_out(segments, (float(c["start"]) + float(c["end"])) * 0.5))
+	var moved = segments[from_i]
+	segments.remove_at(from_i)
+	segments.insert(to_i, moved)
+	# old index k -> new index after the move
+	var new_index: Array = []
+	for k in n:
+		if k == from_i:
+			new_index.append(to_i)
+		elif from_i < to_i and k > from_i and k <= to_i:
+			new_index.append(k - 1)
+		elif to_i < from_i and k >= to_i and k < from_i:
+			new_index.append(k + 1)
+		else:
+			new_index.append(k)
+	var kept: Array = []
+	for ci in cues.size():
+		var k: int = assign[ci]
+		if k < 0:
+			continue
+		var c = cues[ci]
+		var s := maxf(float(c["start"]), float(old_start[k]))
+		var e := minf(float(c["end"]), float(old_start[k]) + float(old_len[k]))
+		if e - s < MIN_DUR:
+			continue
+		var d := out_start(segments, int(new_index[k])) - float(old_start[k])
+		c["start"] = s + d
+		c["end"] = e + d
+		kept.append(c)
+	kept.sort_custom(func(a, b): return float(a["start"]) < float(b["start"]))
+	cues.clear()
+	for c in kept:
+		cues.append(c)
+	return true
+
+
 ## Route a left-press to a title/caption box (select + arm drag), the ruler
 ## (seek), or empty space (clear selection + seek).
 func press(pos: Vector2) -> void:

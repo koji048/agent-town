@@ -259,6 +259,41 @@ func _run() -> void:
 	_check("cut near edge no-op", not TimelineView.cut_footage(eg2, 0.2) and eg2.size() == 2)
 	_check("cut maps through seam to source", TimelineView.cut_footage(eg2, 6.0) and eg2.size() == 3 and is_equal_approx(float(eg2[1]["src_end"]), 6.0))
 
+	# --- delete_segment: cues ripple with the footage (owner rule A) ---
+	var ds := [{"src_start": 0.0, "src_end": 4.0}, {"src_start": 4.0, "src_end": 8.0}, {"src_start": 8.0, "src_end": 12.0}]
+	var dcs := [
+		{"start": 1.0, "end": 2.0, "text": "a"},
+		{"start": 3.5, "end": 5.0, "text": "b"},
+		{"start": 5.0, "end": 6.0, "text": "c"},
+		{"start": 7.5, "end": 9.0, "text": "d"},
+		{"start": 10.0, "end": 11.0, "text": "e"},
+	]
+	_check("delete middle ok", TimelineView.delete_segment(ds, dcs, 1) and ds.size() == 2)
+	_check("inside cue dropped -> 4 remain", dcs.size() == 4)
+	_check("cue before untouched", is_equal_approx(float(dcs[0]["start"]), 1.0))
+	_check("straddle-in tail-trimmed", is_equal_approx(float(dcs[1]["end"]), 4.0))
+	_check("straddle-out head-trimmed+rippled", is_equal_approx(float(dcs[2]["start"]), 4.0) and is_equal_approx(float(dcs[2]["end"]), 5.0))
+	_check("cue after shifted", is_equal_approx(float(dcs[3]["start"]), 6.0))
+	_check("last segment protected", not TimelineView.delete_segment([{"src_start": 0.0, "src_end": 4.0}], [], 0))
+	var ds2 := [{"src_start": 0.0, "src_end": 2.0}, {"src_start": 2.0, "src_end": 4.0}, {"src_start": 4.0, "src_end": 6.0}]
+	var dc2 := [{"start": 1.0, "end": 5.0, "text": "x"}]
+	TimelineView.delete_segment(ds2, dc2, 1)
+	_check("spanning cue shrinks", is_equal_approx(float(dc2[0]["start"]), 1.0) and is_equal_approx(float(dc2[0]["end"]), 3.0))
+	var ds3 := [{"src_start": 0.0, "src_end": 2.0}, {"src_start": 2.0, "src_end": 4.0}]
+	var dc3 := [{"start": 1.95, "end": 3.0, "text": "t"}]
+	TimelineView.delete_segment(ds3, dc3, 1)
+	_check("sub-MIN_DUR leftover dropped", dc3.is_empty())
+
+	# --- reorder_segment: cues travel with their footage (midpoint rule) ---
+	var rs := [{"src_start": 0.0, "src_end": 4.0}, {"src_start": 4.0, "src_end": 8.0}]
+	var rcs := [{"start": 1.0, "end": 2.0, "text": "A"}, {"start": 5.0, "end": 6.0, "text": "B"}]
+	_check("reorder ok", TimelineView.reorder_segment(rs, rcs, 1, 0))
+	_check("segments swapped", is_equal_approx(float(rs[0]["src_start"]), 4.0))
+	_check("B now first block", str(rcs[0]["text"]) == "B" and is_equal_approx(float(rcs[0]["start"]), 1.0))
+	_check("A now second block", str(rcs[1]["text"]) == "A" and is_equal_approx(float(rcs[1]["start"]), 5.0))
+	_check("reorder same index no-op", not TimelineView.reorder_segment(rs, rcs, 0, 0))
+	_check("reorder bad index no-op", not TimelineView.reorder_segment(rs, rcs, 0, 5))
+
 	print("\n=== timeline view tests: %d passed, %d failed ===" % [_passes, _fails])
 	quit(1 if _fails > 0 else 0)
 
