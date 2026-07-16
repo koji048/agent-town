@@ -23,11 +23,14 @@ var frames: Array = []          # a few ImageTextures for the media strip (optio
 var title_text := ""
 var title_start := 0.0
 var title_dur := TITLE_SEC
+var segments: Array = []        # EDL: [{src_start, src_end}]; empty = no edit UI
+var src_duration := 1.0         # source length (thumbnail/waveform mapping)
+var sel_seg := -1
 var playhead := 0.0
-var sel_kind := "none"          # "none" | "cue" | "title"
+var sel_kind := "none"          # "none" | "cue" | "title" | "segment"
 var sel_cue := -1
 
-var _drag_mode := ""            # "" | "seek" | "start" | "end" | "move" | "title"
+var _drag_mode := ""            # "" | "seek" | "start" | "end" | "move" | "title" | "segment_move"
 var _drag_grab := 0.0           # grab offset within the dragged element, seconds
 
 signal cue_selected(i: int)
@@ -38,6 +41,8 @@ signal title_time_changed(start: float, dur: float)
 signal edit_committed()
 signal cue_split(i: int, at: float)
 signal cue_deleted(i: int)
+signal segment_selected(i: int)
+signal segments_changed()
 signal seek(t: float)
 
 
@@ -329,6 +334,19 @@ func press(pos: Vector2) -> void:
 			cue_selected.emit(i)
 			queue_redraw()
 			return
+	if pos.y >= media_row_y() and not segments.is_empty():
+		var mt := x_to_time(pos.x, w, duration)
+		var si := seg_at_out(segments, mt)
+		if si >= 0:
+			sel_kind = "segment"
+			sel_seg = si
+			sel_cue = -1
+			_drag_mode = "segment_move"
+			_drag_grab = mt
+			segment_selected.emit(si)
+			seek.emit(mt)
+			queue_redraw()
+			return
 	# empty space / media lane -> clear selection and seek
 	_drag_mode = "seek"
 	sel_kind = "none"
@@ -402,6 +420,11 @@ func release() -> void:
 ## its START, so the natural select-then-cut flow always hit the
 ## zero-length-half no-op and looked like a dead button.)
 func cut_at_playhead() -> void:
+	if sel_kind == "segment":
+		if cut_footage(segments, playhead):
+			segments_changed.emit()
+			queue_redraw()
+		return
 	var i := -1
 	for k in cues.size():
 		if playhead > float(cues[k]["start"]) and playhead < float(cues[k]["end"]):
@@ -432,6 +455,15 @@ func select_all() -> void:
 
 ## Remove the selected caption cue.
 func delete_selected() -> void:
+	if sel_kind == "segment":
+		if delete_segment(segments, cues, sel_seg):
+			sel_kind = "none"
+			sel_seg = -1
+			_drag_mode = ""
+			segments_changed.emit()
+			selection_cleared.emit()
+		queue_redraw()
+		return
 	if sel_kind != "cue" or sel_cue < 0 or sel_cue >= cues.size():
 		return
 	var i := sel_cue
@@ -511,22 +543,60 @@ func _draw() -> void:
 			draw_rect(Rect2(x0, cy, 3.0, ROW_H), hc)
 			draw_rect(Rect2(x1 - 3.0, cy, 3.0, ROW_H), hc)
 
-	# media row: filmstrip thumbnails (if any) + waveform
+	# media row: EDL segment boxes (thumbnails + waveform mapped through each
+	# segment's source range, seams between); legacy full strip when no EDL
 	var my := media_row_y()
 	var mh := maxf(sz.y - my, 8.0)
-	if not frames.is_empty():
-		var fw := w / frames.size()
-		for i in frames.size():
-			var tex := frames[i] as Texture2D
-			if tex:
-				draw_texture_rect(tex, Rect2(i * fw, my, fw, mh), false)
-	if not wave.is_empty():
-		var n := wave.size()
-		var mid := my + mh * 0.5
-		for i in n:
-			var x := i * w / n
-			var h := wave[i] * (mh * 0.48)
-			draw_line(Vector2(x, mid - h), Vector2(x, mid + h), Color(0.35, 0.45, 0.55, 0.9), 1.0)
+	if segments.is_empty():
+		if not frames.is_empty():
+			var fw := w / frames.size()
+			for i in frames.size():
+				var tex := frames[i] as Texture2D
+				if tex:
+					draw_texture_rect(tex, Rect2(i * fw, my, fw, mh), false)
+		if not wave.is_empty():
+			var n := wave.size()
+			var mid := my + mh * 0.5
+			for i in n:
+				var x := i * w / n
+				var h := wave[i] * (mh * 0.48)
+				draw_line(Vector2(x, mid - h), Vector2(x, mid + h), Color(0.35, 0.45, 0.55, 0.9), 1.0)
+	else:
+		var mo := 0.0
+		for si in segments.size():
+			var s0 := float(segments[si]["src_start"])
+			var s1 := float(segments[si]["src_end"])
+			var sl := s1 - s0
+			var bx0 := time_to_x(mo, w, duration)
+			var bx1 := time_to_x(mo + sl, w, duration)
+			if not frames.is_empty() and src_duration > 0.0:
+				var cols := maxi(1, int((bx1 - bx0) / 36.0))
+				var cw := (bx1 - bx0) / cols
+				for cidx in cols:
+					var fsrc := s0 + (cidx + 0.5) / float(cols) * sl
+					var fi := clampi(int(fsrc / src_duration * frames.size()), 0, frames.size() - 1)
+					var tex := frames[fi] as Texture2D
+					if tex:
+						draw_texture_rect(tex, Rect2(bx0 + cidx * cw, my, cw, mh), false)
+			if not wave.is_empty() and src_duration > 0.0:
+				var mid := my + mh * 0.5
+				var nb := wave.size()
+				var px0 := int(maxf(bx0, 0.0))
+				var px1 := int(minf(bx1, w))
+				for x in range(px0, px1):
+					var fsrc := s0 + (x - bx0) / maxf(bx1 - bx0, 1.0) * sl
+					var bi := clampi(int(fsrc / src_duration * nb), 0, nb - 1)
+					var h := wave[bi] * (mh * 0.48)
+					draw_line(Vector2(x, mid - h), Vector2(x, mid + h), Color(0.35, 0.45, 0.55, 0.9), 1.0)
+			if si > 0:
+				draw_rect(Rect2(bx0 - 1.0, my, 2.0, mh), Color(0.95, 0.85, 0.4, 0.9))
+			if sel_kind == "segment" and si == sel_seg:
+				var sc := Color(1.0, 0.78, 0.32, 0.95)
+				draw_rect(Rect2(bx0, my, maxf(bx1 - bx0, 2.0), 2.0), sc)
+				draw_rect(Rect2(bx0, my + mh - 2.0, maxf(bx1 - bx0, 2.0), 2.0), sc)
+				draw_rect(Rect2(bx0, my, 3.0, mh), sc)
+				draw_rect(Rect2(bx1 - 3.0, my, 3.0, mh), sc)
+			mo += sl
 
 	# playhead across all rows
 	var px := time_to_x(playhead, w, duration)

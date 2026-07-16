@@ -294,6 +294,32 @@ func _run() -> void:
 	_check("reorder same index no-op", not TimelineView.reorder_segment(rs, rcs, 0, 0))
 	_check("reorder bad index no-op", not TimelineView.reorder_segment(rs, rcs, 0, 5))
 
+	# --- media segments: select + blade/delete routing ---
+	var tvs = TimelineView.new()
+	tvs.size = Vector2(1000.0, 120.0)
+	tvs.src_duration = 10.0
+	tvs.segments = [{"src_start": 0.0, "src_end": 10.0}]
+	tvs.duration = TimelineView.out_len(tvs.segments)
+	tvs.cues = []
+	var sev := {"sel": -1, "changed": 0}
+	tvs.segment_selected.connect(func(i: int) -> void: sev["sel"] = i)
+	tvs.segments_changed.connect(func() -> void: sev["changed"] += 1)
+	tvs.press(Vector2(500.0, tvs.media_row_y() + 4.0))
+	_check("press media selects segment", sev["sel"] == 0 and tvs.sel_kind == "segment")
+	tvs.release()
+	tvs.playhead = 5.0
+	tvs.cut_at_playhead()
+	_check("blade cuts footage when segment selected", tvs.segments.size() == 2 and sev["changed"] == 1)
+	tvs.sel_kind = "segment"
+	tvs.sel_seg = 0
+	tvs.delete_selected()
+	_check("delete removes segment", tvs.segments.size() == 1 and sev["changed"] == 2)
+	_check("delete clears segment selection", tvs.sel_kind == "none")
+	tvs.sel_kind = "segment"
+	tvs.sel_seg = 0
+	tvs.delete_selected()
+	_check("last segment protected via UI", tvs.segments.size() == 1)
+
 	print("\n=== timeline view tests: %d passed, %d failed ===" % [_passes, _fails])
 	quit(1 if _fails > 0 else 0)
 
