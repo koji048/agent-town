@@ -8,6 +8,7 @@ extends Control
 const MIN_DUR := 0.2
 const EDGE_PX := 7.0
 const TITLE_SEC := 2.5
+const MIN_TITLE_DUR := 0.5
 
 const RULER_H := 16.0
 const ROW_H := 22.0
@@ -20,6 +21,7 @@ var wave: PackedFloat32Array
 var frames: Array = []          # a few ImageTextures for the media strip (optional)
 var title_text := ""
 var title_start := 0.0
+var title_dur := TITLE_SEC
 var playhead := 0.0
 var sel_kind := "none"          # "none" | "cue" | "title"
 var sel_cue := -1
@@ -31,7 +33,7 @@ signal cue_selected(i: int)
 signal title_selected()
 signal selection_cleared()
 signal cue_time_changed(i: int, start: float, end: float)
-signal title_time_changed(start: float)
+signal title_time_changed(start: float, dur: float)
 signal edit_committed()
 signal cue_split(i: int, at: float)
 signal cue_deleted(i: int)
@@ -132,12 +134,17 @@ func press(pos: Vector2) -> void:
 		return
 	if pos.y >= title_row_y() and pos.y < title_row_y() + ROW_H and not title_text.is_empty():
 		var tx0 := time_to_x(title_start, w, duration)
-		var tx1 := time_to_x(title_start + TITLE_SEC, w, duration)
+		var tx1 := time_to_x(title_start + title_dur, w, duration)
 		if pos.x >= tx0 - EDGE_PX and pos.x <= tx1 + EDGE_PX:
+			if absf(pos.x - tx0) <= EDGE_PX:
+				_drag_mode = "title_start"
+			elif absf(pos.x - tx1) <= EDGE_PX:
+				_drag_mode = "title_end"
+			else:
+				_drag_mode = "title"
+				_drag_grab = x_to_time(pos.x, w, duration) - title_start
 			sel_kind = "title"
 			sel_cue = -1
-			_drag_mode = "title"
-			_drag_grab = x_to_time(pos.x, w, duration) - title_start
 			title_selected.emit()
 			queue_redraw()
 			return
@@ -175,8 +182,20 @@ func motion(pos: Vector2) -> void:
 		"seek":
 			seek.emit(t)
 		"title":
-			title_start = clampf(t - _drag_grab, 0.0, maxf(duration - TITLE_SEC, 0.0))
-			title_time_changed.emit(title_start)
+			title_start = clampf(t - _drag_grab, 0.0, maxf(duration - title_dur, 0.0))
+			title_time_changed.emit(title_start, title_dur)
+			queue_redraw()
+		"title_start":
+			var end_t := title_start + title_dur
+			var ns := clampf(t, 0.0, end_t - MIN_TITLE_DUR)
+			title_start = ns
+			title_dur = end_t - ns
+			title_time_changed.emit(title_start, title_dur)
+			queue_redraw()
+		"title_end":
+			var ne := clampf(t, title_start + MIN_TITLE_DUR, duration)
+			title_dur = ne - title_start
+			title_time_changed.emit(title_start, title_dur)
 			queue_redraw()
 		"start":
 			_apply_span(sel_cue, clamp_span(cues, sel_cue, t, float(cues[sel_cue]["end"]), duration))
@@ -197,7 +216,7 @@ func _apply_span(i: int, sp: Array) -> void:
 
 ## End a drag; ask the studio to persist if the drag actually edited something.
 func release() -> void:
-	if _drag_mode in ["start", "end", "move", "title"]:
+	if _drag_mode in ["start", "end", "move", "title", "title_start", "title_end"]:
 		edit_committed.emit()
 	_drag_mode = ""
 
@@ -273,15 +292,19 @@ func _draw() -> void:
 		draw_line(Vector2(rx, 0), Vector2(rx, RULER_H), Color(0.3, 0.32, 0.4), 1.0)
 		t += step
 
-	# title row: one box start..start+TITLE_SEC
+	# title row: one box start..start+title_dur
 	if not title_text.is_empty():
 		var ty := title_row_y()
 		var tx0 := time_to_x(title_start, w, duration)
-		var tx1 := time_to_x(title_start + TITLE_SEC, w, duration)
+		var tx1 := time_to_x(title_start + title_dur, w, duration)
 		var tcol := Color(1.0, 0.85, 0.35, 0.9) if sel_kind == "title" else Color(1.0, 0.85, 0.35, 0.55)
 		draw_rect(Rect2(tx0, ty, maxf(tx1 - tx0, 3.0), ROW_H), tcol)
 		draw_string(get_theme_default_font(), Vector2(tx0 + 4, ty + ROW_H - 6),
 			"EP", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(0.1, 0.1, 0.12))
+		if sel_kind == "title":
+			var thc := Color(1.0, 0.95, 0.6, 0.95)
+			draw_rect(Rect2(tx0, ty, 3.0, ROW_H), thc)
+			draw_rect(Rect2(tx1 - 3.0, ty, 3.0, ROW_H), thc)
 
 	# caption row: one box per cue
 	var cy := caption_row_y()

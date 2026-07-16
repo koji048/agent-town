@@ -180,6 +180,34 @@ func _run() -> void:
 	_check("shift left clamps (no title)", is_equal_approx(TimelineView.shift_all_delta(sc, 0.0, 2.5, -5.0, 10.0, false), -1.0))
 	_check("shift empty set is zero", is_equal_approx(TimelineView.shift_all_delta([], 0.0, 2.5, 3.0, 10.0, false), 0.0))
 
+	# --- title duration: edge-resize + move keep the box within [0, duration] ---
+	var tvt = TimelineView.new()
+	tvt.size = Vector2(1000.0, 120.0)
+	tvt.duration = D
+	tvt.title_text = "EP"
+	tvt.title_start = 2.0
+	tvt.title_dur = 2.5
+	var tgot := {"start": -1.0, "dur": -1.0}
+	tvt.title_time_changed.connect(func(s: float, du: float) -> void:
+		tgot["start"] = s; tgot["dur"] = du)
+	# grab the RIGHT edge (at title_start+dur = 4.5 -> x=450) and drag to t=6 -> dur grows to 4
+	tvt.press(Vector2(TimelineView.time_to_x(4.5, 1000.0, D), tvt.title_row_y() + 4.0))
+	tvt.motion(Vector2(600.0, tvt.title_row_y() + 4.0))
+	_check("title right-edge resizes dur", is_equal_approx(tvt.title_dur, 4.0) and is_equal_approx(tvt.title_start, 2.0))
+	# grab the LEFT edge (at 2.0 -> x=200) and drag to t=1 -> start moves, end (4.5) fixed -> dur 3.5
+	tvt.title_start = 2.0
+	tvt.title_dur = 2.5
+	tvt.press(Vector2(TimelineView.time_to_x(2.0, 1000.0, D), tvt.title_row_y() + 4.0))
+	tvt.motion(Vector2(TimelineView.time_to_x(1.0, 1000.0, D), tvt.title_row_y() + 4.0))
+	_check("title left-edge moves start keeps end", is_equal_approx(tvt.title_start, 1.0) and is_equal_approx(tvt.title_start + tvt.title_dur, 4.5))
+	# min duration: drag right edge left past MIN_TITLE_DUR
+	tvt.title_start = 2.0
+	tvt.title_dur = 2.5
+	tvt.press(Vector2(TimelineView.time_to_x(4.5, 1000.0, D), tvt.title_row_y() + 4.0))
+	tvt.motion(Vector2(TimelineView.time_to_x(2.0, 1000.0, D), tvt.title_row_y() + 4.0))
+	_check("title dur holds MIN_TITLE_DUR", tvt.title_dur >= 0.5 - 0.001)
+	tvt.release()
+
 	print("\n=== timeline view tests: %d passed, %d failed ===" % [_passes, _fails])
 	quit(1 if _fails > 0 else 0)
 

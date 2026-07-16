@@ -48,6 +48,7 @@ var _title_color := Color(1.0, 0.9, 0.15)
 var _title_pos := Vector2(162.0, 200.0)  # preview-px centre of the title box
 var _title_font_idx := 0
 var _title_start := 0.0    # EP title window start on the timeline, seconds
+var _title_dur := TITLE_SEC   # EP title window length, seconds; owner-resizable
 var _title_inspector: HBoxContainer
 var _title_font_pick: OptionButton
 var _timeline: TimelineView
@@ -404,12 +405,14 @@ func open_clip(srt_path: String, frames_dir: String, title := "") -> void:
 		_start_spin.max_value = _duration
 		_end_spin.max_value = _duration
 	_title_start = 0.0
+	_title_dur = TITLE_SEC
 	_timeline.cues = cues
 	_timeline.duration = _duration
 	_timeline.wave = _wave
 	_timeline.frames = _sample_strip()
 	_timeline.title_text = _title_text
 	_timeline.title_start = _title_start
+	_timeline.title_dur = _title_dur
 	_timeline.sel_kind = "none"
 	_timeline.sel_cue = -1
 	_show_inspector("none")
@@ -463,6 +466,7 @@ func _show_time() -> void:
 		_title_label.visible = not _title_text.is_empty()
 	_timeline.playhead = _t
 	_timeline.title_start = _title_start
+	_timeline.title_dur = _title_dur
 	_timeline.queue_redraw()
 
 
@@ -533,9 +537,10 @@ func _on_selection_cleared() -> void:
 	_show_inspector("none")
 
 
-## Live drag of the title box along the timeline: reflect its new start time.
-func _on_title_time_changed(start: float) -> void:
+## Live drag/resize of the title box: reflect its new start + duration.
+func _on_title_time_changed(start: float, dur: float) -> void:
 	_title_start = start
+	_title_dur = dur
 	_show_time()
 
 
@@ -722,7 +727,7 @@ func style_dict() -> Dictionary:
 		"title_x": int(round(_title_pos.x / PREVIEW_SCALE)),
 		"title_y": int(round(_title_pos.y / PREVIEW_SCALE)),
 		"title_start": _title_start,
-		"title_end": _title_start + TITLE_SEC,
+		"title_end": _title_start + _title_dur,
 	}
 
 
