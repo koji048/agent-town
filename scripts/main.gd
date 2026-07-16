@@ -241,11 +241,12 @@ func _ready() -> void:
 		var ep := int(req.get("_ep", 0))
 		var ttl := ("EP%02d : %s" % [ep, str(req.get("topic", "")).left(60)]) if ep > 0 else ""
 		_studio.open_clip(srt, prev, ttl))
-	# dev hook: AGENT_TOWN_STUDIO="<srt>|<preview_dir>" opens it on boot
+	# dev hook: AGENT_TOWN_STUDIO="<srt>|<preview_dir>[|<EP title>]" opens it on boot
 	var dev_studio := OS.get_environment("AGENT_TOWN_STUDIO")
 	if not dev_studio.is_empty() and dev_studio.contains("|"):
 		get_tree().create_timer(2.0).timeout.connect(func() -> void:
-			_studio.open_clip(dev_studio.get_slice("|", 0), dev_studio.get_slice("|", 1)))
+			_studio.open_clip(dev_studio.get_slice("|", 0), dev_studio.get_slice("|", 1),
+				dev_studio.get_slice("|", 2)))
 	_build_cost_meter()
 	EventBus.stage_started.connect(func(_s, _r, _q) -> void:
 		_calls_inflight += 1)
@@ -284,7 +285,25 @@ func _on_files_dropped(files: PackedStringArray) -> void:
 
 func _ingest_dropped(path: String, opts: Dictionary = {}) -> void:
 	var dest := ProjectSettings.globalize_path("res://inbox").path_join(path.get_file())
+	# a drag from a not-yet-materialised source (iCloud placeholder, file still
+	# being written) can "succeed" as a 0-byte copy; ingest then crashes AFTER
+	# moving the empty file into the content tree. Verify the copy is real
+	# before the pipeline ever sees it.
+	var src_f := FileAccess.open(path, FileAccess.READ)
+	var src_len: int = src_f.get_length() if src_f else -1
+	if src_f:
+		src_f.close()
 	if DirAccess.copy_absolute(path, dest) == OK:
+		var dst_f := FileAccess.open(dest, FileAccess.READ)
+		var dst_len: int = dst_f.get_length() if dst_f else -1
+		if dst_f:
+			dst_f.close()
+		if dst_len <= 0 or dst_len != src_len:
+			DirAccess.remove_absolute(dest)
+			_append_log("⚠ คลิปคัดลอกไม่สมบูรณ์ (%d bytes): %s — ถ้าไฟล์อยู่บน iCloud ให้โหลดลงเครื่องก่อนแล้วลากใหม่" % [
+				maxi(dst_len, 0), path.get_file()])
+			Sfx.play_ui("chime", -8.0)
+			return
 		if not opts.is_empty():
 			var f := FileAccess.open(dest + ".opts.json", FileAccess.WRITE)
 			if f:

@@ -23,3 +23,38 @@ func _report() -> void:
 		Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0,
 		Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0,
 	])
+	_census()
+
+
+## Attribute node growth: report which PARENT container gained children since
+## the last tick ("[grew] [name:script]+N(=total)"). Walking ~5k nodes every
+## 30 s costs <1 ms and turns "nodes went up" into the exact leak site — this
+## is how the clip-options dialog spawn and chat-feed growth were attributed.
+var _prev: Dictionary = {}
+
+func _census() -> void:
+	var counts: Dictionary = {}
+	_walk(get_tree().root, counts)
+	var grew := ""
+	for k in counts:
+		var d := int(counts[k]) - int(_prev.get(k, 0))
+		if d >= 3 and not _prev.is_empty():   # only meaningful accumulators
+			grew += " [%s]+%d(=%d)" % [k, d, int(counts[k])]
+	_prev = counts
+	print("[grew]" + grew)
+
+
+func _walk(n: Node, counts: Dictionary) -> void:
+	# key each node by its parent's identity (path tail + script/class), so a
+	# container that keeps gaining children shows a steady positive delta.
+	var p := n.get_parent()
+	if p != null:
+		var pk := str(p.name)
+		var scr: Variant = p.get_script()
+		if scr != null and (scr as Script).resource_path != "":
+			pk += ":" + (scr as Script).resource_path.get_file()
+		else:
+			pk += ":" + p.get_class()
+		counts[pk] = int(counts.get(pk, 0)) + 1
+	for c in n.get_children():
+		_walk(c, counts)

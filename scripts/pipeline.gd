@@ -226,6 +226,17 @@ func _run_clip(request: Dictionary) -> void:
 	await _run_clip_legacy(request)
 
 
+## Whisper's initial_prompt must be real episode vocabulary (make_srt.py's
+## contract: names, jargon, key phrases). Inbox clips get an auto topic of
+## "clip: <filename>" — a filename (often a bare UUID from AirDrop/Photos) is
+## NOT vocabulary, and whisper hallucinates it into quiet segments (seen live:
+## UUID cues + a 12s caption hole). Drop the prompt for auto topics.
+static func subs_prompt(topic: String) -> String:
+	if topic.begins_with("clip: "):
+		return ""
+	return topic
+
+
 func _run_clip_reels(request: Dictionary) -> void:
 	var results: Dictionary = {}
 	var topic := str(request.get("topic", "clip"))
@@ -261,7 +272,11 @@ func _run_clip_reels(request: Dictionary) -> void:
 	await _walk_stage("edit", "editor", request)
 	var slug := _slugify(clip.get_file().get_basename(), ep)
 	EventBus.log_line.emit("🎙 reel.sh subs %s (large-v3, Thai word-aware)..." % slug)
-	ReelRunner.run(PackedStringArray(["subs", slug, "--prompt", topic]))
+	var subs_args := PackedStringArray(["subs", slug])
+	var vocab := subs_prompt(topic)
+	if not vocab.is_empty():
+		subs_args.append_array(["--prompt", vocab])
+	ReelRunner.run(subs_args)
 	r = await ReelRunner.finished
 	var exports := batch.path_join("05_EXPORTS")
 	var srt_path := ReelRunner.newest_file(exports, "-clean.srt")
