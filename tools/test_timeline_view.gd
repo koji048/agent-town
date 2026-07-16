@@ -208,6 +208,24 @@ func _run() -> void:
 	_check("title dur holds MIN_TITLE_DUR", tvt.title_dur >= 0.5 - 0.001)
 	tvt.release()
 
+	# --- select all + group move ---
+	var tva = TimelineView.new()
+	tva.size = Vector2(1000.0, 120.0)
+	tva.duration = D
+	tva.title_text = "EP"
+	tva.title_start = 0.0
+	tva.title_dur = 2.5
+	tva.cues = [{"start": 1.0, "end": 2.0, "text": "a"}, {"start": 4.0, "end": 6.0, "text": "b"}]
+	tva.select_all()
+	_check("select_all sets sel_kind all", tva.sel_kind == "all")
+	# grab anywhere on the caption row and drag +3s (from t=5 to t=8)
+	tva.press(Vector2(TimelineView.time_to_x(5.0, 1000.0, D), tva.caption_row_y() + 4.0))
+	tva.motion(Vector2(TimelineView.time_to_x(8.0, 1000.0, D), tva.caption_row_y() + 4.0))
+	_check("group move shifts cue a", is_equal_approx(float(tva.cues[0]["start"]), 4.0))
+	_check("group move shifts cue b end", is_equal_approx(float(tva.cues[1]["end"]), 9.0))
+	_check("group move shifts title", is_equal_approx(tva.title_start, 3.0))
+	tva.release()
+
 	print("\n=== timeline view tests: %d passed, %d failed ===" % [_passes, _fails])
 	quit(1 if _fails > 0 else 0)
 

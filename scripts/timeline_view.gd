@@ -132,6 +132,18 @@ func press(pos: Vector2) -> void:
 		_drag_mode = "seek"
 		seek.emit(x_to_time(pos.x, w, duration))
 		return
+	if sel_kind == "all":
+		if pos.y >= title_row_y() and pos.y < caption_row_y() + ROW_H:
+			_drag_mode = "all"
+			_drag_grab = x_to_time(pos.x, w, duration)  # last-seen time
+			return
+		# a press outside the title/caption rows drops the group selection
+		_drag_mode = "seek"
+		sel_kind = "none"
+		selection_cleared.emit()
+		seek.emit(x_to_time(pos.x, w, duration))
+		queue_redraw()
+		return
 	if pos.y >= title_row_y() and pos.y < title_row_y() + ROW_H and not title_text.is_empty():
 		var tx0 := time_to_x(title_start, w, duration)
 		var tx1 := time_to_x(title_start + title_dur, w, duration)
@@ -203,6 +215,17 @@ func motion(pos: Vector2) -> void:
 			_apply_span(sel_cue, clamp_span(cues, sel_cue, float(cues[sel_cue]["start"]), t, duration))
 		"move":
 			_apply_span(sel_cue, move_span(cues, sel_cue, t - _drag_grab, duration))
+		"all":
+			var d := shift_all_delta(cues, title_start, title_dur, t - _drag_grab, duration, not title_text.is_empty())
+			for i in cues.size():
+				cues[i]["start"] = float(cues[i]["start"]) + d
+				cues[i]["end"] = float(cues[i]["end"]) + d
+				cue_time_changed.emit(i, float(cues[i]["start"]), float(cues[i]["end"]))
+			if not title_text.is_empty():
+				title_start += d
+				title_time_changed.emit(title_start, title_dur)
+			_drag_grab += d
+			queue_redraw()
 
 
 func _apply_span(i: int, sp: Array) -> void:
@@ -216,7 +239,7 @@ func _apply_span(i: int, sp: Array) -> void:
 
 ## End a drag; ask the studio to persist if the drag actually edited something.
 func release() -> void:
-	if _drag_mode in ["start", "end", "move", "title", "title_start", "title_end"]:
+	if _drag_mode in ["start", "end", "move", "title", "title_start", "title_end", "all"]:
 		edit_committed.emit()
 	_drag_mode = ""
 
@@ -235,6 +258,13 @@ func cut_at_playhead() -> void:
 	cues.insert(sel_cue + 1, {"start": parts[1][0], "end": parts[1][1], "text": cut_text})
 	cue_split.emit(sel_cue, playhead)
 	_drag_mode = ""
+	queue_redraw()
+
+
+## Select every caption + the title as one block (Select All).
+func select_all() -> void:
+	sel_kind = "all"
+	sel_cue = -1
 	queue_redraw()
 
 
@@ -297,11 +327,11 @@ func _draw() -> void:
 		var ty := title_row_y()
 		var tx0 := time_to_x(title_start, w, duration)
 		var tx1 := time_to_x(title_start + title_dur, w, duration)
-		var tcol := Color(1.0, 0.85, 0.35, 0.9) if sel_kind == "title" else Color(1.0, 0.85, 0.35, 0.55)
+		var tcol := Color(1.0, 0.85, 0.35, 0.9) if (sel_kind == "title" or sel_kind == "all") else Color(1.0, 0.85, 0.35, 0.55)
 		draw_rect(Rect2(tx0, ty, maxf(tx1 - tx0, 3.0), ROW_H), tcol)
 		draw_string(get_theme_default_font(), Vector2(tx0 + 4, ty + ROW_H - 6),
 			"EP", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(0.1, 0.1, 0.12))
-		if sel_kind == "title":
+		if sel_kind == "title" or sel_kind == "all":
 			var thc := Color(1.0, 0.95, 0.6, 0.95)
 			draw_rect(Rect2(tx0, ty, 3.0, ROW_H), thc)
 			draw_rect(Rect2(tx1 - 3.0, ty, 3.0, ROW_H), thc)
@@ -311,9 +341,10 @@ func _draw() -> void:
 	for i in cues.size():
 		var x0 := time_to_x(float(cues[i]["start"]), w, duration)
 		var x1 := time_to_x(float(cues[i]["end"]), w, duration)
-		var col := Color(1.0, 0.78, 0.32, 0.9) if (sel_kind == "cue" and i == sel_cue) else Color(0.55, 0.75, 1.0, 0.6)
+		var on := (sel_kind == "cue" and i == sel_cue) or sel_kind == "all"
+		var col := Color(1.0, 0.78, 0.32, 0.9) if on else Color(0.55, 0.75, 1.0, 0.6)
 		draw_rect(Rect2(x0, cy, maxf(x1 - x0 - 1.0, 2.0), ROW_H), col)
-		if sel_kind == "cue" and i == sel_cue:
+		if on:
 			var hc := Color(1.0, 0.95, 0.6, 0.95)
 			draw_rect(Rect2(x0, cy, 3.0, ROW_H), hc)
 			draw_rect(Rect2(x1 - 3.0, cy, 3.0, ROW_H), hc)
