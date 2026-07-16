@@ -65,6 +65,9 @@ var _color_idx := 0
 var _color_btns: Array = []
 var _use_custom := false      # a free-picked colour overrides the presets
 var _custom_color := Color(1, 1, 1)
+var _list_toggle: CheckButton
+var _list_scroll: ScrollContainer
+var _list_box: VBoxContainer
 
 
 func _ready() -> void:
@@ -335,6 +338,21 @@ func _ready() -> void:
 	I18n.reg(save, "text", "btn_save_cue")
 	save.pressed.connect(_save_cue)
 	right.add_child(save)
+	_list_toggle = CheckButton.new()
+	_list_toggle.text = "📋 รายการซับ"
+	_list_toggle.toggled.connect(func(on: bool) -> void:
+		_list_scroll.visible = on
+		if on:
+			_rebuild_list_view())
+	right.add_child(_list_toggle)
+	_list_scroll = ScrollContainer.new()
+	_list_scroll.visible = false
+	_list_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_list_scroll.custom_minimum_size = Vector2(0, 240)
+	_list_box = VBoxContainer.new()
+	_list_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_list_scroll.add_child(_list_box)
+	right.add_child(_list_scroll)
 	# ONE burn button: what the preview shows is exactly what burns
 	# (two buttons made the font choice look ignored)
 	var actions := HBoxContainer.new()
@@ -420,6 +438,7 @@ func open_clip(srt_path: String, frames_dir: String, title := "") -> void:
 	_show_time()
 	visible = true
 	Sfx.play_ui("paper", -8.0)
+	_refresh_list()
 
 
 func _process(_delta: float) -> void:
@@ -498,6 +517,7 @@ func _on_cue_selected(i: int) -> void:
 	_sync_time_fields()
 	_show_inspector("caption")
 	_seek(float(cues[i]["start"]))
+	_refresh_list()
 
 
 ## Live drag of a caption edge/body: reflect timing into the spins + preview.
@@ -516,6 +536,7 @@ func _on_edit_committed() -> void:
 func _on_cue_split(i: int, _at: float) -> void:
 	PreviewMaker.write_srt(cues, _srt_path)
 	_on_cue_selected(i)
+	_refresh_list()
 
 
 ## A caption was deleted: persist and clear the Inspector.
@@ -523,6 +544,7 @@ func _on_cue_deleted(_i: int) -> void:
 	PreviewMaker.write_srt(cues, _srt_path)
 	_sel = -1
 	_show_inspector("none")
+	_refresh_list()
 
 
 ## The title box was clicked: show the EP Title strip in the Inspector.
@@ -554,6 +576,7 @@ func _apply_time_fields() -> void:
 	PreviewMaker.write_srt(cues, _srt_path)
 	_sync_time_fields()
 	_show_time()
+	_refresh_list()
 
 
 ## Reflect the selected cue's start/end into the spins without re-triggering.
@@ -576,6 +599,7 @@ func _save_cue() -> void:
 	_timeline.title_text = _title_text
 	_timeline.queue_redraw()
 	_show_time()
+	_refresh_list()
 
 
 ## Discover every font file in assets/fonts/ so the picker offers them all —
@@ -742,6 +766,36 @@ func _resolve(action: String) -> void:
 	_audio.stop()
 	EventBus.clip_review_resolved.emit(action,
 		style_dict() if action == "custom" else {})
+
+
+## Read-only list of every cue; click a row to select + seek it. Rebuilt only
+## while the panel is visible.
+func _rebuild_list_view() -> void:
+	if not _list_box:
+		return
+	for ch in _list_box.get_children():
+		ch.queue_free()
+	for i in cues.size():
+		var c: Dictionary = cues[i]
+		var b := Button.new()
+		b.text = "%d:%04.1f  %s" % [int(float(c["start"])) / 60, fmod(float(c["start"]), 60.0), str(c["text"]).left(40)]
+		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		b.add_theme_font_size_override("font_size", 13)
+		if i == _sel:
+			b.add_theme_color_override("font_color", Color(1.0, 0.85, 0.4))
+		var idx := i
+		b.pressed.connect(func() -> void:
+			_timeline.sel_kind = "cue"
+			_timeline.sel_cue = idx
+			_on_cue_selected(idx)
+			_timeline.queue_redraw())
+		_list_box.add_child(b)
+
+
+## Rebuild the list only if it is currently shown.
+func _refresh_list() -> void:
+	if _list_scroll and _list_scroll.visible:
+		_rebuild_list_view()
 
 
 ## Show only the editor widgets for the current selection.
