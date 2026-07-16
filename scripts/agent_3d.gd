@@ -388,13 +388,23 @@ func _on_path_done() -> void:
 		_think(I18n.t(str(ad["line"])))
 		var need: String = str(ad["need"])
 		current_task = "break (%s)" % need
-		get_tree().create_timer(randf_range(5.0, 8.0)).timeout.connect(func() -> void:
+		# Agent-owned one-shot timer (NOT get_tree().create_timer): bound to this
+		# node's lifetime, so if the agent is freed before it fires the timer is
+		# freed with it and the capturing lambda never runs on a freed `self`
+		# (root cause of "Lambda capture ... was freed").
+		var bt := Timer.new()
+		bt.one_shot = true
+		bt.wait_time = randf_range(5.0, 8.0)
+		add_child(bt)
+		bt.timeout.connect(func() -> void:
 			needs[need] = clampf(needs[need] + float(ad["amount"]), 0.0, 1.0)
 			if randf() < 0.3:
 				Memory.remember(role, I18n.f("mem_break", [need]), 2.0)
 			if current_task.begins_with("break"):
 				current_task = "available"
-			_restart_wander())
+			_restart_wander()
+			bt.queue_free())
+		bt.start()
 	else:
 		_set_state(State.IDLE)
 		_play("Idle")
@@ -666,9 +676,18 @@ func _gossip_with(o: TownAgent3D) -> void:
 		if delay == 0.0:
 			who._say(text)
 		else:
-			get_tree().create_timer(delay).timeout.connect(func() -> void:
-				if is_instance_valid(who):
-					who._say(text))
+			# Timer owned by the speaker (`who`), not the SceneTree: if `who` is
+			# freed before it fires, the timer is freed with it and the lambda
+			# never runs on a freed capture (the is_instance_valid guard inside a
+			# SceneTree-timer lambda was too late — the freed capture errors first).
+			var st := Timer.new()
+			st.one_shot = true
+			st.wait_time = delay
+			who.add_child(st)
+			st.timeout.connect(func() -> void:
+				who._say(text)
+				st.queue_free())
+			st.start()
 		delay += randf_range(1.7, 2.4)
 	# what B heard from A colors B's memory (information diffusion)
 	Memory.remember(o.role, I18n.f("mem_gossip_heard", [role, str(lines[0][1])]), 4.0)
