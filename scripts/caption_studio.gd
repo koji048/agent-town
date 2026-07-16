@@ -384,6 +384,27 @@ func _ready() -> void:
 	_timeline.title_selected.connect(_on_title_selected)
 	_timeline.selection_cleared.connect(_on_selection_cleared)
 	_timeline.title_time_changed.connect(_on_title_time_changed)
+
+	var tools := HBoxContainer.new()
+	tools.add_theme_constant_override("separation", 6)
+	var cut_btn := Button.new()
+	cut_btn.text = "✂️ ตัด (S)"
+	cut_btn.pressed.connect(func() -> void: _timeline.cut_at_playhead())
+	tools.add_child(cut_btn)
+	var del_btn := Button.new()
+	del_btn.text = "🗑 ลบ (Del)"
+	del_btn.pressed.connect(func() -> void: _timeline.delete_selected())
+	tools.add_child(del_btn)
+	var all_btn := Button.new()
+	all_btn.text = "⬚ เลือกทั้งหมด"
+	all_btn.pressed.connect(func() -> void: _timeline.select_all())
+	tools.add_child(all_btn)
+	var thint := Label.new()
+	thint.text = "ตัด/ลบที่หัวอ่าน · เลือกทั้งหมดแล้วลากเพื่อเลื่อนทั้งชุด"
+	thint.add_theme_font_size_override("font_size", 11)
+	thint.modulate = Color(0.7, 0.7, 0.76)
+	tools.add_child(thint)
+	root.add_child(tools)
 	root.add_child(_timeline)
 	# Timing is edited on the TimelineView strip below (drag/trim/cut/delete),
 	# not a scrollable cue list — there is no cue list in this layout.
