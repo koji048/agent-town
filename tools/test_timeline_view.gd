@@ -320,6 +320,20 @@ func _run() -> void:
 	tvs.delete_selected()
 	_check("last segment protected via UI", tvs.segments.size() == 1)
 
+	# --- segment drag reorder ---
+	var tvr = TimelineView.new()
+	tvr.size = Vector2(1000.0, 120.0)
+	tvr.src_duration = 10.0
+	tvr.segments = [{"src_start": 0.0, "src_end": 4.0}, {"src_start": 4.0, "src_end": 10.0}]
+	tvr.duration = TimelineView.out_len(tvr.segments)
+	tvr.cues = [{"start": 1.0, "end": 2.0, "text": "A"}]
+	tvr.press(Vector2(TimelineView.time_to_x(2.0, 1000.0, 10.0), tvr.media_row_y() + 4.0))
+	tvr.motion(Vector2(TimelineView.time_to_x(8.0, 1000.0, 10.0), tvr.media_row_y() + 4.0))
+	_check("drag swaps segments", is_equal_approx(float(tvr.segments[0]["src_start"]), 4.0))
+	_check("cue followed its segment", is_equal_approx(float(tvr.cues[0]["start"]), 7.0))
+	_check("selection follows the drag", tvr.sel_seg == 1)
+	tvr.release()
+
 	print("\n=== timeline view tests: %d passed, %d failed ===" % [_passes, _fails])
 	quit(1 if _fails > 0 else 0)
 

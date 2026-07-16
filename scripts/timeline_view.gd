@@ -385,6 +385,15 @@ func motion(pos: Vector2) -> void:
 			_apply_span(sel_cue, clamp_span(cues, sel_cue, float(cues[sel_cue]["start"]), t, duration))
 		"move":
 			_apply_span(sel_cue, move_span(cues, sel_cue, t - _drag_grab, duration))
+		"segment_move":
+			if sel_seg < 0 or sel_seg >= segments.size():
+				return
+			var over := seg_at_out(segments, t)
+			if over >= 0 and over != sel_seg and absi(over - sel_seg) == 1:
+				if reorder_segment(segments, cues, sel_seg, over):
+					sel_seg = over
+					segments_changed.emit()
+					queue_redraw()
 		"all":
 			var d := shift_all_delta(cues, title_start, title_dur, t - _drag_grab, duration, not title_text.is_empty())
 			for i in cues.size():
@@ -409,7 +418,7 @@ func _apply_span(i: int, sp: Array) -> void:
 
 ## End a drag; ask the studio to persist if the drag actually edited something.
 func release() -> void:
-	if _drag_mode in ["start", "end", "move", "title", "title_start", "title_end", "all"]:
+	if _drag_mode in ["start", "end", "move", "title", "title_start", "title_end", "all", "segment_move"]:
 		edit_committed.emit()
 	_drag_mode = ""
 
