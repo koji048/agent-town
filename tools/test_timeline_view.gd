@@ -141,11 +141,25 @@ func _run() -> void:
 	tv2.cut_at_playhead()
 	_check("cut near edge is a no-op", tv2.cues.size() == 2)
 
-	# delete selected
+	# blade semantics: NO selection needed — cut whatever is under the playhead
+	# (selecting a cue snaps the playhead to its start, so select-then-cut was
+	# always a silent no-op; the blade must work straight off the playhead)
+	tv2.sel_kind = "none"
+	tv2.sel_cue = -1
+	tv2.playhead = 5.5   # inside the right half [5.0, 6.0]
+	tv2.cut_at_playhead()
+	_check("blade cuts under playhead without selection", tv2.cues.size() == 3)
+	_check("blade selects the left half", tv2.sel_kind == "cue" and tv2.sel_cue == 1)
+	tv2.sel_kind = "none"
+	tv2.playhead = 2.0   # in the gap before the first cue
+	tv2.cut_at_playhead()
+	_check("blade in a gap is a no-op", tv2.cues.size() == 3)
+
+	# delete selected (3 cues remain after the blade block above)
 	tv2.sel_kind = "cue"
 	tv2.sel_cue = 1
 	tv2.delete_selected()
-	_check("delete removes cue", tv2.cues.size() == 1)
+	_check("delete removes cue", tv2.cues.size() == 2)
 	_check("delete emits signal", ev["del"] == 1)
 	_check("delete clears selection", tv2.sel_kind == "none")
 

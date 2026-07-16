@@ -244,19 +244,29 @@ func release() -> void:
 	_drag_mode = ""
 
 
-## Blade: split the selected caption at the playhead into two adjacent cues,
-## each inheriting the text. No-op unless the playhead is well inside the box.
+## Blade (CapCut/Resolve semantics): split whatever caption is UNDER the
+## playhead into two cues inheriting the text — no selection required.
+## (Requiring a selection was a trap: selecting a cue snaps the playhead to
+## its START, so the natural select-then-cut flow always hit the
+## zero-length-half no-op and looked like a dead button.)
 func cut_at_playhead() -> void:
-	if sel_kind != "cue" or sel_cue < 0 or sel_cue >= cues.size():
+	var i := -1
+	for k in cues.size():
+		if playhead > float(cues[k]["start"]) and playhead < float(cues[k]["end"]):
+			i = k
+			break
+	if i < 0:
 		return
-	var c: Dictionary = cues[sel_cue]
+	var c: Dictionary = cues[i]
 	var parts := split_span(float(c["start"]), float(c["end"]), playhead)
 	if parts.is_empty():
 		return
-	var cut_text := str(cues[sel_cue]["text"])
-	cues[sel_cue]["end"] = parts[0][1]
-	cues.insert(sel_cue + 1, {"start": parts[1][0], "end": parts[1][1], "text": cut_text})
-	cue_split.emit(sel_cue, playhead)
+	var cut_text := str(c["text"])
+	cues[i]["end"] = parts[0][1]
+	cues.insert(i + 1, {"start": parts[1][0], "end": parts[1][1], "text": cut_text})
+	sel_kind = "cue"
+	sel_cue = i
+	cue_split.emit(i, playhead)
 	_drag_mode = ""
 	queue_redraw()
 
