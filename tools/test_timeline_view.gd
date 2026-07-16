@@ -240,6 +240,108 @@ func _run() -> void:
 	_check("group move shifts title", is_equal_approx(tva.title_start, 3.0))
 	tva.release()
 
+	# --- EDL statics: output<->source mapping ---
+	var eg := [{"src_start": 10.0, "src_end": 14.0}, {"src_start": 2.0, "src_end": 5.0}]
+	_check("out_len sums segments", is_equal_approx(TimelineView.out_len(eg), 7.0))
+	_check("out_len empty", is_equal_approx(TimelineView.out_len([]), 0.0))
+	_check("out_start first", is_equal_approx(TimelineView.out_start(eg, 0), 0.0))
+	_check("out_start second", is_equal_approx(TimelineView.out_start(eg, 1), 4.0))
+	_check("seg_at_out inside first", TimelineView.seg_at_out(eg, 1.0) == 0)
+	_check("seg_at_out at seam -> right segment", TimelineView.seg_at_out(eg, 4.0) == 1)
+	_check("seg_at_out past end", TimelineView.seg_at_out(eg, 7.5) == -1)
+	_check("seg_at_out negative", TimelineView.seg_at_out(eg, -0.1) == -1)
+	_check("out_to_src first", is_equal_approx(TimelineView.out_to_src(eg, 1.0), 11.0))
+	_check("out_to_src across seam", is_equal_approx(TimelineView.out_to_src(eg, 5.0), 3.0))
+	_check("out_to_src end clamps", is_equal_approx(TimelineView.out_to_src(eg, 99.0), 5.0))
+	var eg2 := [{"src_start": 0.0, "src_end": 10.0}]
+	_check("cut splits segment", TimelineView.cut_footage(eg2, 4.0) and eg2.size() == 2)
+	_check("cut halves correct", is_equal_approx(float(eg2[0]["src_end"]), 4.0) and is_equal_approx(float(eg2[1]["src_start"]), 4.0))
+	_check("cut near edge no-op", not TimelineView.cut_footage(eg2, 0.2) and eg2.size() == 2)
+	_check("cut maps through seam to source", TimelineView.cut_footage(eg2, 6.0) and eg2.size() == 3 and is_equal_approx(float(eg2[1]["src_end"]), 6.0))
+
+	# --- delete_segment: cues ripple with the footage (owner rule A) ---
+	var ds := [{"src_start": 0.0, "src_end": 4.0}, {"src_start": 4.0, "src_end": 8.0}, {"src_start": 8.0, "src_end": 12.0}]
+	var dcs := [
+		{"start": 1.0, "end": 2.0, "text": "a"},
+		{"start": 3.5, "end": 5.0, "text": "b"},
+		{"start": 5.0, "end": 6.0, "text": "c"},
+		{"start": 7.5, "end": 9.0, "text": "d"},
+		{"start": 10.0, "end": 11.0, "text": "e"},
+	]
+	_check("delete middle ok", TimelineView.delete_segment(ds, dcs, 1) and ds.size() == 2)
+	_check("inside cue dropped -> 4 remain", dcs.size() == 4)
+	_check("cue before untouched", is_equal_approx(float(dcs[0]["start"]), 1.0))
+	_check("straddle-in tail-trimmed", is_equal_approx(float(dcs[1]["end"]), 4.0))
+	_check("straddle-out head-trimmed+rippled", is_equal_approx(float(dcs[2]["start"]), 4.0) and is_equal_approx(float(dcs[2]["end"]), 5.0))
+	_check("cue after shifted", is_equal_approx(float(dcs[3]["start"]), 6.0))
+	_check("last segment protected", not TimelineView.delete_segment([{"src_start": 0.0, "src_end": 4.0}], [], 0))
+	var ds2 := [{"src_start": 0.0, "src_end": 2.0}, {"src_start": 2.0, "src_end": 4.0}, {"src_start": 4.0, "src_end": 6.0}]
+	var dc2 := [{"start": 1.0, "end": 5.0, "text": "x"}]
+	TimelineView.delete_segment(ds2, dc2, 1)
+	_check("spanning cue shrinks", is_equal_approx(float(dc2[0]["start"]), 1.0) and is_equal_approx(float(dc2[0]["end"]), 3.0))
+	var ds3 := [{"src_start": 0.0, "src_end": 2.0}, {"src_start": 2.0, "src_end": 4.0}]
+	var dc3 := [{"start": 1.95, "end": 3.0, "text": "t"}]
+	TimelineView.delete_segment(ds3, dc3, 1)
+	_check("sub-MIN_DUR leftover dropped", dc3.is_empty())
+
+	# --- reorder_segment: cues travel with their footage (midpoint rule) ---
+	var rs := [{"src_start": 0.0, "src_end": 4.0}, {"src_start": 4.0, "src_end": 8.0}]
+	var rcs := [{"start": 1.0, "end": 2.0, "text": "A"}, {"start": 5.0, "end": 6.0, "text": "B"}]
+	_check("reorder ok", TimelineView.reorder_segment(rs, rcs, 1, 0))
+	_check("segments swapped", is_equal_approx(float(rs[0]["src_start"]), 4.0))
+	_check("B now first block", str(rcs[0]["text"]) == "B" and is_equal_approx(float(rcs[0]["start"]), 1.0))
+	_check("A now second block", str(rcs[1]["text"]) == "A" and is_equal_approx(float(rcs[1]["start"]), 5.0))
+	_check("reorder same index no-op", not TimelineView.reorder_segment(rs, rcs, 0, 0))
+	_check("reorder bad index no-op", not TimelineView.reorder_segment(rs, rcs, 0, 5))
+	# seam-spanning cue: assigned by MIDPOINT (seam belongs to the right segment),
+	# trimmed to that segment's old range, then travels with it — pinned so the
+	# trim-on-reorder semantics stay intentional
+	var rs2 := [{"src_start": 0.0, "src_end": 4.0}, {"src_start": 4.0, "src_end": 8.0}]
+	var rc2 := [{"start": 3.0, "end": 5.0, "text": "S"}]   # spans the seam at 4.0, mid=4.0
+	TimelineView.reorder_segment(rs2, rc2, 1, 0)
+	_check("seam-spanning cue trims to its midpoint segment and travels",
+		rc2.size() == 1 and is_equal_approx(float(rc2[0]["start"]), 0.0) and is_equal_approx(float(rc2[0]["end"]), 1.0))
+
+	# --- media segments: select + blade/delete routing ---
+	var tvs = TimelineView.new()
+	tvs.size = Vector2(1000.0, 120.0)
+	tvs.src_duration = 10.0
+	tvs.segments = [{"src_start": 0.0, "src_end": 10.0}]
+	tvs.duration = TimelineView.out_len(tvs.segments)
+	tvs.cues = []
+	var sev := {"sel": -1, "changed": 0}
+	tvs.segment_selected.connect(func(i: int) -> void: sev["sel"] = i)
+	tvs.segments_changed.connect(func() -> void: sev["changed"] += 1)
+	tvs.press(Vector2(500.0, tvs.media_row_y() + 4.0))
+	_check("press media selects segment", sev["sel"] == 0 and tvs.sel_kind == "segment")
+	tvs.release()
+	tvs.playhead = 5.0
+	tvs.cut_at_playhead()
+	_check("blade cuts footage when segment selected", tvs.segments.size() == 2 and sev["changed"] == 1)
+	tvs.sel_kind = "segment"
+	tvs.sel_seg = 0
+	tvs.delete_selected()
+	_check("delete removes segment", tvs.segments.size() == 1 and sev["changed"] == 2)
+	_check("delete clears segment selection", tvs.sel_kind == "none")
+	tvs.sel_kind = "segment"
+	tvs.sel_seg = 0
+	tvs.delete_selected()
+	_check("last segment protected via UI", tvs.segments.size() == 1)
+
+	# --- segment drag reorder ---
+	var tvr = TimelineView.new()
+	tvr.size = Vector2(1000.0, 120.0)
+	tvr.src_duration = 10.0
+	tvr.segments = [{"src_start": 0.0, "src_end": 4.0}, {"src_start": 4.0, "src_end": 10.0}]
+	tvr.duration = TimelineView.out_len(tvr.segments)
+	tvr.cues = [{"start": 1.0, "end": 2.0, "text": "A"}]
+	tvr.press(Vector2(TimelineView.time_to_x(2.0, 1000.0, 10.0), tvr.media_row_y() + 4.0))
+	tvr.motion(Vector2(TimelineView.time_to_x(8.0, 1000.0, 10.0), tvr.media_row_y() + 4.0))
+	_check("drag swaps segments", is_equal_approx(float(tvr.segments[0]["src_start"]), 4.0))
+	_check("cue followed its segment", is_equal_approx(float(tvr.cues[0]["start"]), 7.0))
+	_check("selection follows the drag", tvr.sel_seg == 1)
+	tvr.release()
+
 	print("\n=== timeline view tests: %d passed, %d failed ===" % [_passes, _fails])
 	quit(1 if _fails > 0 else 0)
 

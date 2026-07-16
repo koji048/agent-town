@@ -205,6 +205,41 @@ func write_ass(cues: Array, style: Dictionary, path: String) -> void:
 			str(c["text"]).replace("\n", "\\N")])
 
 
+## Build the burn command. Empty edl = the classic single-pass -vf path.
+## A non-empty edl assembles first: per-segment trim/atrim (+PTS resets,
+## per-segment audio timestamp normalisation), concat, then the reframe
+## chain + subtitles over the assembled video. Output flags identical.
+## Audio is ALWAYS normalized to AAC 48kHz stereo with zeroed timestamps:
+## a posted EP burned at the source's 44.1kHz with the iPhone's negative-pts
+## edit list played SILENT on Android TikTok while fine on iPhone.
+static func build_burn_args(video: String, vf_reframe: String, ass_path: String, fonts_dir: String, edl: Array, final_mp4: String) -> PackedStringArray:
+	var subs := ",subtitles=filename=%s:fontsdir=%s" % [ass_path, fonts_dir]
+	var tail := PackedStringArray([
+		"-c:v", "libx264", "-preset", "medium", "-crf", "20",
+		"-pix_fmt", "yuv420p", "-movflags", "+faststart",
+		"-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "2",
+		"-r", "30", final_mp4])
+	var args: PackedStringArray
+	if edl.is_empty():
+		args = PackedStringArray(["-y", "-i", video, "-vf", vf_reframe + subs,
+			"-af", "aresample=async=1:first_pts=0"])
+	else:
+		var fc := ""
+		for i in edl.size():
+			fc += "[0:v]trim=start=%.3f:end=%.3f,setpts=PTS-STARTPTS[v%d];" % [
+				float(edl[i][0]), float(edl[i][1]), i]
+			fc += "[0:a]atrim=start=%.3f:end=%.3f,asetpts=PTS-STARTPTS,aresample=async=1:first_pts=0[a%d];" % [
+				float(edl[i][0]), float(edl[i][1]), i]
+		for i in edl.size():
+			fc += "[v%d][a%d]" % [i, i]
+		fc += "concat=n=%d:v=1:a=1[vc][ac];" % edl.size()
+		fc += "[vc]" + vf_reframe + subs + "[vout]"
+		args = PackedStringArray(["-y", "-i", video, "-filter_complex", fc,
+			"-map", "[vout]", "-map", "[ac]"])
+	args.append_array(tail)
+	return args
+
+
 ## Custom burn: the reel_common.build_vf recipe verbatim, our ASS on top.
 func burn_custom(video: String, cues: Array, style: Dictionary, final_mp4: String) -> Array:
 	var ass := "/tmp/at_studio.ass"
@@ -214,19 +249,9 @@ func burn_custom(video: String, cues: Array, style: Dictionary, final_mp4: Strin
 		vf = "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,fps=30"
 	else:
 		vf = "crop=ih*9/16:ih:(iw-ih*9/16)/2+0:0,scale=1080:1920,setsar=1,fps=30"
-	vf += ",subtitles=filename=%s:fontsdir=%s" % [ass,
-		ProjectSettings.globalize_path("res://assets/fonts")]
-	# Audio normalized for TikTok/IG Android players: 48 kHz stereo (platform
-	# spec; 44.1k passthrough correlated with Android-only silence on a posted
-	# EP) and timestamps starting at 0 (iPhone sources carry a negative-pts
-	# edit list that some Android decoders mute on). Mirrors burn.py.
-	return await run_cmd(ffmpeg_bin(), PackedStringArray([
-		"-y", "-i", video, "-vf", vf,
-		"-c:v", "libx264", "-preset", "medium", "-crf", "20",
-		"-pix_fmt", "yuv420p", "-movflags", "+faststart",
-		"-af", "aresample=async=1:first_pts=0",
-		"-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "2",
-		"-r", "30", final_mp4]))
+	return await run_cmd(ffmpeg_bin(), build_burn_args(video, vf, ass,
+		ProjectSettings.globalize_path("res://assets/fonts"),
+		style.get("edl", []), final_mp4))
 
 
 ## ---- runtime WAV (16-bit PCM mono) ----
