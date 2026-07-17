@@ -655,13 +655,31 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
 		print("[sleep] app focus lost — arming 60 s display sleep")
 		_arm_display_sleep()
-	elif what == NOTIFICATION_APPLICATION_FOCUS_IN:
-		if _display_sleep:
-			_display_sleep.stop()
-		if not RenderingServer.render_loop_enabled:
-			print("[sleep] display back on")
-		RenderingServer.render_loop_enabled = true
-		Engine.max_fps = 0
+	elif what == NOTIFICATION_APPLICATION_FOCUS_IN \
+			or what == NOTIFICATION_WM_WINDOW_FOCUS_IN \
+			or what == NOTIFICATION_WM_MOUSE_ENTER:
+		# wake on ANY sign of the user: app focus, window focus, or the mouse
+		# entering — APPLICATION_FOCUS_IN alone proved unreliable for a
+		# background-launched window (display slept and never woke; the frozen
+		# frame read as a hard hang and got force-quit)
+		_wake_display()
+
+
+func _wake_display() -> void:
+	if _display_sleep:
+		_display_sleep.stop()
+	if not RenderingServer.render_loop_enabled:
+		print("[sleep] display back on")
+	RenderingServer.render_loop_enabled = true
+	Engine.max_fps = 0
+
+
+## Last-resort wake: while the display is off, ANY input over the window
+## (click/move/key) turns it back on — a frozen-looking window must never
+## ignore the user.
+func _input(_event: InputEvent) -> void:
+	if not RenderingServer.render_loop_enabled:
+		_wake_display()
 
 
 func _process(delta: float) -> void:
